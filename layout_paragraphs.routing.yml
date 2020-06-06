@@ -1,0 +1,7 @@
+layout_paragraphs.settings:
+  path: '/admin/config/content/layout_paragraphs'
+  defaults:
+    _form: '\Drupal\layout_paragraphs\Form\EntityReferenceLayoutSettingsForm'
+    _title: 'Entity Reference Layout general settings'
+  requirements:
+    _permission: 'administer site configuration'

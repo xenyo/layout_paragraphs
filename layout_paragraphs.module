@@ -1,0 +1,211 @@
+<?php
+
+/**
+ * @file
+ * Contains layout_paragraphs.module.
+ */
+
+use Drupal\Core\Url;
+use Drupal\Core\Render\Element;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\layout_paragraphs\Event\ErlMergeAttributesEvent;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_help().
+ */
+function layout_paragraphs_help($route_name, RouteMatchInterface $route_match) {
+  $output = '';
+  switch ($route_name) {
+    // Main module help for the layout_paragraphs module.
+    case 'help.page.layout_paragraphs':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Entity reference field with layouts') . '</p>';
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function layout_paragraphs_theme() {
+  return [
+    'layout_paragraphs_widget' => [
+      'render element' => 'form',
+      'function' => 'theme_layout_paragraphs_widget',
+    ],
+    'layout_paragraphs_widget' => [
+      'render element' => 'form',
+      'function' => 'theme_paragraphs_layout_widget',
+    ],
+    'layout_paragraphs_radio' => [
+      'render element' => 'element',
+      'function' => 'theme_layout_paragraphs_radio',
+    ],
+    'layout_paragraphs' => [
+      'variables' => [
+        'elements' => '',
+        'content' => '',
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_theme_suggestions().
+ */
+function layout_paragraphs_theme_suggestions_layout_paragraphs(array $variables) {
+  $suggestions = [];
+  $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
+  $suggestions[] = 'layout_paragraphs__' . $sanitized_view_mode;
+  $suggestions[] = 'layout_paragraphs__' . $variables['elements']['field_name'];
+  $suggestions[] = 'layout_paragraphs__' . $variables['elements']['field_name'] . '__' . $sanitized_view_mode;
+  return $suggestions;
+}
+
+/**
+ * Implements hook_prepreprocess_radios().
+ *
+ * Add wrapper class for layout selection.
+ */
+function layout_paragraphs_preprocess_radios(&$variables) {
+  if (isset($variables['element']['#wrapper_attributes'])) {
+    $variables['attributes'] += $variables['element']['#wrapper_attributes'];
+  }
+}
+
+/**
+ * Implements hook_layout_paragraphs_radio().
+ *
+ * Custom theme hook for adding layout icons
+ * and wrapper HTML to layout select radios.
+ */
+function theme_layout_paragraphs_radio($element) {
+  /* @var \Drupal\Core\Layout\LayoutPluginManager $layout_plugin_manager */
+  $layout_plugin_manager = \Drupal::service('plugin.manager.core.layout');
+  $renderer = \Drupal::service('renderer');
+  $layout_name = $element['element']['#return_value'];
+  try {
+    /* @var \Drupal\Core\Layout\LayoutDefinition $definition */
+    $definition = $layout_plugin_manager->getDefinition($layout_name);
+    $icon = $definition->getIcon(40, 60, 1, 0);
+    $rendered_icon = $renderer->render($icon);
+
+    $layout_item = [
+      '#type' => 'container',
+      '#prefix' => '<div class="layout-radio-item">',
+      '#suffix' => '</div>',
+      'icon' => [
+        '#prefix' => '<div class="layout-icon-wrapper">',
+        '#suffix' => '</div>',
+        '#markup' => $rendered_icon,
+      ],
+      'radio' => [
+        '#type' => 'container',
+        '#attributes' => [
+          // 'class' => ['visually-hidden'],.
+        ],
+        'item' => ['#markup' => $element['element']['#children']],
+      ],
+    ];
+
+    return \Drupal::service('renderer')->render($layout_item);
+  }
+  catch (\Exception $e) {
+    watchdog_exception('layout_paragraphs', $e);
+  }
+  return [];
+}
+
+/**
+ * Themes the "Paragraph Layout" field widget.
+ *
+ * @param array $variables
+ *   Contains the form element data from $element['entities'].
+ *
+ * @return string
+ *   The Rendered Widget markup.
+ */
+function theme_layout_paragraphs_widget(array $variables) {
+  $form = $variables['form'];
+  $renderer = \Drupal::service('renderer');
+  return $renderer->render($form);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for 'field_ui_field_storage_add_form'.
+ */
+function layout_paragraphs_form_field_ui_field_storage_add_form_alter(array &$form) {
+  if (isset($form['add']['new_storage_type']['#options'][(string) t('Reference revisions')]['field_ui:layout_paragraphs_revisioned:paragraph'])) {
+    // @todo Figure out why this option breaks the field config form
+    // and reintroduce it if possible.
+    // See https://www.drupal.org/project/layout_paragraphs/issues/3041126
+    unset($form['add']['new_storage_type']['#options'][(string) t('Reference revisions')]['field_ui:layout_paragraphs_revisioned:paragraph']);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Indicate unsupported multilingual ERL field configuration.
+ *
+ * @see paragraphs_form_field_config_edit_form_alter
+ */
+function layout_paragraphs_form_field_config_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  /* @var \Drupal\field\Entity\FieldConfig $field */
+  $field = $form_state->getFormObject()->getEntity();
+
+  if (!\Drupal::hasService('content_translation.manager')) {
+    return;
+  }
+
+  $bundle_is_translatable = \Drupal::service('content_translation.manager')
+    ->isEnabled($field->getTargetEntityTypeId(), $field->getTargetBundle());
+
+  if (!$bundle_is_translatable
+    || $field->getType() != 'layout_paragraphs_revisioned'
+    || $field->getSetting('target_type') != 'paragraph') {
+    return;
+  }
+
+  // This is a translatable ERL field pointing to a paragraph.
+  $message_display = 'warning';
+  $message_text = t('Paragraphs fields do not support translation. See the <a href=":documentation">online documentation</a>.', [
+    ':documentation' => Url::fromUri('https://www.drupal.org/node/2735121')->toString(),
+  ]);
+
+  if ($form['translatable']['#default_value'] == TRUE) {
+    $message_display = 'error';
+  }
+
+  $form['paragraphs_message'] = [
+    '#type' => 'container',
+    '#markup' => $message_text,
+    '#attributes' => [
+      'class' => ['messages messages--' . $message_display],
+    ],
+    '#weight' => 0,
+  ];
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * If "content_translation", move the form_alter implementation by the
+ * layout_paragraphs at the end of the list, so that it might be
+ * called after the content_translation one.
+ * Otherwise the $form['translatable'] won't be defined in
+ * layout_paragraphs_form_field_config_edit_form_alter.
+ *
+ * @see: https://www.hashbangcode.com/article/drupal-8-altering-hook-weights.
+ */
+function layout_paragraphs_module_implements_alter(&$implementations, $hook) {
+  // Move our hook_entity_type_alter() implementation to the end of the list.
+  if ($hook == 'form_alter' && isset($implementations['layout_paragraphs']) && isset($implementations['content_translation'])) {
+    $hook_init = $implementations['layout_paragraphs'];
+    unset($implementations['layout_paragraphs']);
+    $implementations['layout_paragraphs'] = $hook_init;
+  }
+}

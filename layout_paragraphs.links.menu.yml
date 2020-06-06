@@ -1,0 +1,4 @@
+layout_paragraphs.settings:
+  title: 'Entity Reference Layout settings'
+  parent: system.admin_config_content
+  route_name: layout_paragraphs.settings
