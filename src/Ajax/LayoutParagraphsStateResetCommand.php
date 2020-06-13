@@ -31,7 +31,7 @@ class LayoutParagraphsStateResetCommand implements CommandInterface {
    */
   public function render() {
     return [
-      'command' => 'resetErlState',
+      'command' => 'resetLayoutParagraphsState',
       'data' => [
         "id" => $this->id,
       ],

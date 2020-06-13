@@ -26,9 +26,15 @@ use Drupal\Core\Field\FieldFilteredMarkup;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\OpenDialogCommand;
+use Drupal\Core\Ajax\AppendCommand;
+use Drupal\Core\Ajax\PrependCommand;
+use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsStateResetCommand;
+use Drupal\layout_paragraphs\Ajax\LayoutParagraphsInsertCommand;
 
 /**
  * Entity Reference with Layout field widget.
@@ -331,8 +337,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
       '#attributes' => ['class' => ['layout-paragraphs-add-item']],
       '#ajax' => [
-        'callback' => [$this, 'elementAjax'],
-        'wrapper' => $this->wrapperId,
+        'callback' => [$this, 'editItemAjax'],
       ],
       '#name' => implode('_', $parents) . '_add_item',
       '#element_parents' => $parents,
@@ -452,6 +457,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       return [];
     }
 
+    if (isset($widget_state_item['is_new'])) {
+      return;
+    }
+
     /** @var \Drupal\paragraphs\ParagraphInterface $entity */
     $entity = $widget_state_item['entity'];
     $layout_settings = $entity->getAllBehaviorSettings()['layout_paragraphs'] ?? [];
@@ -475,6 +484,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
       $preview = $view_builder->view($entity, $preview_view_mode);
       $preview['#cache']['max-age'] = 0;
+      $preview['#attributes']['class'][] = Html::cleanCssIdentifier($entity->uuid() . '-preview');
     }
 
     $element = [
@@ -489,6 +499,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#attributes' => [
         'class' => [
           'layout-paragraphs-item',
+          'paragraph-' . $entity->uuid(),
         ],
         'id' => [
           $this->fieldName . '--item-' . $delta,
@@ -511,7 +522,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'parent_uuid' => [
         '#type' => 'hidden',
         '#attributes' => ['class' => ['layout-paragraphs-parent-uuid']],
-        '#value' => $parent_uuid,
+        '#default_value' => $parent_uuid,
       ],
       'entity' => [
         '#type' => 'value',
@@ -532,8 +543,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#submit' => [[$this, 'editItemSubmit']],
           '#delta' => $delta,
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'editItemAjax'],
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -547,8 +557,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#submit' => [[$this, 'removeItemSubmit']],
           '#delta' => $delta,
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'removeItemAjax'],
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -576,7 +585,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     // New items are rendered in layout but hidden.
     // This way we can track their weights, region names, etc.
     if (!empty($widget_state['items'][$delta]['is_new'])) {
-      $element['#attributes']['class'][] = 'js-hide';
+      $element['#is_new'] = TRUE;
+    }
+    else {
+      $element['#is_new'] = FALSE;
     }
 
     return $element;
@@ -596,10 +608,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function buildLayouts(array $elements, FormStateInterface $form_state) {
     $tree = [];
     $paragraph_elements = [];
+    $elements['#items'] = [];
     foreach (Element::children($elements) as $index) {
       $element = $elements[$index];
       if (!empty($element['#widget_item'])) {
         $paragraph_elements[] = $element;
+        // Maintain a hidden flast list of elements to easily locate items.
+        $elements['#items'][$element['#entity']->uuid()] = $element;
         unset($elements[$index]);
       }
     }
@@ -879,20 +894,21 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $element['entity_form'] += [
       'actions' => [
         '#weight' => 1000,
-        '#type' => 'container',
+        '#type' => 'actions',
         '#attributes' => ['class' => ['layout-paragraphs-item-form-actions']],
         'save_item' => [
           '#type' => 'submit',
           '#name' => 'save',
           '#value' => $this->t('Save'),
           '#delta' => $delta,
+          '#uuid' => $entity->uuid(),
           '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
           '#submit' => [
             [$this, 'saveItemSubmit'],
           ],
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'saveItemAjax'],
+            //'wrapper' => $this->wrapperId,
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -958,10 +974,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#type' => 'submit',
           '#value' => $this->t('Remove'),
           '#delta' => $delta,
+          '#uuid' => $entity->uuid(),
           '#submit' => [[$this, 'removeItemConfirmSubmit']],
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'removeItemConfirmAjax'],
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -1158,12 +1174,22 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function removeItemConfirmSubmit($form, $form_state) {
 
     $element = $form_state->getTriggeringElement();
+    $uuid = $element['#uuid'];
     $parents = $element['#element_parents'];
     $delta = $element['#delta'];
 
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
     unset($widget_state['items'][$delta]);
+    foreach ($widget_state['items'] as $delta => $item) {
+      /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
+      $paragraph = $item['entity'];
+      $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
+      if (isset($behavior_settings['parent_uuid']) && $behavior_settings['parent_uuid'] == $uuid) {
+        unset($widget_state['items'][$delta]);
+      }
+
+    }
     $widget_state['remove_item'] = FALSE;
 
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
@@ -1277,10 +1303,147 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $parents = $element['#element_parents'];
     $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
+    $html_id = $this->entityFormHtmlId($field_state);
 
     $response = new AjaxResponse();
+    $response->addCommand(new CloseDialogCommand('#' . $html_id));
     $response->addCommand(new ReplaceCommand('#' . $this->wrapperId, $widget_field));
     $response->addCommand(new LayoutParagraphsStateResetCommand('#' . $this->wrapperId));
+    return $response;
+  }
+
+  /**
+   * Ajax callback to return the entire ERL element.
+   */
+  public function saveItemAjax(array $form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $uuid = $triggering_element['#uuid'];
+    $parents = $triggering_element['#element_parents'];
+    $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+    $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
+    $html_id = $this->entityFormHtmlId($field_state);
+
+    $element = static::findElementByUuid($widget_field['active_items']['items'], $uuid);
+    /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
+    $paragraph = $element['#entity'];
+    $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
+
+    if ($behavior_settings['parent_uuid'] && $behavior_settings['region']) {
+      $parent_selector = '.paragraph-' . $behavior_settings['parent_uuid'] . ' .layout-paragraphs-layout-region--' . $behavior_settings['region'];
+    }
+    else {
+      $parent_selector = '';
+    }
+
+    $settings = [
+      'wrapper_selector' => '#' . $this->wrapperId,
+      'selector' => '.paragraph-' . $uuid,
+      'parent_selector' => $parent_selector,
+      'weight' => $element['#weight'],
+    ];
+
+    $response = new AjaxResponse();
+    $response->addCommand(new LayoutParagraphsInsertCommand($settings, $element));
+    $response->addCommand(new CloseDialogCommand('#' . $html_id));
+    return $response;
+  }
+
+  /**
+   * Recursively search the build array for element with matching uuid.
+   *
+   * @param array $array
+   *   Nested build array.
+   * @param string $uuid
+   *   The uuid of the element to find.
+   *
+   * @return array
+   *   The matching element build array.
+   */
+  public static function findElementByUuid(array $array, string $uuid) {
+    $element = FALSE;
+    foreach ($array as $key => $item) {
+      if (is_array($item)) {
+        if (isset($item['#entity'])) {
+          if ($item['#entity']->uuid() == $uuid) {
+            return $item;
+          }
+        }
+        if (isset($item['preview']['regions'])) {
+          foreach (Element::children($item['preview']['regions']) as $region_name) {
+            if ($element = static::findElementByUuid($item['preview']['regions'][$region_name], $uuid)) {
+              return $element;
+            }
+          }
+        }
+      }
+    }
+    return $element;
+  }
+
+  /**
+   * Ajax callback to return the entire ERL element.
+   */
+  public function editItemAjax(array $form, FormStateInterface $form_state) {
+    $element = $form_state->getTriggeringElement();
+    $parents = $element['#element_parents'];
+    $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+    $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
+    $entity_form = $widget_field['entity_form'];
+    $html_id = $this->entityFormHtmlId($field_state);
+
+    $dialog_options = [
+      'modal' => TRUE,
+      'appendTo' => '#' . $this->wrapperId,
+      'width' => 800,
+      'drupalAutoButtons' => TRUE,
+    ];
+
+    $response = new AjaxResponse();
+    $response->addCommand(new AppendCommand('#' . $this->wrapperId, '<div id="' . $html_id . '"></div>'));
+    $response->addCommand(new OpenDialogCommand('#' . $html_id, 'Edit Form', $entity_form, $dialog_options));
+    $response->addCommand(new LayoutParagraphsStateResetCommand('#' . $this->wrapperId));
+    return $response;
+  }
+
+  /**
+   * Ajax callback to remove an item - launches confirmation dialog.
+   */
+  public function removeItemAjax(array $form, FormStateInterface $form_state) {
+    $element = $form_state->getTriggeringElement();
+    $parents = $element['#element_parents'];
+    $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+    $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
+    $entity_form = $widget_field['remove_form'];
+    $html_id = $this->entityFormHtmlId($field_state);
+
+    $dialog_options = [
+      'modal' => TRUE,
+      'appendTo' => '#' . $this->wrapperId,
+      'width' => 800,
+      'drupalAutoButtons' => TRUE,
+    ];
+
+    $response = new AjaxResponse();
+    $response->addCommand(new AppendCommand('#' . $this->wrapperId, '<div id="' . $html_id . '"></div>'));
+    $response->addCommand(new OpenDialogCommand('#' . $html_id, 'Edit Form', $entity_form, $dialog_options));
+    $response->addCommand(new LayoutParagraphsStateResetCommand('#' . $this->wrapperId));
+    return $response;
+  }
+
+
+  /**
+   * Ajax callback to remove an item - removes item from DOM.
+   */
+  public function removeItemConfirmAjax(array $form, FormStateInterface $form_state) {
+    $element = $form_state->getTriggeringElement();
+    $uuid = $element['#uuid'];
+    $parents = $element['#element_parents'];
+    $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+    $html_id = $this->entityFormHtmlId($field_state);
+
+    $response = new AjaxResponse();
+    $response->addCommand(new RemoveCommand('.paragraph-' . $uuid));
+    $response->addCommand(new CloseDialogCommand('#' . $html_id));
     return $response;
   }
 
@@ -1302,6 +1465,19 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     else {
       return [];
     }
+  }
+
+  /**
+   * Generates an ID for the entity form dialog container.
+   *
+   * @param array $field_state
+   *   The field state with array_parents.
+   *
+   * @return string
+   *   The HTML id.
+   */
+  private function entityFormHtmlId(array $field_state) {
+    return trim(Html::getId(implode('-', $field_state['array_parents']) . '-entity-form'), '-');
   }
 
   /**

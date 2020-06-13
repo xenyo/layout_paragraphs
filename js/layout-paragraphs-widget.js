@@ -44,6 +44,29 @@
     setLoaded($(response.data.id));
   };
   /**
+   * Ajax Command to insert or update a paragraph element.
+   * @param {object} ajax The ajax object.
+   * @param {object} response The response object.
+   */
+  Drupal.AjaxCommands.prototype.layoutParagraphsInsert = (ajax, response) => {
+    const { settings, content } = response;
+    const weight = Math.floor(settings.weight);
+    const $container = settings.parent_selector
+      ? $(settings.parent_selector, settings.wrapper_selector)
+      : $(".active-items", settings.wrapper_selector);
+    const $sibling = $container.find(
+      `.layout-paragraphs-weight option[value="${weight}"]:selected`
+    );
+
+    if ($(settings.selector, settings.wrapper_selector).length) {
+      $(settings.selector, settings.wrapper_selector).replaceWith(content);
+    } else if ($sibling.length) {
+      $sibling.closest(".layout-paragraphs-item").after(content);
+    } else {
+      $container.prepend(content);
+    }
+  };
+  /**
    * The main layout-paragraphs Widget behavior.
    */
   Drupal.behaviors.layoutParagraphsWidget = {
@@ -210,16 +233,6 @@
         $(item).addClass("dragula-enabled");
         // Turn on drag and drop if dragula function exists.
         if (typeof dragula !== "undefined") {
-          // Add layout handles.
-          $(".layout-paragraphs-item").each(
-            (layoutParagraphsItemIndex, layoutParagraphsItem) => {
-              $('<div class="layout-controls">')
-                .append($('<div class="layout-handle">'))
-                .append($('<div class="layout-up">').click(moveUp))
-                .append($('<div class="layout-down">').click(moveDown))
-                .prependTo(layoutParagraphsItem);
-            }
-          );
           const items = $(
             ".active-items, .layout-paragraphs-layout-wrapper, .layout-paragraphs-layout-region, .layout-paragraphs-disabled-items__items",
             item
@@ -435,9 +448,10 @@
       }
       /**
        * Enhances the radio button select for choosing a layout.
+       * @param {Object} layoutList The list of layout items.
        */
-      function enhanceRadioSelect() {
-        const $layoutRadioItem = $(".layout-select--list-item");
+      function enhanceRadioSelect(layoutList) {
+        const $layoutRadioItem = $(".layout-select--list-item", layoutList);
         $layoutRadioItem.click(e => {
           const $radioItem = $(e.currentTarget);
           const $layoutParagraphsField = $radioItem.closest(
@@ -581,68 +595,17 @@
           });
         });
       /**
-       * Load entity form in dialog.
+       * Add drag/drop/move controls.
        */
-      $(".layout-paragraphs-field .layout-paragraphs-form", context)
-        .once("layout-paragraphs-dialog")
-        .each((index, layoutParagraphsForm) => {
-          const buttons = [];
-          const $layoutParagraphsForm = $(layoutParagraphsForm);
-          $(
-            '.layout-paragraphs-item-form-actions input[type="submit"]',
-            layoutParagraphsForm
-          ).each((btnIndex, btn) => {
-            buttons.push({
-              text: btn.value,
-              class: btn.className,
-              click() {
-                if (
-                  isLoading(
-                    $layoutParagraphsForm.closest(".layout-paragraphs-field")
-                  )
-                ) {
-                  return false;
-                }
-                setLoading($layoutParagraphsForm.closest(".ui-dialog"));
-                $(btn)
-                  .trigger("mousedown")
-                  .trigger("click");
-              }
-            });
-            btn.style.display = "none";
-          });
-          const dialogConfig = {
-            width: "800px",
-            title: $layoutParagraphsForm
-              .find("[data-dialog-title]")
-              .attr("data-dialog-title"),
-            maxHeight: Math.max(400, $(window).height() * 0.8),
-            minHeight: Math.min($layoutParagraphsForm.outerHeight(), 400),
-            appendTo: $(".layout-paragraphs-form").parent(),
-            draggable: true,
-            autoResize: true,
-            modal: true,
-            buttons,
-            open() {
-              enhanceRadioSelect();
-            },
-            beforeClose(event) {
-              if (
-                isLoading($(event.target).closest(".layout-paragraphs-field"))
-              ) {
-                return false;
-              }
-              setLoading($(event.target).closest(".ui-dialog"));
-              $(event.target)
-                .find(".layout-paragraphs-cancel")
-                .trigger("mousedown")
-                .trigger("click");
-              return false;
-            }
-          };
-          $layoutParagraphsForm.dialog(dialogConfig);
+      $(".layout-paragraphs-item", context)
+        .once("layout-paragraphs-controls")
+        .each((layoutParagraphsItemIndex, layoutParagraphsItem) => {
+          $('<div class="layout-controls">')
+            .append($('<div class="layout-handle">'))
+            .append($('<div class="layout-up">').click(moveUp))
+            .append($('<div class="layout-down">').click(moveDown))
+            .prependTo(layoutParagraphsItem);
         });
-
       /**
        * Drag and drop with dragula.
        */
@@ -668,6 +631,14 @@
         .each((index, item) => {
           updateFields($(item));
           updateDisabled($(item));
+        });
+      /**
+       * Enhance radio buttons.
+       */
+      $(".layout-select--list", context)
+        .once("layout-select-enhance-radios")
+        .each((index, layoutList) => {
+          enhanceRadioSelect(layoutList);
         });
     }
   };
