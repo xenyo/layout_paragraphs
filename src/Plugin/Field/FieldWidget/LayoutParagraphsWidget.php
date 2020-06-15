@@ -128,6 +128,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $entityDisplayRepository;
 
   /**
+   * Indicates whether the current widget instance is in translation.
+   *
+   * @var bool
+   */
+  protected $isTranslating;
+
+  /**
    * Constructs a WidgetBase object.
    *
    * @param string $plugin_id
@@ -1582,7 +1589,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     foreach ($values as $delta => &$item) {
       unset($values[$delta]['actions']);
-      if ($item['entity'] instanceof ParagraphInterface) {
+      if (isset($item['entity']) && $item['entity'] instanceof ParagraphInterface) {
         /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph_entity */
         $paragraph_entity = $item['entity'];
 

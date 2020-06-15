@@ -84,7 +84,7 @@ fieldset.layout-paragraphs-field > legend {
 .layout-paragraphs-field .layout-paragraphs-layout-region:hover {
   border: 1px solid #ccc;
 }
-.layout-paragraphs-field .layout-paragraphs-layout .layout-paragraphs-item:hover {
+.layout-paragraphs-field .layout-paragraphs-item:hover {
   border-color: #0074bd;
 }
 .layout-paragraphs-field .reversed .layout-paragraphs-item:hover {
@@ -110,10 +110,6 @@ fieldset.layout-paragraphs-field > legend {
 
 /* -- Layout Controls -- */
 
-.layout-paragraphs-field .layout-paragraphs-layout .layout-controls,
-.layout-paragraphs-field .layout-paragraphs-layout .layout-paragraphs-actions {
-  background: #f5f5f3;
-}
 .layout-paragraphs-field .layout-paragraphs-layout .layout-paragraphs-item .layout-controls,
 .layout-paragraphs-field .layout-paragraphs-layout .layout-paragraphs-item .layout-paragraphs-actions {
   background: none;
@@ -287,6 +283,9 @@ fieldset.layout-paragraphs-field > legend {
 }
 .layout-paragraphs-loading .layout-paragraphs-add-content__toggle {
   opacity: 0 !important;
+}
+.layout-paragraphs-item .layout-paragraphs-add-content__toggle {
+  top: 30px;
 }
 .layout-paragraphs-item > .layout-paragraphs-add-content__toggle {
   top: 100%;

@@ -229,14 +229,25 @@
        * Initiates dragula drag/drop functionality.
        * @param {object} item ERL field item to attach drag/drop behavior to.
        */
-      function dragulaBehaviors(item) {
-        $(item).addClass("dragula-enabled");
+      function dragulaBehaviors(layoutParagraphField) {
+        $(layoutParagraphField).addClass("dragula-enabled");
         // Turn on drag and drop if dragula function exists.
         if (typeof dragula !== "undefined") {
           const items = $(
-            ".active-items, .layout-paragraphs-layout-wrapper, .layout-paragraphs-layout-region, .layout-paragraphs-disabled-items__items",
-            item
-          ).get();
+            ".active-items, .layout-paragraphs-layout-region, .layout-paragraphs-disabled-items__items",
+            layoutParagraphField
+          ).not(".dragula-enabled").addClass("dragula-enabled").get();
+
+          // Dragula is already initialized, add any new containers that may have been added.
+          if ($(layoutParagraphField).data('drake')) {
+            for (var i in items) {
+              if ($(layoutParagraphField).data('drake').containers.indexOf(items[i]) === -1) {
+                $(layoutParagraphField).data('drake').containers.push(items[i]);
+              }
+            }
+            return;
+          }
+
           const drake = dragula(items, {
             moves(el, container, handle) {
               return handle.className.toString().indexOf("layout-handle") >= 0;
@@ -274,11 +285,11 @@
               return true;
             }
           });
-
           drake.on("drop", el => {
             updateFields($(el).closest(".layout-paragraphs-field"));
             updateDisabled($(el).closest(".layout-paragraphs-field"));
           });
+          $(layoutParagraphField).data('drake', drake);
         }
       }
       /**
@@ -607,10 +618,18 @@
             .prependTo(layoutParagraphsItem);
         });
       /**
+       * Enhance radio buttons.
+       */
+      $(".layout-select--list", context)
+        .once("layout-select-enhance-radios")
+        .each((index, layoutList) => {
+          enhanceRadioSelect(layoutList);
+        });
+      /**
        * Drag and drop with dragula.
+       * Runs every time DOM is updated.
        */
       $(".layout-paragraphs-field", context)
-        .once("layout-paragraphs-drag-drop")
         .each((index, item) => {
           const checkDragulaInterval = setInterval(() => {
             if (typeof dragula !== "undefined") {
@@ -619,26 +638,14 @@
             }
           }, 50);
         });
-
-      $(".layout-paragraphs-field", context)
-        .once("layout-paragraphs-drag-drop")
-        .each((index, item) => {});
       /**
        * Update weights, regions, and disabled area on load.
+       * Runs every time DOM is updated.
        */
       $(".layout-paragraphs-field", context)
-        .once("layout-paragraphs-update-fields")
         .each((index, item) => {
           updateFields($(item));
           updateDisabled($(item));
-        });
-      /**
-       * Enhance radio buttons.
-       */
-      $(".layout-select--list", context)
-        .once("layout-select-enhance-radios")
-        .each((index, layoutList) => {
-          enhanceRadioSelect(layoutList);
         });
     }
   };

@@ -1,7 +1,7 @@
 name: 'Layout Paragraphs'
 type: module
 description: 'Field widget and formatter for using layouts with paragraph fields.'
-core: 8.x
+core_version_requirement: ^8 || ^9
 package: 'Paragraphs'
 configure: layout_paragraphs.settings
 dependencies:
