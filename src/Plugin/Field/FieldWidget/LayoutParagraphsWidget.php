@@ -265,6 +265,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $elements = parent::formMultipleElements($items, $form, $form_state);
     unset($elements['#theme']);
+    $elements['#parents'] = $form['#parents'];
     $paragraph_items_count = 0;
     foreach (Element::children($elements) as $index) {
       $element =& $elements[$index];
@@ -414,12 +415,12 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     ];
     $elements['toggle_button'] = $this->toggleButton();
     if ($widget_state['open_form'] !== FALSE) {
-      $elements['#process'][] = [$this, 'entityForm'];
+      $this->entityForm($elements, $form_state, $form);
     }
 
     // Add remove confirmation form if we're removing.
     if ($widget_state['remove_item'] !== FALSE) {
-      $elements['#process'][] = [$this, 'removeForm'];
+      $this->removeForm($elements, $form_state, $form);
     }
 
     // Container for disabled / orphaned items.
@@ -613,7 +614,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The restructured with layouts.
    */
   public function buildLayouts(array $elements, FormStateInterface $form_state) {
-    $tree = [];
+    $tree = [
+      '#parents' => [],
+    ];
     $paragraph_elements = [];
     $elements['#items'] = [];
     foreach (Element::children($elements) as $index) {
@@ -651,6 +654,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#type' => 'container',
       '#attributes' => ['class' => ['active-items']],
       'items' => $tree,
+      '#parents' => [],
     ];
     return $elements;
   }
@@ -663,6 +667,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $entity = $layout_element['#entity'];
     $uuid = $entity->uuid();
     $layout_element['preview']['regions'] = ['#weight' => 100] + $layout_element['#layout_instance']->build($layout_element['preview']['regions']);
+    $layout_element['preview']['regions']['#parents'] = $layout_element['#parents'];
     foreach ($elements as $index => $element) {
       if ($element['#parent_uuid'] == $uuid) {
         /* @var \Drupal\Core\Entity\EntityInterface $child_entity */
@@ -739,7 +744,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function entityForm(array &$element, FormStateInterface $form_state, array &$form) {
 
-    $parents = $form['#parents'];
+    $parents = $element['#parents'];
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $delta = $widget_state['open_form'];
 
@@ -821,7 +826,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#limit_validation_errors' => [
             array_merge($parents, [
               $this->fieldName,
-              $delta,
               'entity_form',
               'layout_selection',
             ]),
@@ -909,13 +913,16 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#value' => $this->t('Save'),
           '#delta' => $delta,
           '#uuid' => $entity->uuid(),
-          '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
+          '#limit_validation_errors' => [
+            array_merge($parents, [
+              $this->fieldName,
+            ]),
+          ],
           '#submit' => [
             [$this, 'saveItemSubmit'],
           ],
           '#ajax' => [
             'callback' => [$this, 'saveItemAjax'],
-            //'wrapper' => $this->wrapperId,
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -933,8 +940,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             'class' => ['layout-paragraphs-cancel', 'button--danger'],
           ],
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'closeDialogAjax'],
             'progress' => 'none',
           ],
           '#element_parents' => $parents,
@@ -942,7 +948,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       ],
     ];
 
-    return $element;
+    //return $element;
   }
 
   /**
@@ -960,7 +966,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function removeForm(array &$element, FormStateInterface $form_state, array &$form) {
 
-    $parents = $form['#parents'];
+    $parents = $element['#parents'];
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $delta = $widget_state['remove_item'];
     /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph_entity */
@@ -975,7 +981,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#markup' => $this->t('Are you sure you want to permanently remove this <b>@type?</b><br />This action cannot be undone.', ['@type' => $entity->type->entity->label()]),
       ],
       'actions' => [
-        '#type' => 'container',
+        '#type' => 'actions',
         '#attributes' => ['class' => ['layout-paragraphs-item-form-actions']],
         'confirm' => [
           '#type' => 'submit',
@@ -998,15 +1004,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             'class' => ['layout-paragraphs-cancel', 'button--danger'],
           ],
           '#ajax' => [
-            'callback' => [$this, 'elementAjax'],
-            'wrapper' => $this->wrapperId,
+            'callback' => [$this, 'closeDialogAjax'],
+            'progress' => 'none',
           ],
           '#element_parents' => $parents,
         ],
       ],
       '#delta' => $delta,
     ];
-    return $element;
   }
 
   /**
@@ -1213,7 +1218,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
-    unset($widget_state['remove_item']);
+    $widget_state['remove_item'] = FALSE;
 
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $form_state->setRebuild();
@@ -1329,29 +1334,40 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
     $html_id = $this->entityFormHtmlId($field_state);
+    $response = new AjaxResponse();
 
-    $element = static::findElementByUuid($widget_field['active_items']['items'], $uuid);
-    /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
-    $paragraph = $element['#entity'];
-    $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
-
-    if ($behavior_settings['parent_uuid'] && $behavior_settings['region']) {
-      $parent_selector = '.paragraph-' . $behavior_settings['parent_uuid'] . ' .layout-paragraphs-layout-region--' . $behavior_settings['region'];
+    if ($form_state->hasAnyErrors()) {
+      $entity_form = $widget_field['entity_form'];
+      $entity = $entity_form['#entity'];
+      $selector = '#' . $this->wrapperId . ' .layout-paragraphs-form';
+      $entity_form['status'] = [
+        '#weight' => -100,
+        '#type' => 'status_messages',
+      ];
+      $response->addCommand(new ReplaceCommand($selector, $entity_form));
     }
     else {
-      $parent_selector = '';
+      $element = static::findElementByUuid($widget_field['active_items']['items'], $uuid);
+      /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
+      $paragraph = $element['#entity'];
+      $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
+
+      if ($behavior_settings['parent_uuid'] && $behavior_settings['region']) {
+        $parent_selector = '.paragraph-' . $behavior_settings['parent_uuid'] . ' .layout-paragraphs-layout-region--' . $behavior_settings['region'];
+      }
+      else {
+        $parent_selector = '';
+      }
+
+      $settings = [
+        'wrapper_selector' => '#' . $this->wrapperId,
+        'selector' => '.paragraph-' . $uuid,
+        'parent_selector' => $parent_selector,
+        'weight' => $element['#weight'],
+      ];
+      $response->addCommand(new LayoutParagraphsInsertCommand($settings, $element));
+      $response->addCommand(new CloseDialogCommand('#' . $html_id));
     }
-
-    $settings = [
-      'wrapper_selector' => '#' . $this->wrapperId,
-      'selector' => '.paragraph-' . $uuid,
-      'parent_selector' => $parent_selector,
-      'weight' => $element['#weight'],
-    ];
-
-    $response = new AjaxResponse();
-    $response->addCommand(new LayoutParagraphsInsertCommand($settings, $element));
-    $response->addCommand(new CloseDialogCommand('#' . $html_id));
     return $response;
   }
 
@@ -1450,6 +1466,21 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $response = new AjaxResponse();
     $response->addCommand(new RemoveCommand('.paragraph-' . $uuid));
+    $response->addCommand(new CloseDialogCommand('#' . $html_id));
+    return $response;
+  }
+
+  /**
+   * Form submit handler - cancels item removal and closes confirmation form.
+   */
+  public function closeDialogAjax(array $form, FormStateInterface $form_state) {
+
+    $element = $form_state->getTriggeringElement();
+    $parents = $element['#element_parents'];
+    $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+    $html_id = $this->entityFormHtmlId($field_state);
+
+    $response = new AjaxResponse();
     $response->addCommand(new CloseDialogCommand('#' . $html_id));
     return $response;
   }

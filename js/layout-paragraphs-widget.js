@@ -1,4 +1,4 @@
-(($, Drupal, dragula) => {
+(($, Drupal) => {
   /**
    * Sets the state of layout-paragraphs field to loading and adds loading indicator to element.
    * @param {jQuery} $element The jQuery object to set loading state for.
@@ -649,4 +649,4 @@
         });
     }
   };
-})(jQuery, Drupal, dragula);
+})(jQuery, Drupal);
