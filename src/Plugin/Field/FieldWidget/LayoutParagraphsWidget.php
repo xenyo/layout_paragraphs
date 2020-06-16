@@ -33,6 +33,7 @@ use Drupal\Core\Ajax\RemoveCommand;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\paragraphs\ParagraphInterface;
+use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsStateResetCommand;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsInsertCommand;
 
@@ -314,8 +315,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
     foreach ($bundle_ids as $bundle_id) {
       $type = $storage->load($bundle_id);
-      $plugins = $type->getEnabledBehaviorPlugins();
-      $has_layout = isset($plugins['layout_paragraphs']);
+      $has_layout = count($this->getAvailableLayoutsByType($type)) > 0;
 
       $path = '';
       // Get the icon and pass to Javascript.
@@ -430,7 +430,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#attributes' => ['class' => ['layout-paragraphs-disabled-items']],
         '#weight' => 999,
         '#title' => $this->t('Disabled Items'),
-        '#wrapper_attributes' => ['class' => ['test']],
         'items' => [
           '#type' => 'container',
           '#attributes' => [
@@ -471,7 +470,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     /** @var \Drupal\paragraphs\ParagraphInterface $entity */
     $entity = $widget_state_item['entity'];
-    $layout_settings = $entity->getAllBehaviorSettings()['layout_paragraphs'] ?? [];
+    $layout_settings = $this->getLayoutSettings($entity);
     $layout = $layout_settings['layout'] ?? '';
     $config = $layout_settings['config'] ?? [];
 
@@ -622,10 +621,19 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     foreach (Element::children($elements) as $index) {
       $element = $elements[$index];
       if (!empty($element['#widget_item'])) {
-        $paragraph_elements[] = $element;
+        $paragraph_elements[$element['#entity']->uuid()] = $element;
         // Maintain a hidden flast list of elements to easily locate items.
         $elements['#items'][$element['#entity']->uuid()] = $element;
         unset($elements[$index]);
+      }
+    }
+    // Move any orphaned items to the disabled bin.
+    foreach ($paragraph_elements as $index => $element) {
+      $paragraph = $element['#entity'];
+      $layout_settings = $this->getLayoutSettings($paragraph);
+      $parent_uuid = $layout_settings['parent_uuid'];
+      if ($parent_uuid && !isset($paragraph_elements[$parent_uuid])) {
+        $paragraph_elements[$index]['#region'] = '_disabled';
       }
     }
     // Sort items by weight to make sure we're processing the correct order.
@@ -639,7 +647,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       /* @var \Drupal\Core\Entity\EntityInterface $entity */
       $entity = $element['#entity'];
       if ($element['#layout']) {
-        $tree[$entity->uuid()] = $this->buildLayout($element, $paragraph_elements);
+        $tree[$entity->uuid()] = $this->buildLayout($element, $paragraph_elements, $elements['disabled']['items']);
       }
       else {
         $tree[$entity->uuid()] = $element;
@@ -662,7 +670,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   /**
    * Builds a single layout element.
    */
-  public function buildLayout($layout_element, &$elements) {
+  public function buildLayout($layout_element, &$elements, &$disabled_items) {
     /* @var \Drupal\Core\Entity\EntityInterface $entity */
     $entity = $layout_element['#entity'];
     $uuid = $entity->uuid();
@@ -676,13 +684,18 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         $region = $element['#region'];
         // Recursive processing for layouts within layouts.
         if ($element['#layout']) {
-          $sub_element = $this->buildLayout($element, $elements);
+          $sub_element = $this->buildLayout($element, $elements, $disabled_items);
         }
         else {
           $sub_element = $element;
         }
         unset($elements[$index]);
-        $layout_element['preview']['regions'][$region][$child_uuid] = $sub_element;
+        if (isset($layout_element['preview']['regions'][$region])) {
+          $layout_element['preview']['regions'][$region][$child_uuid] = $sub_element;
+        }
+        else {
+          $disabled_items[$child_uuid] = $sub_element;
+        }
       }
     }
     return $layout_element;
@@ -795,14 +808,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $display->buildForm($entity, $element['entity_form'], $form_state);
 
     // Add layout selection form if "paragraphs layout" behavior is enabled.
-    $paragraphs_type = $entity->getParagraphType();
-    $plugins = $paragraphs_type->getEnabledBehaviorPlugins();
-    if (isset($plugins['layout_paragraphs'])) {
-      $layout_paragraphs_plugin = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
-      $config = $layout_paragraphs_plugin->getConfiguration();
-
-      $layout = $entity->getBehaviorSetting('layout_paragraphs', 'layout');
-      $layout_plugin_config = $entity->getBehaviorSetting('layout_paragraphs', 'config') ?? [];
+    if ($this->isLayoutParagraph($entity)) {
+      $available_layouts = $this->getAvailableLayouts($entity);
+      $layout_settings = $this->getLayoutSettings($entity);
+      $layout = $layout_settings['layout'];
+      $layout_plugin_config = $layout_settings['config'];
 
       $element['entity_form']['layout_selection'] = [
         '#type' => 'container',
@@ -810,7 +820,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         'layout' => [
           '#type' => 'radios',
           '#title' => $this->t('Select a layout:'),
-          '#options' => $config['available_layouts'],
+          '#options' => $available_layouts,
           '#default_value' => $layout,
           '#attributes' => [
             'class' => ['layout-paragraphs-layout-select'],
@@ -971,10 +981,12 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $delta = $widget_state['remove_item'];
     /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph_entity */
     $entity = $widget_state['items'][$delta]['entity'];
+
     $element['remove_form'] = [
       '#prefix' => '<div class="layout-paragraphs-form">',
       '#suffix' => '</div>',
       '#type' => 'container',
+      '#entity' => $entity,
       '#attributes' => ['data-dialog-title' => [$this->t('Confirm removal')]],
       'message' => [
         '#type' => 'markup',
@@ -1012,6 +1024,23 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       ],
       '#delta' => $delta,
     ];
+    if ($this->hasChildren($entity, $widget_state['items'])) {
+      $element['remove_form']['nested_items'] = [
+        '#type' => 'radios',
+        '#title' => $this->t('This layout has nested items.'),
+        '#options' => [
+          'disable' => $this->t('Disable nested items'),
+          'remove' => $this->t('Permanently remove nested items'),
+        ],
+        'disable' => [
+          '#description' => $this->t('Nested items will be moved to the Disabled Bin and can be editied or restored.'),
+        ],
+        'remove' => [
+          '#description' => $this->t('Nested items will be permanenty removed.'),
+        ],
+        '#default_value' => 'disable',
+      ];
+    }
   }
 
   /**
@@ -1131,11 +1160,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'add_more',
       'actions',
     ]);
-    $behavior_values = [
+    $this->setLayoutSettings($paragraph_entity, [
       'region' => $form_state->getValue(array_merge($path, ['_region'])),
       'parent_uuid' => $form_state->getValue(array_merge($path, ['_parent_uuid'])),
-    ];
-    $paragraph_entity->setBehaviorSettings('layout_paragraphs', $behavior_values);
+    ]);
     $widget_state['items'][] = [
       'entity' => $paragraph_entity,
       'weight' => $form_state->getValue(array_merge($path, ['_new_item_weight'])),
@@ -1186,22 +1214,26 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function removeItemConfirmSubmit($form, $form_state) {
 
     $element = $form_state->getTriggeringElement();
+    $element_parents = $element['#parents'];
+    $remove_form_parents = array_splice($element_parents, 0, -2);
+    $nested_items_path = array_merge($remove_form_parents, ['nested_items']);
+    $nested_items_value = $form_state->getValue($nested_items_path);
     $uuid = $element['#uuid'];
     $parents = $element['#element_parents'];
     $delta = $element['#delta'];
-
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
-    unset($widget_state['items'][$delta]);
-    foreach ($widget_state['items'] as $delta => $item) {
-      /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
-      $paragraph = $item['entity'];
-      $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
-      if (isset($behavior_settings['parent_uuid']) && $behavior_settings['parent_uuid'] == $uuid) {
-        unset($widget_state['items'][$delta]);
+    if ($nested_items_value == 'remove') {
+      foreach ($widget_state['items'] as $index => $item) {
+        /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
+        $paragraph = $item['entity'];
+        $layout_settings = $this->getLayoutSettings($paragraph);
+        if ($layout_settings['parent_uuid'] == $uuid) {
+          unset($widget_state['items'][$index]);
+        }
       }
-
     }
+    unset($widget_state['items'][$delta]);
     $widget_state['remove_item'] = FALSE;
 
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
@@ -1262,8 +1294,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     // Save layout settings.
     if (!empty($item_form['layout_selection']['layout'])) {
 
+      $layout_settings = $this->getLayoutSettings($paragraph_entity);
       $layout = $form_state->getValue($item_form['layout_selection']['layout']['#parents']);
-      $new_behavior_settings = ['layout' => $layout];
+      $layout_settings['layout'] = $layout;
 
       // Save layout config:
       if (!empty($item_form['layout_plugin_form'])) {
@@ -1271,13 +1304,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         if ($this->getLayoutPluginForm($layout_instance)) {
           $subform_state = SubformState::createForSubform($item_form['layout_plugin_form'], $form_state->getCompleteForm(), $form_state);
           $layout_instance->submitConfigurationForm($item_form['layout_plugin_form'], $subform_state);
-          $layout_config = $layout_instance->getConfiguration();
-          $new_behavior_settings['config'] = $layout_config;
+          $layout_settings['config'] = $layout_instance->getConfiguration();
         }
       }
-      // Merge new behavior settings for layout/config into existing settings.
-      $behavior_settings = $paragraph_entity->getAllBehaviorSettings()['layout_paragraphs'] ?? [];
-      $paragraph_entity->setBehaviorSettings('layout_paragraphs', $new_behavior_settings + $behavior_settings);
+      $this->setLayoutSettings($paragraph_entity, $layout_settings);
     }
 
     // Close the entity form.
@@ -1347,13 +1377,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $response->addCommand(new ReplaceCommand($selector, $entity_form));
     }
     else {
-      $element = static::findElementByUuid($widget_field['active_items']['items'], $uuid);
+      $element = static::findElementByUuid($widget_field, $uuid);
       /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
       $paragraph = $element['#entity'];
-      $behavior_settings = $paragraph->getAllBehaviorSettings()['layout_paragraphs'];
+      $layout_settings = $this->getLayoutSettings($paragraph);
 
-      if ($behavior_settings['parent_uuid'] && $behavior_settings['region']) {
-        $parent_selector = '.paragraph-' . $behavior_settings['parent_uuid'] . ' .layout-paragraphs-layout-region--' . $behavior_settings['region'];
+      if ($layout_settings['parent_uuid'] && $layout_settings['region']) {
+        $parent_selector = '.paragraph-' . $layout_settings['parent_uuid'] . ' .layout-paragraphs-layout-region--' . $layout_settings['region'];
       }
       else {
         $parent_selector = '';
@@ -1368,39 +1398,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $response->addCommand(new LayoutParagraphsInsertCommand($settings, $element));
       $response->addCommand(new CloseDialogCommand('#' . $html_id));
     }
+    $disabled_bin = $widget_field['disabled'];
+    $response->addCommand(new ReplaceCommand('#' . $this->wrapperId . ' .layout-paragraphs-disabled-items', $disabled_bin));
     return $response;
-  }
-
-  /**
-   * Recursively search the build array for element with matching uuid.
-   *
-   * @param array $array
-   *   Nested build array.
-   * @param string $uuid
-   *   The uuid of the element to find.
-   *
-   * @return array
-   *   The matching element build array.
-   */
-  public static function findElementByUuid(array $array, string $uuid) {
-    $element = FALSE;
-    foreach ($array as $key => $item) {
-      if (is_array($item)) {
-        if (isset($item['#entity'])) {
-          if ($item['#entity']->uuid() == $uuid) {
-            return $item;
-          }
-        }
-        if (isset($item['preview']['regions'])) {
-          foreach (Element::children($item['preview']['regions']) as $region_name) {
-            if ($element = static::findElementByUuid($item['preview']['regions'][$region_name], $uuid)) {
-              return $element;
-            }
-          }
-        }
-      }
-    }
-    return $element;
   }
 
   /**
@@ -1437,6 +1437,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
     $entity_form = $widget_field['remove_form'];
+    $entity = $entity_form['#entity'];
+    $type = $entity->getParagraphType();
+
     $html_id = $this->entityFormHtmlId($field_state);
 
     $dialog_options = [
@@ -1448,7 +1451,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $response = new AjaxResponse();
     $response->addCommand(new AppendCommand('#' . $this->wrapperId, '<div id="' . $html_id . '"></div>'));
-    $response->addCommand(new OpenDialogCommand('#' . $html_id, 'Edit Form', $entity_form, $dialog_options));
+    $response->addCommand(new OpenDialogCommand('#' . $html_id, $this->t('Remove @type', ['@type' => $type->label()]), $entity_form, $dialog_options));
     $response->addCommand(new LayoutParagraphsStateResetCommand('#' . $this->wrapperId));
     return $response;
   }
@@ -1463,10 +1466,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $parents = $element['#element_parents'];
     $field_state = static::getWidgetState($parents, $this->fieldName, $form_state);
     $html_id = $this->entityFormHtmlId($field_state);
+    $widget_field = NestedArray::getValue($form, $field_state['array_parents']);
+    $disabled_bin = $widget_field['disabled'];
 
     $response = new AjaxResponse();
     $response->addCommand(new RemoveCommand('.paragraph-' . $uuid));
     $response->addCommand(new CloseDialogCommand('#' . $html_id));
+    $response->addCommand(new ReplaceCommand('#' . $this->wrapperId . ' .layout-paragraphs-disabled-items', $disabled_bin));
+
     return $response;
   }
 
@@ -1506,6 +1513,68 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
+   * Recursively search the build array for element with matching uuid.
+   *
+   * @param array $array
+   *   Nested build array.
+   * @param string $uuid
+   *   The uuid of the element to find.
+   *
+   * @return array
+   *   The matching element build array.
+   */
+  public static function findElementByUuid(array $array, string $uuid) {
+    $element = FALSE;
+    if (isset($array['active_items']['items']) && isset($array['disabled']['items'])) {
+      return static::findElementByUuid($array['active_items']['items'] + $array['disabled']['items'], $uuid);
+    }
+    foreach ($array as $key => $item) {
+      if (is_array($item)) {
+        if (isset($item['#entity'])) {
+          if ($item['#entity']->uuid() == $uuid) {
+            return $item;
+          }
+        }
+        if (isset($item['preview']['regions'])) {
+          foreach (Element::children($item['preview']['regions']) as $region_name) {
+            if ($element = static::findElementByUuid($item['preview']['regions'][$region_name], $uuid)) {
+              return $element;
+            }
+          }
+        }
+      }
+    }
+    return $element;
+  }
+
+  /**
+   * Search $items for children of $parent.
+   *
+   * @param ParagraphInterface $parent
+   *   The parent paragraph.
+   * @param array $items
+   *   An array of items to search.
+   *
+   * @return boolean
+   *   True if finds children.
+   */
+  public function hasChildren(ParagraphInterface $parent, array $items, string $region = '') {
+    $uuid = $parent->uuid();
+    foreach ($items as $item) {
+      $layout_settings = $this->getLayoutSettings($item['entity']);
+      if ($region) {
+        if ($layout_settings['region'] == $region && $layout_settings['parent_uuid'] == $uuid) {
+          return TRUE;
+        }
+      }
+      if ($layout_settings['parent_uuid'] == $uuid) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Generates an ID for the entity form dialog container.
    *
    * @param array $field_state
@@ -1516,6 +1585,101 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   private function entityFormHtmlId(array $field_state) {
     return trim(Html::getId(implode('-', $field_state['array_parents']) . '-entity-form'), '-');
+  }
+
+  /**
+   * Gets the layout settings for a paragraph.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   *
+   * @return array
+   *   The layout settings array.
+   */
+  protected function getLayoutSettings(ParagraphInterface $paragraph) {
+    $defaults = [
+      'parent_uuid' => '',
+      'layout' => '',
+      'region' => '_disabled',
+      'config' => '',
+    ];
+    $behavior_settings = $paragraph->getAllBehaviorSettings();
+    return ($behavior_settings['layout_paragraphs'] ?? []) + $defaults;
+  }
+
+  /**
+   * Sets the layout settings for a given paragraph.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   * @param string $name
+   *   The layout setting name.
+   * @param mixed $value
+   *   The layout setting value.
+   */
+  protected function setLayoutSetting(ParagraphInterface &$paragraph, string $name, $value) {
+    $settings = $this->getLayoutSettings($paragraph);
+    $settings[$name] = $value;
+    $this->setLayoutSettings($paragraph, $settings);
+  }
+
+  /**
+   * Sets the layout settings for a given paragraph.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   * @param array $layout_settings
+   *   An array of layout settings.
+   */
+  protected function setLayoutSettings(ParagraphInterface &$paragraph, array $layout_settings) {
+    $paragraph->setBehaviorSettings('layout_paragraphs', $layout_settings);
+  }
+
+  /**
+   * Returns true if the paragraph can be used as a layout section.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   *
+   * @return bool
+   *   True if paragraph is a layout section.
+   */
+  protected function isLayoutParagraph(ParagraphInterface &$paragraph) {
+    $available_layouts = $this->getAvailableLayouts($paragraph);
+    return count($available_layouts) > 0;
+  }
+
+  /**
+   * Returns an array of available layouts for a given paragraph.
+   *
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   *
+   * @return array
+   *   An array of available layout plugins.
+   */
+  protected function getAvailableLayouts(ParagraphInterface &$paragraph) {
+    $paragraphs_type = $paragraph->getParagraphType();
+    return $this->getAvailableLayoutsByType($paragraphs_type);
+  }
+
+  /**
+   * Returns an array of available layouts for a given paragraph type.
+   *
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraphs_type
+   *   The paragraph entity.
+   *
+   * @return array
+   *   An array of available layout plugins.
+   */
+  protected function getAvailableLayoutsByType(ParagraphsTypeInterface $paragraphs_type) {
+    $plugins = $paragraphs_type->getEnabledBehaviorPlugins();
+    if (isset($plugins['layout_paragraphs'])) {
+      $layout_paragraphs_plugin = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
+      $config = $layout_paragraphs_plugin->getConfiguration();
+      return $config['available_layouts'] ?? [];
+    }
+    return [];
   }
 
   /**
@@ -1571,8 +1735,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         foreach ($target_bundles as $target_bundle) {
           /** @var \Drupal\paragraphs\ParagraphsTypeInterface $type */
           $type = $storage->load($target_bundle);
-          $plugins = $type->getEnabledBehaviorPlugins();
-          if (isset($plugins['layout_paragraphs'])) {
+          if (count($this->getAvailableLayoutsByType($type)) > 0) {
             $has_layout = TRUE;
             break;
           }
@@ -1625,12 +1788,12 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         $paragraph_entity = $item['entity'];
 
         // Merge region and parent uuid into paragraph behavior settings.
-        $behavior_settings = $paragraph_entity->getAllBehaviorSettings()['layout_paragraphs'] ?? [];
+        $behavior_settings = $this->getLayoutSettings($paragraph_entity);
         $new_behavior_settings = [
           'region' => $item['region'],
           'parent_uuid' => $item['parent_uuid'],
         ];
-        $paragraph_entity->setBehaviorSettings('layout_paragraphs', $new_behavior_settings + $behavior_settings);
+        $this->setLayoutSettings($paragraph_entity, $new_behavior_settings + $behavior_settings);
 
         $paragraph_entity->setNeedsSave(TRUE);
         $item['target_id'] = $paragraph_entity->id();
