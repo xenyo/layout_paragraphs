@@ -219,8 +219,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $parents = $form['#parents'];
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
-    $this->wrapperId = Html::getId(implode('-', $parents) . $this->fieldName . '-wrapper');
-    $this->itemFormWrapperId = Html::getId(implode('-', $parents) . $this->fieldName . '-form');
+    $this->wrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-wrapper'), '-');
+    $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
 
     $handler_settings = $items->getSetting('handler_settings');
     $target_bundles = $handler_settings['target_bundles'] ?? [];
@@ -511,7 +511,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           'paragraph-' . $entity->uuid(),
         ],
         'id' => [
-          $this->fieldName . '--item-' . $delta,
+          $this->wrapperId . '--item-' . $delta,
         ],
       ],
       'preview' => $preview,
@@ -545,7 +545,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#attributes' => ['class' => ['layout-paragraphs-actions']],
         'edit' => [
           '#type' => 'submit',
-          '#name' => 'edit_' . $this->fieldName . '_' . $delta,
+          '#name' => 'edit_' . $this->wrapperId . '_' . $delta,
           '#value' => $this->t('Edit'),
           '#attributes' => ['class' => ['layout-paragraphs-edit']],
           '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
@@ -1079,7 +1079,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           'remove' => $this->t('Permanently remove nested items'),
         ],
         'disable' => [
-          '#description' => $this->t('Nested items will be moved to the Disabled Bin and can be editied or restored.'),
+          '#description' => $this->t('Nested items will be moved to the <b>Disabled Items</b> section and can be editied or restored.'),
         ],
         'remove' => [
           '#description' => $this->t('Nested items will be permanenty removed.'),
@@ -1658,7 +1658,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           return TRUE;
         }
       }
-      if ($layout_settings['parent_uuid'] == $uuid) {
+      elseif ($layout_settings['parent_uuid'] == $uuid) {
         return TRUE;
       }
     }
