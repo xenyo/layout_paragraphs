@@ -477,7 +477,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     // These fields are manipulated via JS and interacting with the DOM.
     // We have to check the submitted form for their values.
     $region = $this->extractInput($form, $form_state, $delta, 'region', $layout_settings['region']);
+    $this->setLayoutSetting($widget_state['items'][$delta]['entity'], 'region', $region);
     $parent_uuid = $this->extractInput($form, $form_state, $delta, 'parent_uuid', $layout_settings['parent_uuid']);
+    $this->setLayoutSetting($widget_state['items'][$delta]['entity'], 'parent_uuid', $parent_uuid);
     $weight = $this->extractInput($form, $form_state, $delta, '_weight', $widget_state_item['weight']);
 
     $layout_instance = $layout
@@ -772,7 +774,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#type' => 'container',
       '#parents' => array_merge($parents, [
         $this->fieldName,
-        $delta,
         'entity_form',
       ]),
       '#weight' => 1000,
@@ -812,7 +813,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $available_layouts = $this->getAvailableLayouts($entity);
       $layout_settings = $this->getLayoutSettings($entity);
       $layout = $layout_settings['layout'];
-      $layout_plugin_config = $layout_settings['config'];
+      $layout_plugin_config = $layout_settings['config'] ?? [];
 
       $element['entity_form']['layout_selection'] = [
         '#type' => 'container',
@@ -868,10 +869,57 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#suffix' => '</div>',
         '#access' => $this->currentUser->hasPermission('edit entity reference layout plugin config'),
       ];
+
       // Add the layout configuration form if applicable.
-      if (!empty($layout)) {
-        $layout_instance = $this->layoutPluginManager->createInstance($layout, $layout_plugin_config);
-        if ($layout_plugin = $this->getLayoutPluginForm($layout_instance)) {
+      $layout_select_parents = array_merge($parents, [
+        $this->fieldName,
+        'entity_form',
+        'layout_selection',
+        'layout',
+      ]);
+      $updated_layout = $form_state->getValue($layout_select_parents) ?? $layout;
+
+      if (!empty($updated_layout)) {
+        $updated_layout_instance = $this->layoutPluginManager->createInstance($updated_layout, $layout_plugin_config);
+        // If the user selects a new layout,
+        // we provide a way for them to choose
+        // what to do with items from regions
+        // that no longer exist.
+        if ($layout && $updated_layout != $layout) {
+          $move_items = [];
+
+          $original_layout = $this->layoutPluginManager->createInstance($layout);
+          $original_definition = $original_layout->getPluginDefinition();
+          $original_regions = $original_definition->getRegions();
+
+          $updated_layout_definition = $updated_layout_instance->getPluginDefinition();
+          $updated_regions = $updated_layout_definition->getRegions();
+          $updated_regions_options = ['_disabled' => $this->t('Disabled')];
+          foreach ($updated_regions as $region_name => $region) {
+            $updated_regions_options[$region_name] = $region['label'];
+          }
+
+          foreach ($original_regions as $region_name => $region) {
+            if (!isset($updated_regions[$region_name]) && $this->hasChildren($entity, $widget_state['items'], $region_name)) {
+              $move_items[$region_name] = [
+                '#type' => 'select',
+                '#wrapper_attributes' => ['class' => ['container-inline']],
+                '#title' => $this->t('Move items from the "@region" region to', ['@region' => $region['label']]),
+                '#options' => $updated_regions_options,
+              ];
+            }
+          }
+        }
+
+        if (count($move_items)) {
+          $element['entity_form']['layout_selection']['move_items'] = [
+            '#type' => 'fieldset',
+            '#title' => $this->t('Move orphaned items'),
+            '#description' => $this->t('The layout you selected has different regions than the previous one.'),
+            'items' => $move_items,
+          ];
+        }
+        if ($layout_plugin = $this->getLayoutPluginForm($updated_layout_instance)) {
           $element['entity_form']['layout_plugin_form'] += [
             '#type' => 'details',
             '#title' => $this->t('Layout Configuration'),
@@ -957,8 +1005,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         ],
       ],
     ];
-
-    //return $element;
   }
 
   /**
@@ -1100,6 +1146,29 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       return Html::escape($val);
     }
     return $default_value;
+  }
+
+  protected function setUserInput(array $form, FormStateInterface &$form_state, int $delta, $element_name, $value) {
+    $input = $form_state->getUserInput();
+    $parents = $form['#parents'];
+
+    if (is_array($element_name)) {
+      $element_path = array_merge($parents, [
+        $this->fieldName,
+        $delta,
+      ],
+      $element_name);
+    }
+    else {
+      $element_path = array_merge($parents, [
+        $this->fieldName,
+        $delta,
+        $element_name,
+      ]);
+    }
+
+    NestedArray::setValue($input, $element_path, $value);
+    $form_state->setUserInput($input);
   }
 
   /**
@@ -1308,11 +1377,34 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         }
       }
       $this->setLayoutSettings($paragraph_entity, $layout_settings);
+
+      // Handle orphaned items.
+      if ($move_items = $form_state->getValue($item_form['layout_selection']['move_items']['#parents'])) {
+        $parent_uuid = $paragraph_entity->uuid();
+        foreach ($move_items['items'] as $from_region => $to_region) {
+          foreach ($widget_state['items'] as $delta => $item) {
+            $layout_settings = $this->getLayoutSettings($item['entity']);
+            if ($layout_settings['parent_uuid'] == $parent_uuid && $layout_settings['region'] == $from_region) {
+              $this->setLayoutSetting($widget_state['items'][$delta]['entity'], 'region', $to_region);
+              // We have to update user input directly
+              // or the region setting will be
+              // overwritten by the form.
+              $path = array_merge($parents, [
+                $this->fieldName,
+                $delta,
+                'region',
+              ]);
+              $input = $form_state->getUserInput();
+              NestedArray::setValue($input, $path, $to_region);
+              $form_state->setUserInput($input);
+            }
+          }
+        }
+      }
     }
 
     // Close the entity form.
     $widget_state['open_form'] = FALSE;
-
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $form_state->setRebuild();
   }
@@ -1500,10 +1592,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $element = $form_state->getTriggeringElement();
     $parents = $element['#array_parents'];
     $parents = array_splice($parents, 0, -2);
-    $parents = array_merge($parents, ['layout_plugin_form']);
-    if ($layout_plugin_form = NestedArray::getValue($form, $parents)) {
+    if ($entity_form = NestedArray::getValue($form, $parents)) {
       $response = new AjaxResponse();
-      $response->addCommand(new ReplaceCommand('#layout-config', $layout_plugin_form));
+      $response->addCommand(new ReplaceCommand('#' . $this->wrapperId . ' .layout-paragraphs-form', $entity_form));
       $response->addCommand(new LayoutParagraphsStateResetCommand('#' . $this->wrapperId));
       return $response;
     }
@@ -1601,7 +1692,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'parent_uuid' => '',
       'layout' => '',
       'region' => '_disabled',
-      'config' => '',
+      'config' => [],
     ];
     $behavior_settings = $paragraph->getAllBehaviorSettings();
     return ($behavior_settings['layout_paragraphs'] ?? []) + $defaults;
