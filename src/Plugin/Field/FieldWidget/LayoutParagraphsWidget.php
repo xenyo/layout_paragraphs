@@ -1843,9 +1843,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $entity_type = $this->getFieldSetting('target_type');
     $handler_settings = $this->getFieldSetting('handler_settings');
-    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
+    $bundles = isset($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
     $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (!$handler_settings["negate"]) {
+    if (empty($handler_settings["negate"])) {
       $selected_bundles = empty($selected_bundles) ? [] : $selected_bundles;
       $target_bundles = array_intersect($bundles, $selected_bundles);
     }
