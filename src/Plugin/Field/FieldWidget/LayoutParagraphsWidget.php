@@ -424,25 +424,23 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     }
 
     // Container for disabled / orphaned items.
-    if ($paragraph_items_count) {
-      $elements['disabled'] = [
-        '#type' => 'fieldset',
-        '#attributes' => ['class' => ['layout-paragraphs-disabled-items']],
-        '#weight' => 999,
-        '#title' => $this->t('Disabled Items'),
-        'items' => [
-          '#type' => 'container',
-          '#attributes' => [
-            'class' => [
-              'layout-paragraphs-disabled-items__items',
-            ],
-          ],
-          'description' => [
-            '#markup' => '<div class="layout-paragraphs-disabled-items__description">' . $this->t('Drop items here that you want to keep disabled / hidden, without removing them permanently.') . '</div>',
+    $elements['disabled'] = [
+      '#type' => 'fieldset',
+      '#attributes' => ['class' => ['layout-paragraphs-disabled-items']],
+      '#weight' => 999,
+      '#title' => $this->t('Disabled Items'),
+      'items' => [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => [
+            'layout-paragraphs-disabled-items__items',
           ],
         ],
-      ];
-    }
+        'description' => [
+          '#markup' => '<div class="layout-paragraphs-disabled-items__description">' . $this->t('Drop items here that you want to keep disabled / hidden, without removing them permanently.') . '</div>',
+        ],
+      ],
+    ];
 
     $elements['#attached']['drupalSettings']['paragraphsLayoutWidget']['maxDepth'] = $this->getSetting('nesting_depth');
     $elements['#attached']['drupalSettings']['paragraphsLayoutWidget']['requireLayouts'] = $this->getSetting('require_layouts');
@@ -541,7 +539,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#type' => 'value',
         '#value' => $entity,
       ],
-      'toggle_button' => $this->toggleButton(),
+      'toggle_button' => $this->toggleButton('layout-paragraphs-parent-uuid'),
       // Edit and remove button.
       'actions' => [
         '#type' => 'container',
@@ -596,7 +594,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
               'layout-paragraphs-layout-region--' . $region_name,
             ],
           ],
-          'toggle_button' => $this->toggleButton(),
+          'toggle_button' => $this->toggleButton('layout-paragraphs-uuid'),
         ];
       }
     }
@@ -740,9 +738,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    * @return array
    *   Returns the render array for an "add more" toggle button.
    */
-  protected function toggleButton() {
+  protected function toggleButton($uuid_class = '') {
     return [
-      '#markup' => '<button class="layout-paragraphs-add-content__toggle">+<span class="visually-hidden">Add Item</span></button>',
+      '#markup' => '<button class="layout-paragraphs-add-content__toggle" data-parent-uuid-class="' . $uuid_class . '">+<span class="visually-hidden">Add Item</span></button>',
       '#allowed_tags' => ['button', 'span'],
       '#weight' => 10000,
     ];
@@ -908,10 +906,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
           $updated_layout_definition = $updated_layout_instance->getPluginDefinition();
           $updated_regions = $updated_layout_definition->getRegions();
-          $updated_regions_options = ['_disabled' => $this->t('Disabled')];
+          $updated_regions_options = [];
           foreach ($updated_regions as $region_name => $region) {
             $updated_regions_options[$region_name] = $region['label'];
           }
+          $updated_regions_options['_disabled'] = $this->t('Disabled');
           foreach ($original_regions as $region_name => $region) {
             if (!isset($updated_regions[$region_name]) && $this->hasChildren($entity, $widget_state['items'], $region_name)) {
               $move_items[$region_name] = [
@@ -1309,7 +1308,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     }
     unset($widget_state['items'][$delta]['entity']);
     $widget_state['remove_item'] = FALSE;
-    $widget_state['items_count'] = count($widget_state['items']);
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $form_state->setRebuild();
   }
@@ -1429,8 +1427,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     // If canceling an item that hasn't been created yet, remove it.
     if (!empty($widget_state['items'][$delta]['is_new'])) {
-      array_splice($widget_state['items'], $delta, 1);
-      $widget_state['items_count'] = count($widget_state['items']);
+      unset($widget_state['items'][$delta]['entity']);
     }
     $widget_state['open_form'] = FALSE;
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
@@ -1725,7 +1722,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $defaults = [
       'parent_uuid' => '',
       'layout' => '',
-      'region' => '_disabled',
+      'region' => '',
       'config' => [],
     ];
     $behavior_settings = $paragraph->getAllBehaviorSettings();
@@ -1843,9 +1840,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $entity_type = $this->getFieldSetting('target_type');
     $handler_settings = $this->getFieldSetting('handler_settings');
-    $bundles = isset($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
+    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
     $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (empty($handler_settings["negate"])) {
+    if (!$handler_settings["negate"]) {
       $selected_bundles = empty($selected_bundles) ? [] : $selected_bundles;
       $target_bundles = array_intersect($bundles, $selected_bundles);
     }

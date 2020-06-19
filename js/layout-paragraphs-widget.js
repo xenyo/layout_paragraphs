@@ -101,9 +101,9 @@
        */
       function updateFields($container) {
         // Set deltas:
-        let delta = -1;
+        let delta = Number($container.find(".layout-paragraphs-weight option:first-child").val());
         $container
-          .find(".layout-paragraphs-weight, .layout-paragraphs-new-item-delta")
+          .find(".layout-paragraphs-weight")
           .each((index, item) => {
             if ($(item).hasClass("layout-paragraphs-weight")) {
               delta += 1;
@@ -378,6 +378,7 @@
         const $parentUuidInput = $widget.find(
           ".layout-paragraphs-new-item-parent-uuid"
         );
+        const parentUuidSelector = '.' + $btn.attr('data-parent-uuid-class');
         const $menu = $widget.find(".layout-paragraphs-add-more-menu");
         const region = getRegion(
           $btn.closest(".layout-paragraphs-layout-region")
@@ -385,23 +386,12 @@
         const depth = region
           ? $btn.parents(".layout-paragraphs-layout").length
           : 0;
-        let parentUuid = "";
-        if (region) {
-          if ($btn.closest('.layout-paragraphs-item').is('.layout-paragraphs-layout')) {
-            parentUuid = $btn
-              .closest(".layout-paragraphs-item")
-              .parent()
-              .closest(".layout-paragraphs-layout")
-              .find(".layout-paragraphs-uuid")
-              .val();
-          }
-          else {
-            parentUuid = $btn
-              .closest(".layout-paragraphs-layout")
-              .find(".layout-paragraphs-uuid")
-              .val();
-          }
-        }
+        const parentUuid = parentUuidSelector
+          ? $btn
+              .closest('.layout-paragraphs-item')
+              .find(parentUuidSelector)
+              .val()
+          : "";
         const parentWeight =
           0.5 +
           Number(
@@ -468,9 +458,9 @@
         $regionInput.val(region);
         $parentWeightInput.val(parentWeight);
         $parentUuidInput.val(parentUuid);
-        console.log(region);
-        console.log(parentWeight);
-        console.log(parentUuid);
+        // console.log(region);
+        // console.log(parentWeight);
+        // console.log(parentUuid);
         setTimeout(() => {
           positionMenu($menu);
         }, 100);
@@ -656,6 +646,19 @@
               dragulaBehaviors(item);
             }
           }, 50);
+        });
+      /**
+       * Only show disabled items if there are items in the field.
+       * Runs every time DOM is updated.
+       */
+      $(".layout-paragraphs-field", context)
+        .each((index, field) => {
+          if ($('.layout-paragraphs-item', field).length == 0) {
+            $('.layout-paragraphs-disabled-items', field).hide();
+          }
+          else {
+            $('.layout-paragraphs-disabled-items', field).show();
+          }
         });
       /**
        * Update weights, regions, and disabled area on load.
