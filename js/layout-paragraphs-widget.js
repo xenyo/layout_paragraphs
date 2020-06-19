@@ -65,6 +65,7 @@
     } else {
       $container.prepend(content);
     }
+
   };
   /**
    * The main layout-paragraphs Widget behavior.
@@ -106,6 +107,10 @@
           .each((index, item) => {
             if ($(item).hasClass("layout-paragraphs-weight")) {
               delta += 1;
+            }
+            // If the options don't go high enough, add one.
+            if ($(`[value=${delta}]`, item).length == 0) {
+              $(item).append(`<option value=${delta}>`);
             }
             $(item).val(`${delta}`);
           });
@@ -380,12 +385,23 @@
         const depth = region
           ? $btn.parents(".layout-paragraphs-layout").length
           : 0;
-        const parentUuid = region
-          ? $btn
+        let parentUuid = "";
+        if (region) {
+          if ($btn.closest('.layout-paragraphs-item').is('.layout-paragraphs-layout')) {
+            parentUuid = $btn
+              .closest(".layout-paragraphs-item")
+              .parent()
               .closest(".layout-paragraphs-layout")
               .find(".layout-paragraphs-uuid")
-              .val()
-          : "";
+              .val();
+          }
+          else {
+            parentUuid = $btn
+              .closest(".layout-paragraphs-layout")
+              .find(".layout-paragraphs-uuid")
+              .val();
+          }
+        }
         const parentWeight =
           0.5 +
           Number(
@@ -452,6 +468,9 @@
         $regionInput.val(region);
         $parentWeightInput.val(parentWeight);
         $parentUuidInput.val(parentUuid);
+        console.log(region);
+        console.log(parentWeight);
+        console.log(parentUuid);
         setTimeout(() => {
           positionMenu($menu);
         }, 100);
@@ -647,6 +666,17 @@
           updateFields($(item));
           updateDisabled($(item));
         });
+      /**
+       * Dialog close buttons should trigger the "Cancel" action.
+       */
+      $(".layout-paragraphs-dialog .ui-dialog-titlebar-close", context).mousedown(e => {
+        $(e.target)
+          .closest(".layout-paragraphs-dialog")
+          .find(".layout-paragraphs-cancel")
+          .trigger("mousedown")
+          .trigger("click");
+        return false;
+      });
     }
   };
 })(jQuery, Drupal);

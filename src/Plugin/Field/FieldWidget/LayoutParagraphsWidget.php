@@ -233,7 +233,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $description = FieldFilteredMarkup::create(\Drupal::token()->replace($this->fieldDefinition->getDescription()));
 
     // Save items to widget state when the form first loads.
-    if (empty($widget_state['items'])) {
+    if (!isset($widget_state['items'])) {
       $widget_state['items'] = [];
       $widget_state['open_form'] = FALSE;
       $widget_state['remove_item'] = FALSE;
@@ -342,7 +342,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#host' => $items->getEntity(),
       '#value' => $this->t('Create New'),
       '#submit' => [[$this, 'newItemSubmit']],
-      '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
+      '#limit_validation_errors' => [array_merge($parents, [$this->fieldName, 'add_more'])],
       '#attributes' => ['class' => ['layout-paragraphs-add-item']],
       '#ajax' => [
         'callback' => [$this, 'editItemAjax'],
@@ -464,6 +464,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       return [];
     }
 
+    if (!isset($widget_state_item['entity'])) {
+      return;
+    }
+
     if (isset($widget_state_item['is_new'])) {
       return;
     }
@@ -548,7 +552,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#name' => 'edit_' . $this->wrapperId . '_' . $delta,
           '#value' => $this->t('Edit'),
           '#attributes' => ['class' => ['layout-paragraphs-edit']],
-          '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
+          '#limit_validation_errors' => [],
           '#submit' => [[$this, 'editItemSubmit']],
           '#delta' => $delta,
           '#ajax' => [
@@ -559,10 +563,16 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         ],
         'remove' => [
           '#type' => 'submit',
-          '#name' => 'remove_' . $this->fieldName . '_' . $delta,
+          '#name' => 'remove_' . $this->wrapperId . '_' . $delta,
           '#value' => $this->t('Remove'),
           '#attributes' => ['class' => ['layout-paragraphs-remove']],
-          '#limit_validation_errors' => [array_merge($parents, [$this->fieldName])],
+          '#limit_validation_errors' => [
+            array_merge($parents, [
+              $this->fieldName,
+              $delta,
+            ]),
+           ],
+          '#limit_validation_errors' => [],
           '#submit' => [[$this, 'removeItemSubmit']],
           '#delta' => $delta,
           '#ajax' => [
@@ -775,6 +785,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#parents' => array_merge($parents, [
         $this->fieldName,
         'entity_form',
+        $delta,
       ]),
       '#weight' => 1000,
       '#delta' => $delta,
@@ -838,6 +849,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             array_merge($parents, [
               $this->fieldName,
               'entity_form',
+              $delta,
               'layout_selection',
             ]),
           ],
@@ -874,9 +886,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $layout_select_parents = array_merge($parents, [
         $this->fieldName,
         'entity_form',
+        $delta,
         'layout_selection',
         'layout',
       ]);
+      $values = $form_state->getValues();
       $updated_layout = $form_state->getValue($layout_select_parents) ?? $layout;
 
       if (!empty($updated_layout)) {
@@ -898,7 +912,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           foreach ($updated_regions as $region_name => $region) {
             $updated_regions_options[$region_name] = $region['label'];
           }
-
           foreach ($original_regions as $region_name => $region) {
             if (!isset($updated_regions[$region_name]) && $this->hasChildren($entity, $widget_state['items'], $region_name)) {
               $move_items[$region_name] = [
@@ -909,15 +922,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
               ];
             }
           }
-        }
-
-        if (count($move_items)) {
-          $element['entity_form']['layout_selection']['move_items'] = [
-            '#type' => 'fieldset',
-            '#title' => $this->t('Move orphaned items'),
-            '#description' => $this->t('The layout you selected has different regions than the previous one.'),
-            'items' => $move_items,
-          ];
+          if (count($move_items)) {
+            $element['entity_form']['layout_selection']['move_items'] = [
+              '#type' => 'fieldset',
+              '#title' => $this->t('Move orphaned items'),
+              '#description' => $this->t('The layout you selected has different regions than the previous one.'),
+              'items' => $move_items,
+            ];
+          }
         }
         if ($layout_plugin = $this->getLayoutPluginForm($updated_layout_instance)) {
           $element['entity_form']['layout_plugin_form'] += [
@@ -1239,7 +1251,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'is_new' => TRUE,
     ];
     $widget_state['open_form'] = $widget_state['items_count'];
-    $widget_state['items_count']++;
+    $widget_state['items_count'] = count($widget_state['items']);
 
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $form_state->setRebuild();
@@ -1293,18 +1305,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
     if ($nested_items_value == 'remove') {
-      foreach ($widget_state['items'] as $index => $item) {
-        /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
-        $paragraph = $item['entity'];
-        $layout_settings = $this->getLayoutSettings($paragraph);
-        if ($layout_settings['parent_uuid'] == $uuid) {
-          unset($widget_state['items'][$index]);
-        }
-      }
+      $this->removeChildren($widget_state['items'], $uuid);
     }
-    unset($widget_state['items'][$delta]);
+    unset($widget_state['items'][$delta]['entity']);
     $widget_state['remove_item'] = FALSE;
-
+    $widget_state['items_count'] = count($widget_state['items']);
     static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
     $form_state->setRebuild();
   }
@@ -1379,24 +1384,27 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $this->setLayoutSettings($paragraph_entity, $layout_settings);
 
       // Handle orphaned items.
-      if ($move_items = $form_state->getValue($item_form['layout_selection']['move_items']['#parents'])) {
-        $parent_uuid = $paragraph_entity->uuid();
-        foreach ($move_items['items'] as $from_region => $to_region) {
-          foreach ($widget_state['items'] as $delta => $item) {
-            $layout_settings = $this->getLayoutSettings($item['entity']);
-            if ($layout_settings['parent_uuid'] == $parent_uuid && $layout_settings['region'] == $from_region) {
-              $this->setLayoutSetting($widget_state['items'][$delta]['entity'], 'region', $to_region);
-              // We have to update user input directly
-              // or the region setting will be
-              // overwritten by the form.
-              $path = array_merge($parents, [
-                $this->fieldName,
-                $delta,
-                'region',
-              ]);
-              $input = $form_state->getUserInput();
-              NestedArray::setValue($input, $path, $to_region);
-              $form_state->setUserInput($input);
+      if (isset($item_form['layout_selection']['move_items'])) {
+        $move_items = $form_state->getValue($item_form['layout_selection']['move_items']['#parents']);
+        if ($move_items && isset($move_items['items'])) {
+          $parent_uuid = $paragraph_entity->uuid();
+          foreach ($move_items['items'] as $from_region => $to_region) {
+            foreach ($widget_state['items'] as $delta => $item) {
+              $layout_settings = $this->getLayoutSettings($item['entity']);
+              if ($layout_settings['parent_uuid'] == $parent_uuid && $layout_settings['region'] == $from_region) {
+                $this->setLayoutSetting($widget_state['items'][$delta]['entity'], 'region', $to_region);
+                // We have to update user input directly
+                // or the region setting will be
+                // overwritten by the form.
+                $path = array_merge($parents, [
+                  $this->fieldName,
+                  $delta,
+                  'region',
+                ]);
+                $input = $form_state->getUserInput();
+                NestedArray::setValue($input, $path, $to_region);
+                $form_state->setUserInput($input);
+              }
             }
           }
         }
@@ -1507,6 +1515,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $html_id = $this->entityFormHtmlId($field_state);
 
     $dialog_options = [
+      'dialogClass' => 'layout-paragraphs-dialog',
       'modal' => TRUE,
       'appendTo' => '#' . $this->wrapperId,
       'width' => 800,
@@ -1535,6 +1544,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $html_id = $this->entityFormHtmlId($field_state);
 
     $dialog_options = [
+      'dialogClass' => 'layout-paragraphs-dialog',
       'modal' => TRUE,
       'appendTo' => '#' . $this->wrapperId,
       'width' => 800,
@@ -1652,17 +1662,41 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function hasChildren(ParagraphInterface $parent, array $items, string $region = '') {
     $uuid = $parent->uuid();
     foreach ($items as $item) {
-      $layout_settings = $this->getLayoutSettings($item['entity']);
-      if ($region) {
-        if ($layout_settings['region'] == $region && $layout_settings['parent_uuid'] == $uuid) {
+      if (isset($item['entity'])) {
+        $layout_settings = $this->getLayoutSettings($item['entity']);
+        if ($region) {
+          if ($layout_settings['region'] == $region && $layout_settings['parent_uuid'] == $uuid) {
+            return TRUE;
+          }
+        }
+        elseif ($layout_settings['parent_uuid'] == $uuid) {
           return TRUE;
         }
       }
-      elseif ($layout_settings['parent_uuid'] == $uuid) {
-        return TRUE;
-      }
     }
     return FALSE;
+  }
+
+  /**
+   * Recursively remove decendants from list of items.
+   *
+   * @param array $items
+   *   The entire list of items.
+   * @param string $uuid
+   *   The parent/ancestor uuid.
+   */
+  protected function removeChildren(array &$items, string $uuid) {
+    foreach ($items as $index => $item) {
+      if (isset($item['entity'])) {
+        /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
+        $paragraph = $item['entity'];
+        $layout_settings = $this->getLayoutSettings($paragraph);
+        if ($layout_settings['parent_uuid'] == $uuid) {
+          unset($items[$index]['entity']);
+          $this->removeChildren($items, $paragraph->uuid());
+        }
+      }
+    }
   }
 
   /**
