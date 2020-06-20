@@ -223,11 +223,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
 
     $handler_settings = $items->getSetting('handler_settings');
-    $target_bundles = $handler_settings['target_bundles'] ?? [];
-
-    if (!empty($handler_settings['negate'])) {
-      $target_bundles_options = array_keys($handler_settings['target_bundles_drag_drop']);
-      $target_bundles = array_diff($target_bundles_options, $target_bundles);
+    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
+    $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
+    if (!$handler_settings["negate"]) {
+      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
+    }
+    else {
+      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
     }
     $title = $this->fieldDefinition->getLabel();
     $description = FieldFilteredMarkup::create(\Drupal::token()->replace($this->fieldDefinition->getDescription()));
@@ -1843,11 +1845,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
     $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
     if (!$handler_settings["negate"]) {
-      $selected_bundles = empty($selected_bundles) ? [] : $selected_bundles;
-      $target_bundles = array_intersect($bundles, $selected_bundles);
+      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
     }
     else {
-      $target_bundles = array_diff($bundles, $selected_bundles);
+      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
     }
     $definition = $this->entityTypeManager->getDefinition($entity_type);
     $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
