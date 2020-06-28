@@ -578,7 +578,7 @@
           });
         });
       /**
-       * Click hanlders for "Add New Section" buttons.
+       * Click handlers for "Add New Section" buttons.
        */
       $(".layout-paragraphs-field", context)
         .once("layout-paragraphs-add-section")

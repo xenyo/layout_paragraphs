@@ -2,6 +2,7 @@
 
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -16,6 +17,7 @@ use Drupal\Core\Render\Renderer;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
+use Drupal\Core\Plugin\PluginFormFactoryInterface;
 use Drupal\Core\Layout\LayoutInterface;
 use Drupal\Core\Form\SubformState;
 use Drupal\Component\Utility\NestedArray;
@@ -71,6 +73,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    * @var \Drupal\Core\Layout\LayoutPluginManager
    */
   protected $layoutPluginManager;
+
+  /**
+   * The plugin form manager.
+   *
+   * @var \Drupal\Core\Plugin\PluginFormFactoryInterface
+   */
+  protected $pluginFormFactory;
 
   /**
    * The entity that contains this field.
@@ -156,6 +165,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The entity type bundle info.
    * @param \Drupal\Core\Layout\LayoutPluginManager $layout_plugin_manager
    *   Core layout plugin manager service.
+   * @param \Drupal\Core\Plugin\PluginFormFactoryInterface $plugin_form_manager
+   *   The plugin form manager.
    * @param \Drupal\Core\Language\LanguageManager $language_manager
    *   Core language manager service.
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -173,6 +184,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     EntityTypeManagerInterface $entity_type_manager,
     EntityTypeBundleInfoInterface $entity_type_bundle_info,
     LayoutPluginManager $layout_plugin_manager,
+    PluginFormFactoryInterface $plugin_form_manager,
     LanguageManager $language_manager,
     AccountProxyInterface $current_user,
     EntityDisplayRepositoryInterface $entity_display_repository) {
@@ -183,6 +195,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->layoutPluginManager = $layout_plugin_manager;
+    $this->pluginFormFactory = $plugin_form_manager;
     $this->fieldName = $this->fieldDefinition->getName();
     $this->languageManager = $language_manager;
     $this->currentUser = $current_user;
@@ -203,251 +216,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $container->get('entity_type.manager'),
       $container->get('entity_type.bundle.info'),
       $container->get('plugin.manager.core.layout'),
+      $container->get('plugin_form.factory'),
       $container->get('language_manager'),
       $container->get('current_user'),
       $container->get('entity_display.repository')
     );
-  }
-
-  /**
-   * Builds the main widget form array container/wrapper.
-   *
-   * Form elements for individual items are built by formElement().
-   */
-  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
-
-    $parents = $form['#parents'];
-    $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
-
-    $this->wrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-wrapper'), '-');
-    $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
-
-    $handler_settings = $items->getSetting('handler_settings');
-    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
-    $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (!$handler_settings["negate"]) {
-      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
-    }
-    else {
-      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
-    }
-    $title = $this->fieldDefinition->getLabel();
-    $description = FieldFilteredMarkup::create(\Drupal::token()->replace($this->fieldDefinition->getDescription()));
-
-    // Save items to widget state when the form first loads.
-    if (!isset($widget_state['items'])) {
-      $widget_state['items'] = [];
-      $widget_state['open_form'] = FALSE;
-      $widget_state['remove_item'] = FALSE;
-      /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
-      foreach ($items as $delta => $item) {
-        if ($paragraph = $item->entity) {
-          $widget_state['items'][$delta] = [
-            'entity' => $paragraph,
-            'weight' => $delta,
-          ];
-        }
-      }
-    }
-    // Handle asymmetric translation if field is translatable
-    // by duplicating items for enabled languages.
-    if ($items->getFieldDefinition()->isTranslatable()) {
-      $langcode = $this->languageManager
-        ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
-        ->getId();
-
-      foreach ($widget_state['items'] as $delta => $item) {
-        if (empty($item['entity']) || $item['entity']->get('langcode')->value == $langcode) {
-          continue;
-        }
-        $duplicate = $item['entity']->createDuplicate();
-        $duplicate->set('langcode', $langcode);
-        $widget_state['items'][$delta]['entity'] = $duplicate;
-      }
-    }
-    static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
-    $elements = parent::formMultipleElements($items, $form, $form_state);
-    unset($elements['#theme']);
-    $elements['#parents'] = $form['#parents'];
-    $paragraph_items_count = 0;
-    foreach (Element::children($elements) as $index) {
-      $element =& $elements[$index];
-      if (isset($element['_weight'])) {
-        $element['_weight']['#wrapper_attributes']['class'] = ['hidden'];
-        $element['_weight']['#attributes']['class'] = ['layout-paragraphs-weight'];
-        // Move to top of container to ensure items are given the correct delta.
-        $element['_weight']['#weight'] = -1000;
-      }
-      if (isset($element['#entity'])) {
-        $paragraph_items_count++;
-      }
-    }
-    $elements['#after_build'][] = [$this, 'buildLayouts'];
-
-    if (isset($elements['#prefix'])) {
-      unset($elements['#prefix']);
-    }
-    if (isset($elements['#suffix'])) {
-      unset($elements['#suffix']);
-    }
-    $elements += [
-      '#title' => $title,
-      '#description' => $description,
-      '#attributes' => ['class' => ['layout-paragraphs-field']],
-      '#type' => 'fieldset',
-    ];
-    $elements['#id'] = $this->wrapperId;
-
-    // Button to add new section and other paragraphs.
-    $elements['add_more'] = [
-      'actions' => [
-        '#attributes' => ['class' => ['js-hide']],
-        '#type' => 'container',
-      ],
-    ];
-    $bundle_info = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
-    $options = [];
-    $types = [
-      'layout' => [],
-      'content' => [],
-    ];
-    $bundle_ids = $target_bundles;
-    $target_type = $items->getSetting('target_type');
-    $definition = $this->entityTypeManager->getDefinition($target_type);
-    $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
-    foreach ($bundle_ids as $bundle_id) {
-      $type = $storage->load($bundle_id);
-      $has_layout = count($this->getAvailableLayoutsByType($type)) > 0;
-
-      $path = '';
-      // Get the icon and pass to Javascript.
-      if (method_exists($type, 'getIconFile')) {
-        if ($icon = $type->getIconFile()) {
-          $path = $icon->url();
-        }
-      }
-      $options[$bundle_id] = $bundle_info[$bundle_id]['label'];
-      $types[($has_layout ? 'layout' : 'content')][] = [
-        'id' => $bundle_id,
-        'name' => $bundle_info[$bundle_id]['label'],
-        'image' => $path,
-      ];
-    }
-    $elements['add_more']['actions']['type'] = [
-      '#title' => $this->t('Choose type'),
-      '#type' => 'select',
-      '#options' => $options,
-      '#attributes' => ['class' => ['layout-paragraphs-item-type']],
-    ];
-    $elements['add_more']['actions']['item'] = [
-      '#type' => 'submit',
-      '#host' => $items->getEntity(),
-      '#value' => $this->t('Create New'),
-      '#submit' => [[$this, 'newItemSubmit']],
-      '#limit_validation_errors' => [array_merge($parents, [$this->fieldName, 'add_more'])],
-      '#attributes' => ['class' => ['layout-paragraphs-add-item']],
-      '#ajax' => [
-        'callback' => [$this, 'editItemAjax'],
-      ],
-      '#name' => implode('_', $parents) . '_add_item',
-      '#element_parents' => $parents,
-    ];
-    // Add region and parent_delta hidden items only in this is a new entity.
-    // Prefix with underscore to prevent namespace collisions.
-    $elements['add_more']['actions']['_region'] = [
-      '#type' => 'hidden',
-      '#attributes' => ['class' => ['layout-paragraphs-new-item-region']],
-    ];
-    $elements['add_more']['actions']['_new_item_weight'] = [
-      '#type' => 'hidden',
-      '#attributes' => ['class' => ['layout-paragraphs-new-item-weight']],
-    ];
-    $elements['add_more']['actions']['_parent_uuid'] = [
-      '#type' => 'hidden',
-      '#attributes' => ['class' => ['layout-paragraphs-new-item-parent-uuid']],
-    ];
-    // Template for javascript behaviors.
-    $elements['add_more']['menu'] = [
-      '#type' => 'inline_template',
-      '#template' => '
-        <div class="layout-paragraphs-add-more-menu hidden">
-          <h4 class="visually-hidden">Add Item</h4>
-          <div class="layout-paragraphs-add-more-menu__search hidden">
-            <input type="text" placeholder="{{ search_text }}" />
-          </div>
-          <div class="layout-paragraphs-add-more-menu__group">
-            {% if types.layout %}
-            <div class="layout-paragraphs-add-more-menu__group--layout">
-            {% endif %}
-            {% for type in types.layout %}
-              <div class="layout-paragraphs-add-more-menu__item paragraph-type-{{type.id}} layout-paragraph">
-                <a data-type="{{ type.id }}" href="#{{ type.id }}">
-                {% if type.image %}
-                <img src="{{ type.image }}" alt ="" />
-                {% endif %}
-                <div>{{ type.name }}</div>
-                </a>
-              </div>
-            {% endfor %}
-            {% if types.layout %}
-            </div>
-            {% endif %}
-            {% if types.content %}
-            <div class="layout-paragraphs-add-more-menu__group--content">
-            {% endif %}
-            {% for type in types.content %}
-              <div class="layout-paragraphs-add-more-menu__item paragraph-type-{{type.id}}">
-                <a data-type="{{ type.id }}" href="#{{ type.id }}">
-                {% if type.image %}
-                <img src="{{ type.image }}" alt ="" />
-                {% endif %}
-                <div>{{ type.name }}</div>
-                </a>
-              </div>
-            {% endfor %}
-            {% if types.content %}
-            </div>
-            {% endif %}
-          </div>
-        </div>',
-      '#context' => [
-        'types' => $types,
-        'search_text' => $this->t('Search'),
-      ],
-    ];
-    $elements['toggle_button'] = $this->toggleButton();
-    if ($widget_state['open_form'] !== FALSE) {
-      $this->entityForm($elements, $form_state, $form);
-    }
-
-    // Add remove confirmation form if we're removing.
-    if ($widget_state['remove_item'] !== FALSE) {
-      $this->removeForm($elements, $form_state, $form);
-    }
-
-    // Container for disabled / orphaned items.
-    $elements['disabled'] = [
-      '#type' => 'fieldset',
-      '#attributes' => ['class' => ['layout-paragraphs-disabled-items']],
-      '#weight' => 999,
-      '#title' => $this->t('Disabled Items'),
-      'items' => [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => [
-            'layout-paragraphs-disabled-items__items',
-          ],
-        ],
-        'description' => [
-          '#markup' => '<div class="layout-paragraphs-disabled-items__description">' . $this->t('Drop items here that you want to keep disabled / hidden, without removing them permanently.') . '</div>',
-        ],
-      ],
-    ];
-
-    $elements['#attached']['drupalSettings']['paragraphsLayoutWidget']['maxDepth'] = $this->getSetting('nesting_depth');
-    $elements['#attached']['drupalSettings']['paragraphsLayoutWidget']['requireLayouts'] = $this->getSetting('require_layouts');
-    $elements['#attached']['library'][] = 'layout_paragraphs/layout_paragraphs_widget';
-    return $elements;
   }
 
   /**
@@ -465,11 +238,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     }
 
     if (!isset($widget_state_item['entity'])) {
-      return;
+      return [];
     }
 
     if (isset($widget_state_item['is_new'])) {
-      return;
+      return [];
     }
 
     /** @var \Drupal\paragraphs\ParagraphInterface $entity */
@@ -541,7 +314,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#type' => 'value',
         '#value' => $entity,
       ],
-      'toggle_button' => $this->toggleButton('layout-paragraphs-parent-uuid'),
+      'toggle_button' => $this->allowReferenceChanges() ? $this->toggleButton('layout-paragraphs-parent-uuid') : [],
       // Edit and remove button.
       'actions' => [
         '#type' => 'container',
@@ -566,12 +339,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#name' => 'remove_' . $this->wrapperId . '_' . $delta,
           '#value' => $this->t('Remove'),
           '#attributes' => ['class' => ['layout-paragraphs-remove']],
-          '#limit_validation_errors' => [
-            array_merge($parents, [
-              $this->fieldName,
-              $delta,
-            ]),
-           ],
           '#limit_validation_errors' => [],
           '#submit' => [[$this, 'removeItemSubmit']],
           '#delta' => $delta,
@@ -596,7 +363,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
               'layout-paragraphs-layout-region--' . $region_name,
             ],
           ],
-          'toggle_button' => $this->toggleButton('layout-paragraphs-uuid'),
+          'toggle_button' => $this->allowReferenceChanges() ? $this->toggleButton('layout-paragraphs-uuid') : [],
         ];
       }
     }
@@ -611,6 +378,346 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     }
 
     return $element;
+  }
+
+  /**
+   * Builds the main widget form array container/wrapper.
+   *
+   * Form elements for individual items are built by formElement().
+   */
+  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
+
+    $parents = $form['#parents'];
+    $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
+
+    $this->wrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-wrapper'), '-');
+    $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
+
+    $handler_settings = $items->getSetting('handler_settings');
+    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
+    $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
+    if (!$handler_settings["negate"]) {
+      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
+    }
+    else {
+      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
+    }
+    $title = $this->fieldDefinition->getLabel();
+    $description = FieldFilteredMarkup::create(\Drupal::token()->replace($this->fieldDefinition->getDescription()));
+
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
+    $host = $items->getEntity();
+    // Detect if we are translating.
+    $this->initIsTranslating($form_state, $host);
+
+    // Save items to widget state when the form first loads.
+    if (!isset($widget_state['items'])) {
+      $widget_state['items'] = [];
+      $widget_state['open_form'] = FALSE;
+      $widget_state['remove_item'] = FALSE;
+      /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
+      foreach ($items as $delta => $item) {
+        if ($paragraph = $item->entity) {
+          if ($item->entity instanceof ParagraphInterface) {
+            $langcode = $form_state->get('langcode');
+            if (!$this->isTranslating) {
+              // Set the langcode if we are not translating.
+              $langcode_key = $item->entity->getEntityType()->getKey('langcode');
+              if ($item->entity->get($langcode_key)->value != $langcode) {
+                // If a translation in the given language already exists,
+                // switch to that. If there is none yet, update the language.
+                if ($item->entity->hasTranslation($langcode)) {
+                  $item->entity = $item->entity->getTranslation($langcode);
+                }
+                else {
+                  $item->entity->set($langcode_key, $langcode);
+                }
+              }
+            }
+            else {
+              // Add translation if missing for the target language.
+              if (!$item->entity->hasTranslation($langcode)) {
+                // Get the selected translation of the paragraph entity.
+                $entity_langcode = $item->entity->language()->getId();
+                $source = $form_state->get(['content_translation', 'source']);
+                $source_langcode = $source ? $source->getId() : $entity_langcode;
+                // Make sure the source language version is used if available.
+                // Fetching the translation without this check could lead valid
+                // scenario to have no paragraphs items in the source version of
+                // to an exception.
+                if ($item->entity->hasTranslation($source_langcode)) {
+                  $entity = $item->entity->getTranslation($source_langcode);
+                }
+                // The paragraphs entity has no content translation source field
+                // if no paragraph entity field is translatable,
+                // even if the host is.
+                if ($item->entity->hasField('content_translation_source')) {
+                  // Initialise the translation with source language values.
+                  $item->entity->addTranslation($langcode, $entity->toArray());
+                  $translation = $item->entity->getTranslation($langcode);
+                  $manager = \Drupal::service('content_translation.manager');
+                  $manager->getTranslationMetadata($translation)
+                    ->setSource($item->entity->language()->getId());
+                }
+              }
+              // If any paragraphs type is translatable do not switch.
+              if ($item->entity->hasField('content_translation_source')) {
+                // Switch the paragraph to the translation.
+                $item->entity = $item->entity->getTranslation($langcode);
+              }
+            }
+          }
+
+          $widget_state['items'][$delta] = [
+            'entity' => $paragraph,
+            'weight' => $delta,
+          ];
+        }
+      }
+    }
+    // Handle asymmetric translation if field is translatable
+    // by duplicating items for enabled languages.
+    if ($items->getFieldDefinition()->isTranslatable()) {
+      $langcode = $this->languageManager
+        ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
+        ->getId();
+
+      foreach ($widget_state['items'] as $delta => $item) {
+        if (empty($item['entity']) || $item['entity']->get('langcode')->value == $langcode) {
+          continue;
+        }
+        /* @var \Drupal\Core\Entity\EntityInterface $duplicate */
+        $duplicate = $item['entity']->createDuplicate();
+        $duplicate->set('langcode', $langcode);
+        $widget_state['items'][$delta]['entity'] = $duplicate;
+      }
+    }
+    static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
+    $elements = parent::formMultipleElements($items, $form, $form_state);
+    unset($elements['#theme']);
+    $elements['#parents'] = $form['#parents'];
+    $paragraph_items_count = 0;
+    foreach (Element::children($elements) as $index) {
+      $element =& $elements[$index];
+      if (isset($element['_weight'])) {
+        $element['_weight']['#wrapper_attributes']['class'] = ['hidden'];
+        $element['_weight']['#attributes']['class'] = ['layout-paragraphs-weight'];
+        // Move to top of container to ensure items are given the correct delta.
+        $element['_weight']['#weight'] = -1000;
+      }
+      if (isset($element['#entity'])) {
+        $paragraph_items_count++;
+      }
+    }
+    $elements['#after_build'][] = [$this, 'buildLayouts'];
+
+    if (isset($elements['#prefix'])) {
+      unset($elements['#prefix']);
+    }
+    if (isset($elements['#suffix'])) {
+      unset($elements['#suffix']);
+    }
+    $elements += [
+      '#title' => $title,
+      '#description' => $description,
+      '#attributes' => ['class' => ['layout-paragraphs-field']],
+      '#type' => 'fieldset',
+    ];
+    $elements['#id'] = $this->wrapperId;
+
+    // Add logic for new elements Add, if not in a translation context.
+    if ($this->allowReferenceChanges()) {
+      // Button to add new section and other paragraphs.
+      $elements['add_more'] = [
+        'actions' => [
+          '#attributes' => ['class' => ['js-hide']],
+          '#type' => 'container',
+        ],
+      ];
+      $bundle_info = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
+      $options = [];
+      $types = [
+        'layout' => [],
+        'content' => [],
+      ];
+      $bundle_ids = $target_bundles;
+      $target_type = $items->getSetting('target_type');
+      $definition = $this->entityTypeManager->getDefinition($target_type);
+      $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
+      foreach ($bundle_ids as $bundle_id) {
+        $type = $storage->load($bundle_id);
+        $has_layout = count($this->getAvailableLayoutsByType($type)) > 0;
+
+        $path = '';
+        // Get the icon and pass to Javascript.
+        if (method_exists($type, 'getIconFile')) {
+          if ($icon = $type->getIconFile()) {
+            $path = $icon->url();
+          }
+        }
+        $options[$bundle_id] = $bundle_info[$bundle_id]['label'];
+        $types[($has_layout ? 'layout' : 'content')][] = [
+          'id' => $bundle_id,
+          'name' => $bundle_info[$bundle_id]['label'],
+          'image' => $path,
+        ];
+      }
+      $elements['add_more']['actions']['type'] = [
+        '#title' => $this->t('Choose type'),
+        '#type' => 'select',
+        '#options' => $options,
+        '#attributes' => ['class' => ['layout-paragraphs-item-type']],
+      ];
+      $elements['add_more']['actions']['item'] = [
+        '#type' => 'submit',
+        '#host' => $items->getEntity(),
+        '#value' => $this->t('Create New'),
+        '#submit' => [[$this, 'newItemSubmit']],
+        '#limit_validation_errors' => [array_merge($parents, [
+          $this->fieldName,
+          'add_more',
+        ]),
+        ],
+        '#attributes' => ['class' => ['layout-paragraphs-add-item']],
+        '#ajax' => [
+          'callback' => [$this, 'editItemAjax'],
+        ],
+        '#name' => implode('_', $parents) . '_add_item',
+        '#element_parents' => $parents,
+      ];
+      // Add region and parent_delta hidden items only in this is a new entity.
+      // Prefix with underscore to prevent namespace collisions.
+      $elements['add_more']['actions']['_region'] = [
+        '#type' => 'hidden',
+        '#attributes' => ['class' => ['layout-paragraphs-new-item-region']],
+      ];
+      $elements['add_more']['actions']['_new_item_weight'] = [
+        '#type' => 'hidden',
+        '#attributes' => ['class' => ['layout-paragraphs-new-item-weight']],
+      ];
+      $elements['add_more']['actions']['_parent_uuid'] = [
+        '#type' => 'hidden',
+        '#attributes' => ['class' => ['layout-paragraphs-new-item-parent-uuid']],
+      ];
+      // Template for javascript behaviors.
+      $elements['add_more']['menu'] = [
+        '#type' => 'inline_template',
+        '#template' => '
+        <div class="layout-paragraphs-add-more-menu hidden">
+          <h4 class="visually-hidden">Add Item</h4>
+          <div class="layout-paragraphs-add-more-menu__search hidden">
+            <input type="text" placeholder="{{ search_text }}" />
+          </div>
+          <div class="layout-paragraphs-add-more-menu__group">
+            {% if types.layout %}
+            <div class="layout-paragraphs-add-more-menu__group--layout">
+            {% endif %}
+            {% for type in types.layout %}
+              <div class="layout-paragraphs-add-more-menu__item paragraph-type-{{type.id}} layout-paragraph">
+                <a data-type="{{ type.id }}" href="#{{ type.id }}">
+                {% if type.image %}
+                <img src="{{ type.image }}" alt ="" />
+                {% endif %}
+                <div>{{ type.name }}</div>
+                </a>
+              </div>
+            {% endfor %}
+            {% if types.layout %}
+            </div>
+            {% endif %}
+            {% if types.content %}
+            <div class="layout-paragraphs-add-more-menu__group--content">
+            {% endif %}
+            {% for type in types.content %}
+              <div class="layout-paragraphs-add-more-menu__item paragraph-type-{{type.id}}">
+                <a data-type="{{ type.id }}" href="#{{ type.id }}">
+                {% if type.image %}
+                <img src="{{ type.image }}" alt ="" />
+                {% endif %}
+                <div>{{ type.name }}</div>
+                </a>
+              </div>
+            {% endfor %}
+            {% if types.content %}
+            </div>
+            {% endif %}
+          </div>
+        </div>',
+        '#context' => [
+          'types' => $types,
+          'search_text' => $this->t('Search'),
+        ],
+      ];
+      $elements['toggle_button'] = $this->toggleButton();
+    }
+    else {
+      // Add the #isTranslating attribute, if in a translation context.
+      $elements['is_translating_warning'] = [
+        '#type' => "html_tag",
+        '#tag' => 'div',
+        '#value' => t("This is Translation Context (editing a version not in the original language). <b>No new Layout Sections and Paragraphs can be added</b>."),
+        '#weight' => -1100,
+        '#attributes' => [
+          'class' => ['is_translating_warning'],
+        ],
+      ];
+      $elements['add_more'] = [
+        'actions' => [
+          '#isTranslating' => TRUE,
+        ],
+      ];
+    }
+
+    if ($widget_state['open_form'] !== FALSE) {
+      $this->entityForm($elements, $form_state, $form);
+    }
+
+    // Add remove confirmation form if we're removing.
+    if ($widget_state['remove_item'] !== FALSE) {
+      $this->removeForm($elements, $form_state, $form);
+    }
+
+    // Container for disabled / orphaned items.
+    $elements['disabled'] = [
+      '#type' => 'fieldset',
+      '#attributes' => ['class' => ['layout-paragraphs-disabled-items']],
+      '#weight' => 999,
+      '#title' => $this->t('Disabled Items'),
+      'items' => [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => [
+            'layout-paragraphs-disabled-items__items',
+          ],
+        ],
+        'description' => [
+          '#markup' => '<div class="layout-paragraphs-disabled-items__description">' . $this->t('Drop items here that you want to keep disabled / hidden, without removing them permanently.') . '</div>',
+        ],
+      ],
+    ];
+
+    // Pass specific paragraphsLayoutWidget settings to js.
+    $elements['#attached']['drupalSettings']['paragraphsLayoutWidget'] = [
+      'maxDepth' => $this->getSetting('nesting_depth'),
+      'requireLayouts' => $this->getSetting('require_layouts'),
+      'isTranslating' => $elements["add_more"]["actions"]["#isTranslating"] ?? NULL,
+    ];
+    // Add layout_paragraphs_widget library.
+    $elements['#attached']['library'][] = 'layout_paragraphs/layout_paragraphs_widget';
+    return $elements;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function form(FieldItemListInterface $items, array &$form, FormStateInterface $form_state, $get_delta = NULL) {
+    $elements = parent::form($items, $form, $form_state, $get_delta);
+
+    // Signal to content_translation that this field should be treated as
+    // multilingual and not be hidden, see
+    // \Drupal\content_translation\ContentTranslationHandler::entityFormSharedElements().
+    $elements['#multilingual'] = TRUE;
+    return $elements;
   }
 
   /**
@@ -775,6 +882,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     /** @var \Drupal\paragraphs\Entity\Paragraph $entity */
     $entity = $widget_state['items'][$delta]['entity'];
+    // Set correct default language for the entity.
+    if ($this->isTranslating && $language = $form_state->get('langcode')) {
+      $entity = $entity->getTranslation($language);
+    }
     $display = EntityFormDisplay::collectRenderDisplay($entity, 'default');
     $bundle_label = $entity->type->entity->label();
     $element['entity_form'] = [
@@ -890,55 +1001,59 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         'layout_selection',
         'layout',
       ]);
-      $values = $form_state->getValues();
       $updated_layout = $form_state->getValue($layout_select_parents) ?? $layout;
 
       if (!empty($updated_layout)) {
-        $updated_layout_instance = $this->layoutPluginManager->createInstance($updated_layout, $layout_plugin_config);
-        // If the user selects a new layout,
-        // we provide a way for them to choose
-        // what to do with items from regions
-        // that no longer exist.
-        if ($layout && $updated_layout != $layout) {
-          $move_items = [];
+        try {
+          $updated_layout_instance = $this->layoutPluginManager->createInstance($updated_layout, $layout_plugin_config);
+          // If the user selects a new layout,
+          // we provide a way for them to choose
+          // what to do with items from regions
+          // that no longer exist.
+          if ($layout && $updated_layout != $layout) {
+            $move_items = [];
 
-          $original_layout = $this->layoutPluginManager->createInstance($layout);
-          $original_definition = $original_layout->getPluginDefinition();
-          $original_regions = $original_definition->getRegions();
+            $original_layout = $this->layoutPluginManager->createInstance($layout);
+            $original_definition = $original_layout->getPluginDefinition();
+            $original_regions = $original_definition->getRegions();
 
-          $updated_layout_definition = $updated_layout_instance->getPluginDefinition();
-          $updated_regions = $updated_layout_definition->getRegions();
-          $updated_regions_options = [];
-          foreach ($updated_regions as $region_name => $region) {
-            $updated_regions_options[$region_name] = $region['label'];
-          }
-          $updated_regions_options['_disabled'] = $this->t('Disabled');
-          foreach ($original_regions as $region_name => $region) {
-            if (!isset($updated_regions[$region_name]) && $this->hasChildren($entity, $widget_state['items'], $region_name)) {
-              $move_items[$region_name] = [
-                '#type' => 'select',
-                '#wrapper_attributes' => ['class' => ['container-inline']],
-                '#title' => $this->t('Move items from the "@region" region to', ['@region' => $region['label']]),
-                '#options' => $updated_regions_options,
+            $updated_layout_definition = $updated_layout_instance->getPluginDefinition();
+            $updated_regions = $updated_layout_definition->getRegions();
+            $updated_regions_options = [];
+            foreach ($updated_regions as $region_name => $region) {
+              $updated_regions_options[$region_name] = $region['label'];
+            }
+            $updated_regions_options['_disabled'] = $this->t('Disabled');
+            foreach ($original_regions as $region_name => $region) {
+              if (!isset($updated_regions[$region_name]) && $this->hasChildren($entity, $widget_state['items'], $region_name)) {
+                $move_items[$region_name] = [
+                  '#type' => 'select',
+                  '#wrapper_attributes' => ['class' => ['container-inline']],
+                  '#title' => $this->t('Move items from the "@region" region to', ['@region' => $region['label']]),
+                  '#options' => $updated_regions_options,
+                ];
+              }
+            }
+            if (count($move_items)) {
+              $element['entity_form']['layout_selection']['move_items'] = [
+                '#type' => 'fieldset',
+                '#title' => $this->t('Move orphaned items'),
+                '#description' => $this->t('The layout you selected has different regions than the previous one.'),
+                'items' => $move_items,
               ];
             }
           }
-          if (count($move_items)) {
-            $element['entity_form']['layout_selection']['move_items'] = [
-              '#type' => 'fieldset',
-              '#title' => $this->t('Move orphaned items'),
-              '#description' => $this->t('The layout you selected has different regions than the previous one.'),
-              'items' => $move_items,
+          if ($layout_plugin = $this->getLayoutPluginForm($updated_layout_instance)) {
+            $element['entity_form']['layout_plugin_form'] += [
+              '#type' => 'details',
+              '#title' => $this->t('Layout Configuration'),
+              '#weight' => 999,
             ];
+            $element['entity_form']['layout_plugin_form'] += $layout_plugin->buildConfigurationForm([], $form_state);
           }
         }
-        if ($layout_plugin = $this->getLayoutPluginForm($updated_layout_instance)) {
-          $element['entity_form']['layout_plugin_form'] += [
-            '#type' => 'details',
-            '#title' => $this->t('Layout Configuration'),
-            '#weight' => 999,
-          ];
-          $element['entity_form']['layout_plugin_form'] += $layout_plugin->buildConfigurationForm([], $form_state);
+        catch (\Exception $e) {
+          watchdog_exception('Layout Paragraphs, updating_layout', $e);
         }
       }
     }
@@ -1018,6 +1133,42 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         ],
       ],
     ];
+
+    $hide_untranslatable_fields = $entity->isDefaultTranslationAffectedOnly();
+    foreach (Element::children($element['entity_form']) as $field) {
+      if ($entity->hasField($field)) {
+        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+        $field_definition = $entity->get($field)->getFieldDefinition();
+        $translatable = $entity->{$field}->getFieldDefinition()->isTranslatable();
+
+        // Do a check if we have to add a class to the form element. We need
+        // those classes (paragraphs-content and paragraphs-behavior) to show
+        // and hide elements, depending of the active perspective.
+        // We need them to filter out entity reference revisions fields that
+        // reference paragraphs, cause otherwise we have problems with showing
+        // and hiding the right fields in nested paragraphs.
+        $is_paragraph_field = FALSE;
+        if ($field_definition->getType() == 'entity_reference_revisions') {
+          // Check if we are referencing paragraphs.
+          if ($field_definition->getSetting('target_type') == 'paragraph') {
+            $is_paragraph_field = TRUE;
+          }
+        }
+
+        if (!$translatable && $this->isTranslating && !$is_paragraph_field) {
+          if ($hide_untranslatable_fields) {
+            $element['entity_form'][$field]['#access'] = FALSE;
+          }
+          else {
+            $element['entity_form'][$field]['widget']['#after_build'][] = [
+              static::class,
+              'addTranslatabilityClue',
+            ];
+          }
+        }
+      }
+    }
+    return $element;
   }
 
   /**
@@ -1029,9 +1180,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The form_state object.
    * @param array $form
    *   The form array.
-   *
-   * @return array
-   *   The entity form element.
    */
   public function removeForm(array &$element, FormStateInterface $form_state, array &$form) {
 
@@ -1144,7 +1292,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         $this->fieldName,
         $delta,
       ],
-      $element_name);
+        $element_name);
     }
     else {
       $element_path = array_merge($parents, [
@@ -1170,7 +1318,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         $this->fieldName,
         $delta,
       ],
-      $element_name);
+        $element_name);
     }
     else {
       $element_path = array_merge($parents, [
@@ -1213,6 +1361,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - adds a new item and opens its edit form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
   public function newItemSubmit(array $form, FormStateInterface $form_state) {
 
@@ -1229,39 +1382,50 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $bundle_id = $form_state->getValue($element_parents);
     }
 
-    $entity_type = $this->entityTypeManager->getDefinition('paragraph');
-    $bundle_key = $entity_type->getKey('bundle');
-    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
-    $paragraph_entity = $this->entityTypeManager->getStorage('paragraph')->create([
-      $bundle_key => $bundle_id,
-    ]);
-    $paragraph_entity->setParentEntity($element['#host'], $this->fieldDefinition->getName());
+    try {
+      $entity_type = $this->entityTypeManager->getDefinition('paragraph');
+      $bundle_key = $entity_type->getKey('bundle');
+      /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
+      $paragraph_entity = $this->entityTypeManager->getStorage('paragraph')
+        ->create([
+          $bundle_key => $bundle_id,
+        ]);
+      $paragraph_entity->setParentEntity($element['#host'], $this->fieldDefinition->getName());
 
-    $path = array_merge($parents, [
-      $this->fieldDefinition->getName(),
-      'add_more',
-      'actions',
-    ]);
-    $this->setLayoutSettings($paragraph_entity, [
-      'region' => $form_state->getValue(array_merge($path, ['_region'])),
-      'parent_uuid' => $form_state->getValue(array_merge($path, ['_parent_uuid'])),
-    ]);
-    $widget_state['items'][] = [
-      'entity' => $paragraph_entity,
-      'weight' => $form_state->getValue(array_merge($path, ['_new_item_weight'])),
-      'is_new' => TRUE,
-    ];
-    $widget_state['open_form'] = $widget_state['items_count'];
-    $widget_state['items_count'] = count($widget_state['items']);
+      $path = array_merge($parents, [
+        $this->fieldDefinition->getName(),
+        'add_more',
+        'actions',
+      ]);
+      $this->setLayoutSettings($paragraph_entity, [
+        'region' => $form_state->getValue(array_merge($path, ['_region'])),
+        'parent_uuid' => $form_state->getValue(array_merge($path, ['_parent_uuid'])),
+      ]);
+      $widget_state['items'][] = [
+        'entity' => $paragraph_entity,
+        'weight' => $form_state->getValue(array_merge($path, ['_new_item_weight'])),
+        'is_new' => TRUE,
+      ];
+      $widget_state['open_form'] = $widget_state['items_count'];
+      $widget_state['items_count'] = count($widget_state['items']);
 
-    static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
-    $form_state->setRebuild();
+      static::setWidgetState($parents, $this->fieldName, $form_state, $widget_state);
+      $form_state->setRebuild();
+    }
+    catch (\Exception $e) {
+      watchdog_exception('Layout Paragraphs, new Item Submit', $e);
+    }
   }
 
   /**
    * Form submit handler - opens the edit form for an existing item.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function editItemSubmit($form, $form_state) {
+  public function editItemSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $parents = $element['#element_parents'];
@@ -1276,8 +1440,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - opens confirm removal form for an item.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function removeItemSubmit($form, $form_state) {
+  public function removeItemSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $parents = $element['#element_parents'];
@@ -1292,8 +1461,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - removes/deletes an item.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function removeItemConfirmSubmit($form, $form_state) {
+  public function removeItemConfirmSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $element_parents = $element['#parents'];
@@ -1316,8 +1490,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - cancels item removal and closes confirmation form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function removeItemCancelSubmit($form, $form_state) {
+  public function removeItemCancelSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $parents = $element['#element_parents'];
@@ -1332,8 +1511,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - saves an item.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function saveItemSubmit($form, $form_state) {
+  public function saveItemSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $parents = $element['#element_parents'];
@@ -1342,52 +1526,69 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $item_array_parents = array_splice($element_array_parents, 0, -2);
 
     $item_form = NestedArray::getValue($form, $item_array_parents);
+    /* @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $display */
     $display = $item_form['#display'];
     $widget_state = static::getWidgetState($parents, $this->fieldName, $form_state);
 
     // Remove is_new flag since we're saving the entity.
     unset($widget_state['items'][$delta]['is_new']);
 
-    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
-    $paragraph_entity = $widget_state['items'][$delta]['entity'];
+    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph */
+    $paragraph = $widget_state['items'][$delta]['entity'];
+
+    // Set correct default language for the entity.
+    if ($this->isTranslating && $language = $form_state->get('langcode')) {
+      $paragraph = $paragraph->getTranslation($language);
+    }
 
     // Save field values to entity.
-    $display->extractFormValues($paragraph_entity, $item_form, $form_state);
+    $display->extractFormValues($paragraph, $item_form, $form_state);
 
     // Submit behavior forms.
-    $paragraphs_type = $paragraph_entity->getParagraphType();
+    $paragraphs_type = $paragraph->getParagraphType();
     if ($this->currentUser->hasPermission('edit behavior plugin settings')) {
       foreach ($paragraphs_type->getEnabledBehaviorPlugins() as $plugin_id => $plugin_values) {
-        if (!empty($item_form['behavior_plugins'][$plugin_id])) {
+        $plugin_form = isset($item_form['behavior_plugins']) ? $item_form['behavior_plugins'][$plugin_id] : [];
+        if (!empty($plugin_form) && !empty(Element::children($plugin_form))) {
           $subform_state = SubformState::createForSubform($item_form['behavior_plugins'][$plugin_id], $form_state->getCompleteForm(), $form_state);
-          $plugin_values->submitBehaviorForm($paragraph_entity, $item_form['behavior_plugins'][$plugin_id], $subform_state);
+          $plugin_values->submitBehaviorForm($paragraph, $item_form['behavior_plugins'][$plugin_id], $subform_state);
         }
       }
     }
 
+    // Save paragraph back to widget state.
+    $widget_state['items'][$delta]['entity'] = $paragraph;
+
     // Save layout settings.
     if (!empty($item_form['layout_selection']['layout'])) {
 
-      $layout_settings = $this->getLayoutSettings($paragraph_entity);
+      $layout_settings = $this->getLayoutSettings($paragraph);
       $layout = $form_state->getValue($item_form['layout_selection']['layout']['#parents']);
       $layout_settings['layout'] = $layout;
 
       // Save layout config:
       if (!empty($item_form['layout_plugin_form'])) {
-        $layout_instance = $this->layoutPluginManager->createInstance($layout);
-        if ($this->getLayoutPluginForm($layout_instance)) {
-          $subform_state = SubformState::createForSubform($item_form['layout_plugin_form'], $form_state->getCompleteForm(), $form_state);
-          $layout_instance->submitConfigurationForm($item_form['layout_plugin_form'], $subform_state);
-          $layout_settings['config'] = $layout_instance->getConfiguration();
+        try {
+
+          $layout_instance = $this->layoutPluginManager->createInstance($layout);
+          if ($this->getLayoutPluginForm($layout_instance)) {
+            $subform_state = SubformState::createForSubform($item_form['layout_plugin_form'], $form_state->getCompleteForm(), $form_state);
+            $layout_instance->submitConfigurationForm($item_form['layout_plugin_form'], $subform_state);
+            $layout_settings['config'] = $layout_instance->getConfiguration();
+          }
+
+          $this->setLayoutSettings($paragraph, $layout_settings);
+        }
+        catch (\Exception $e) {
+          watchdog_exception('Layout Paragraphs, Layout Instance generation', $e);
         }
       }
-      $this->setLayoutSettings($paragraph_entity, $layout_settings);
 
       // Handle orphaned items.
       if (isset($item_form['layout_selection']['move_items'])) {
         $move_items = $form_state->getValue($item_form['layout_selection']['move_items']['#parents']);
         if ($move_items && isset($move_items['items'])) {
-          $parent_uuid = $paragraph_entity->uuid();
+          $parent_uuid = $paragraph->uuid();
           foreach ($move_items['items'] as $from_region => $to_region) {
             foreach ($widget_state['items'] as $delta => $item) {
               $layout_settings = $this->getLayoutSettings($item['entity']);
@@ -1419,8 +1620,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - cancels editing an item and closes form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
-  public function cancelItemSubmit($form, $form_state) {
+  public function cancelItemSubmit(array $form, FormStateInterface $form_state) {
 
     $element = $form_state->getTriggeringElement();
     $parents = $element['#element_parents'];
@@ -1438,6 +1644,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Ajax callback to return the entire ERL element.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response.
    */
   public function elementAjax(array $form, FormStateInterface $form_state) {
     $element = $form_state->getTriggeringElement();
@@ -1455,6 +1669,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Ajax callback to return the entire ERL element.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response.
    */
   public function saveItemAjax(array $form, FormStateInterface $form_state) {
     $triggering_element = $form_state->getTriggeringElement();
@@ -1504,6 +1726,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Ajax callback to return the entire ERL element.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response.
    */
   public function editItemAjax(array $form, FormStateInterface $form_state) {
     $element = $form_state->getTriggeringElement();
@@ -1530,6 +1760,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Ajax callback to remove an item - launches confirmation dialog.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response.
    */
   public function removeItemAjax(array $form, FormStateInterface $form_state) {
     $element = $form_state->getTriggeringElement();
@@ -1557,9 +1795,16 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     return $response;
   }
 
-
   /**
    * Ajax callback to remove an item - removes item from DOM.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response
    */
   public function removeItemConfirmAjax(array $form, FormStateInterface $form_state) {
     $element = $form_state->getTriggeringElement();
@@ -1580,6 +1825,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Form submit handler - cancels item removal and closes confirmation form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax Response.
    */
   public function closeDialogAjax(array $form, FormStateInterface $form_state) {
 
@@ -1595,6 +1848,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Ajax callback to return a layout plugin configuration form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse|array
+   *   The Ajax Response.
    */
   public function buildLayoutConfigurationFormAjax(array $form, FormStateInterface $form_state) {
 
@@ -1650,12 +1911,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   /**
    * Search $items for children of $parent.
    *
-   * @param ParagraphInterface $parent
+   * @param \Drupal\Paragraphs\ParagraphInterface $parent
    *   The parent paragraph.
    * @param array $items
    *   An array of items to search.
+   * @param string $region
+   *   The region string.
    *
-   * @return boolean
+   * @return bool
    *   True if finds children.
    */
   public function hasChildren(ParagraphInterface $parent, array $items, string $region = '') {
@@ -1808,6 +2071,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Field instance settings form.
+   *
+   * @param array $form
+   *   The Form element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   The Form array.
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $entity_type_id = $this->getFieldSetting('target_type');
@@ -1829,7 +2100,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $form['require_layouts'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Require paragraphs to be added inside a layout'),
-      '#default_value' => $this->getSetting('nesting_depth'),
       '#default_value' => $this->getSetting('require_layouts'),
     ];
     return $form;
@@ -1888,6 +2158,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
   /**
    * Default settings for widget.
+   *
+   * @return array
+   *   The default settings array.
    */
   public static function defaultSettings() {
     $defaults = parent::defaultSettings();
@@ -1932,19 +2205,134 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    * @param \Drupal\Core\Layout\LayoutInterface $layout
    *   The layout plugin.
    *
-   * @return \Drupal\Core\Plugin\PluginFormInterface
+   * @return \Drupal\Core\Plugin\PluginFormInterface|null
    *   The plugin form for the layout.
    */
   protected function getLayoutPluginForm(LayoutInterface $layout) {
     if ($layout instanceof PluginWithFormsInterface) {
-      return $this->pluginFormFactory->createInstance($layout, 'configure');
+      try {
+        return $this->pluginFormFactory->createInstance($layout, 'configure');
+      }
+      catch (\Exception $e) {
+        watchdog_exception('Erl, Layout Configuration', $e);
+      }
     }
 
     if ($layout instanceof PluginFormInterface) {
       return $layout;
     }
 
-    return FALSE;
+    return NULL;
+  }
+
+  /**
+   * Determine if widget is in translation.
+   *
+   * Initializes $this->isTranslating.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   * @param \Drupal\Core\Entity\ContentEntityInterface $host
+   *   The host entity.
+   */
+  protected function initIsTranslating(FormStateInterface $form_state, ContentEntityInterface $host) {
+    if ($this->isTranslating != NULL) {
+      return;
+    }
+    $this->isTranslating = FALSE;
+    if (!$host->isTranslatable()) {
+      return;
+    }
+    if (!$host->getEntityType()->hasKey('default_langcode')) {
+      return;
+    }
+    $default_langcode_key = $host->getEntityType()->getKey('default_langcode');
+    if (!$host->hasField($default_langcode_key)) {
+      return;
+    }
+
+    if (!empty($form_state->get('content_translation'))) {
+      // Adding a language through the ContentTranslationController.
+      $this->isTranslating = TRUE;
+    }
+    $langcode = $form_state->get('langcode');
+    if ($host->hasTranslation($langcode) && $host->getTranslation($langcode)->get($default_langcode_key)->value == 0) {
+      // Editing a translation.
+      $this->isTranslating = TRUE;
+    }
+  }
+
+  /**
+   * Checks if we can allow reference changes.
+   *
+   * @return bool
+   *   TRUE if we can allow reference changes, otherwise FALSE.
+   */
+  protected function allowReferenceChanges() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * After-build callback for adding the translatability clue from the widget.
+   *
+   * ContentTranslationHandler::addTranslatabilityClue() adds an
+   * "(all languages)" suffix to the widget title, replicate that here.
+   *
+   * @param array $element
+   *   The Form element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   The element containing a translatability clue.
+   */
+  public static function addTranslatabilityClue(array $element, FormStateInterface $form_state) {
+    static $suffix, $fapi_title_elements;
+
+    // Widgets could have multiple elements with their own titles, so remove the
+    // suffix if it exists, do not recurse lower than this to avoid going into
+    // nested paragraphs or similar nested field types.
+    // Elements which can have a #title attribute according to FAPI Reference.
+    if (!isset($suffix)) {
+      $suffix = ' <span class="translation-entity-all-languages">(' . t('all languages') . ')</span>';
+      $fapi_title_elements = array_flip([
+        'checkbox',
+        'checkboxes',
+        'date',
+        'details',
+        'fieldset',
+        'file',
+        'item',
+        'password',
+        'password_confirm',
+        'radio',
+        'radios',
+        'select',
+        'textarea',
+        'textfield',
+        'weight',
+      ]);
+    }
+
+    // Update #title attribute for all elements that are allowed to have a
+    // #title attribute according to the Form API Reference. The reason for this
+    // check is because some elements have a #title attribute even though it is
+    // not rendered; for instance, field containers.
+    if (isset($element['#type']) && isset($fapi_title_elements[$element['#type']]) && isset($element['#title'])) {
+      $element['#title'] .= $suffix;
+    }
+    // If the current element does not have a (valid) title, try child elements.
+    elseif ($children = Element::children($element)) {
+      foreach ($children as $delta) {
+        $element[$delta] = static::addTranslatabilityClue($element[$delta], $form_state);
+      }
+    }
+    // If there are no children, fall back to the current #title attribute if it
+    // exists.
+    elseif (isset($element['#title'])) {
+      $element['#title'] .= $suffix;
+    }
+    return $element;
   }
 
 }
