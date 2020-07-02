@@ -30,7 +30,6 @@ use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenDialogCommand;
 use Drupal\Core\Ajax\AppendCommand;
-use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\Ajax\RemoveCommand;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
@@ -38,6 +37,7 @@ use Drupal\paragraphs\ParagraphInterface;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsStateResetCommand;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsInsertCommand;
+use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
  * Entity Reference with Layout field widget.
@@ -138,6 +138,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $entityDisplayRepository;
 
   /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\config\ConfigFactoryInterface
+   */
+  protected $config;
+
+  /**
    * Indicates whether the current widget instance is in translation.
    *
    * @var bool
@@ -173,6 +180,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The current user.
    * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository
    *   The entity display repository.
+   * @param \drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
   public function __construct(
     $plugin_id,
@@ -187,8 +196,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     PluginFormFactoryInterface $plugin_form_manager,
     LanguageManager $language_manager,
     AccountProxyInterface $current_user,
-    EntityDisplayRepositoryInterface $entity_display_repository) {
-
+    EntityDisplayRepositoryInterface $entity_display_repository,
+    ConfigFactoryInterface $config_factory) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
     $this->renderer = $renderer;
@@ -200,6 +209,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->languageManager = $language_manager;
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
+    $this->config = $config_factory;
   }
 
   /**
@@ -219,7 +229,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $container->get('plugin_form.factory'),
       $container->get('language_manager'),
       $container->get('current_user'),
-      $container->get('entity_display.repository')
+      $container->get('entity_display.repository'),
+      $container->get('config.factory')
     );
   }
 
@@ -272,6 +283,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $preview['#cache']['max-age'] = 0;
       $preview['#attributes']['class'][] = Html::cleanCssIdentifier($entity->uuid() . '-preview');
     }
+
+    $show_labels = $this->config->get('layout_paragraphs.settings')->get('show_paragraph_labels');
 
     $element = [
       '#widget_item' => TRUE,
@@ -349,6 +362,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#element_parents' => $parents,
         ],
       ],
+      'label' => $show_labels ? [
+        '#type' => 'label',
+        '#title' => $entity->getParagraphType()->label,
+        '#attributes' => ['class' => ['paragraph-type-label']],
+      ] : [],
     ];
 
     // Nested elements for regions.
@@ -741,7 +759,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $element = $elements[$index];
       if (!empty($element['#widget_item'])) {
         $paragraph_elements[$element['#entity']->uuid()] = $element;
-        // Maintain a hidden flast list of elements to easily locate items.
+        // Maintain a hidden flat list of elements to easily locate items.
         $elements['#items'][$element['#entity']->uuid()] = $element;
         unset($elements[$index]);
       }

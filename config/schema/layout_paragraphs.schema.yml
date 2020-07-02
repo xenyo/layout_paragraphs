@@ -1,8 +1,12 @@
-layou_paragraphs.settings:
+layout_paragraphs.settings:
   type: config_object
   label: 'Layout Paragraphs general settings'
   mapping:
     show_paragraph_labels:
       type: integer
       label: 'Show Paragraph Labels'
-      description: 'This option allows to show the Paragraphs Type Label of each Item added in ERL widget Sections/Layouts'
+      description: 'This option allows to show the Paragraphs Type Label of each Item added in LP widget Sections/Layouts'
+    show_layout_labels:
+      type: integer
+      label: 'Show Layout Labels'
+      description: 'This option allows to show the Paragraphs Layout Label of each Item added in LP widget Sections/Layouts'

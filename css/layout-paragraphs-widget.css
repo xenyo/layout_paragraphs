@@ -98,8 +98,8 @@ fieldset.layout-paragraphs-field > legend {
   position: relative;
   border: 1px dashed #e5e5e3;
   transition: all .15s linear;
-  min-height: 30px;
-  padding: 30px;
+  min-height: 50px;
+  padding: 10px;
 }
 
 /* -- Warnings -- */
@@ -671,4 +671,30 @@ button.layout-paragraphs-add-content__toggle.active {
   background: #fff4f4;
   border: lightgray dashed 1px;
   opacity: 0.7;
+}
+
+/* -- Paragraphs and Layout Labels. -- */
+
+.paragraph-type-label {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 5px;
+  margin: 0;
+  border-top: 1px dashed #e5e5e3;
+  border-left: 1px dashed #e5e5e3;
+  font-style: italic;
+  font-weight: normal !important;
+  color: darkgray;
+}
+
+.paragraph-layout-label {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  padding: 0;
+  margin: auto;
+  font-style: italic;
+  font-weight: normal !important;
+  color: darkgray;
 }

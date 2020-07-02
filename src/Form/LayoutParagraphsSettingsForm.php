@@ -66,16 +66,24 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->getEditable('layout_paragraphs.settings');
-    $erl_config_schema = $this->typedConfigManager->getDefinition('layout_paragraphs.settings') + ['mapping' => []];
-    $erl_config_schema = $erl_config_schema['mapping'];
+    $lp_config = $this->configFactory()->getEditable('layout_paragraphs.settings');
+    $lp_config_schema = $this->typedConfigManager->getDefinition('layout_paragraphs.settings') + ['mapping' => []];
+    $lp_config_schema = $lp_config_schema['mapping'];
 
     $form['show_paragraph_labels'] = [
       '#type' => 'checkbox',
-      '#title' => $erl_config_schema['show_paragraph_labels']['label'],
-      '#description' => $erl_config_schema['show_paragraph_labels']['description'],
-      '#default_value' => $config->get('show_paragraph_labels'),
+      '#title' => $lp_config_schema['show_paragraph_labels']['label'],
+      '#description' => $lp_config_schema['show_paragraph_labels']['description'],
+      '#default_value' => $lp_config->get('show_paragraph_labels'),
     ];
+
+    $form['show_layout_labels'] = [
+      '#type' => 'checkbox',
+      '#title' => $lp_config_schema['show_layout_labels']['label'],
+      '#description' => $lp_config_schema['show_layout_labels']['description'],
+      '#default_value' => $lp_config->get('show_layout_labels'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -83,11 +91,12 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->getEditable('layout_paragraphs.settings');
-    $config->set('show_paragraph_labels', $form_state->getValue('show_paragraph_labels'));
-    $config->save();
+    $lp_config = $this->configFactory()->getEditable('layout_paragraphs.settings');
+    $lp_config->set('show_paragraph_labels', $form_state->getValue('show_paragraph_labels'));
+    $lp_config->set('show_layout_labels', $form_state->getValue('show_layout_labels'));
+    $lp_config->save();
     // Confirmation on form submission.
-    $this->messenger()->addMessage($this->t('The Entity Reference Layout settings have been saved.'));
+    $this->messenger()->addMessage($this->t('The Layout Paragraphs settings have been saved.'));
   }
 
 }
