@@ -235,7 +235,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
-   * Builds the widget form array for an individual item.
+   * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
 
@@ -2101,39 +2101,31 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
-   * Field instance settings form.
-   *
-   * @param array $form
-   *   The Form element.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The current state of the form.
-   *
-   * @return array
-   *   The Form array.
+   * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $entity_type_id = $this->getFieldSetting('target_type');
-    $form['preview_view_mode'] = [
+    $element = parent::settingsForm($form, $form_state);
+    $element['preview_view_mode'] = [
       '#type' => 'select',
       '#title' => $this->t('Preview view mode'),
       '#default_value' => $this->getSetting('preview_view_mode'),
       '#options' => $this->entityDisplayRepository->getViewModeOptions($entity_type_id),
-      '#required' => TRUE,
       '#description' => $this->t('View mode for the referenced entity preview on the edit form. Automatically falls back to "default", if it is not enabled in the referenced entity type displays.'),
     ];
-    $form['nesting_depth'] = [
+    $element['nesting_depth'] = [
       '#type' => 'select',
       '#title' => $this->t('Maximum nesting depth'),
       '#options' => range(0, 10),
       '#default_value' => $this->getSetting('nesting_depth'),
       '#description' => $this->t('Choosing 0 will prevent nesting layouts within other layouts.'),
     ];
-    $form['require_layouts'] = [
+    $element['require_layouts'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Require paragraphs to be added inside a layout'),
       '#default_value' => $this->getSetting('require_layouts'),
     ];
-    return $form;
+    return $element;
   }
 
   /**
