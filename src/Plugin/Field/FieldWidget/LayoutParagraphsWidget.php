@@ -284,7 +284,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $preview['#attributes']['class'][] = Html::cleanCssIdentifier($entity->uuid() . '-preview');
     }
 
-    $show_labels = $this->config->get('layout_paragraphs.settings')->get('show_paragraph_labels');
+    $show_paragraphs_labels = $this->config->get('layout_paragraphs.settings')->get('show_paragraph_labels');
+    $show_layout_labels = $this->config->get('layout_paragraphs.settings')->get('show_layout_labels');
 
     $element = [
       '#widget_item' => TRUE,
@@ -362,7 +363,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#element_parents' => $parents,
         ],
       ],
-      'label' => $show_labels ? [
+      'label' => $show_paragraphs_labels ? [
         '#type' => 'label',
         '#title' => $entity->getParagraphType()->label,
         '#attributes' => ['class' => ['paragraph-type-label']],
@@ -373,6 +374,18 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     if ($layout_instance) {
       $element['#layout_instance'] = $layout_instance;
       $element['#attributes']['class'][] = 'layout-paragraphs-layout';
+      if ($show_layout_labels) {
+        $label = $layout_instance->getPluginDefinition() ? $layout_instance->getPluginDefinition()
+          ->getLabel()
+          ->__toString() : [];
+        $element['label'] = [
+          '#type' => 'label',
+          '#title' => $label,
+          '#title_display' => $label,
+          '#attributes' => ['class' => ['paragraph-layout-label']],
+        ];
+      }
+
       foreach ($layout_instance->getPluginDefinition()->getRegionNames() as $region_name) {
         $element['preview']['regions'][$region_name] = [
           '#attributes' => [
