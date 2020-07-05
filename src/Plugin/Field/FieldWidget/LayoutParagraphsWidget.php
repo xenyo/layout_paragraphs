@@ -425,9 +425,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
 
     $handler_settings = $items->getSetting('handler_settings');
-    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
+    $bundles = !empty($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
     $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (!$handler_settings["negate"]) {
+    if (isset($handler_settings["negate"]) && !$handler_settings["negate"]) {
       $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
     }
     else {
@@ -2135,9 +2135,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     $entity_type = $this->getFieldSetting('target_type');
     $handler_settings = $this->getFieldSetting('handler_settings');
-    $bundles = array_keys($handler_settings["target_bundles_drag_drop"]);
+    $bundles = !empty($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
     $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (!$handler_settings["negate"]) {
+    if (isset($handler_settings["negate"]) && !$handler_settings["negate"]) {
       $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
     }
     else {
