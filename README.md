@@ -1,35 +1,31 @@
-Entity Reference with Layout
+Layout Paragraphs
 ============================
 
-Paragraphs + Layout for Drupal 8
+Layout Paragraphs provides an intuitive drag-and-drop experience for building flexible layouts with [Paragraphs](https://www.drupal.org/project/paragraphs). The module was designed from the ground up with paragraphs in mind, and works seamlessly with existing paragraph reference fields.
 
-Overview
-========
+### Key Features
+- Intuitive drag-and-drop interface.
+- Works with existing paragraph reference fields.
+- Flexible configuration – site admins choose which paragraphs to use as “layout sections,” and which layouts should be available for each.
+- Compatible with Drupal 9.
 
-Entity Reference with Layout empowers content creators to design beautiful pages with structured content (aka Paragraphs). It borrows concepts from other paragraphs-inspired modules like Bricks, and provides authors with a way to visually manipulate referenced entities and create unique page layouts. Entity Reference with Layout leverages Drupal’s core Layout Discovery module.
+### How it Works
+- Provides a new Field Widget and Field Formatter for paragraph reference fields.
+- Leverages Drupal’s Layout API for building layouts.
+- Uses the paragraphs behaviors API for storing layout data.
 
-Works with Paragraphs
-=====================
+### Getting Started
+- Make sure the [Paragraphs module](https://www.drupal.org/project/paragraphs) is installed.
+- Download/Require
+(`composer require drupal/layout_paragraphs`)
+and install Layout Paragraphs.
+- Create a new paragraph type (admin > structure > paragraph types) to use for layout sections. Your new paragraph type can have whatever fields you wish, although no fields are required for the module to work.
+- Enable the “Layout Paragraphs” paragraph behavior for your layout section paragraph type, and select one or more layouts you wish to make available.
+- Make sure your new layout section paragraph type is selected under “Reference Type” on the content type’s reference field edit screen by clicking “edit” for the respective field on the “Manage fields” tab.
+- Choose “Layout Paragraphs” as the field widget type for the desired paragraph reference field under “Manage form display”.
+- Choose “Layout Paragraphs” as the field formatter for the desired paragraph reference field under “Manage display”.
+- That’s it. Start creating (or editing) content to see the module in action.
 
-While Entity Reference with Layout theoretically works with any referenced entity types, testing and development has so far been limited to paragraphs only. Interested in testing / extending this module to work with other entity types? We’d love to hear your thoughts, use cases, and experiences in the issue queue!
-
-Current Status is Experimental
-==============================
-
-Entity Reference with Layout under active development and currently provides only an experimental dev release. Test heavily before using in production.
-
-Installation
-============
-
-Install with composer:
-composer require drupal/layout_paragraphs
-
-Setup
-=====
-
-1. First, make sure you have a few paragraphs types configured for your site.
-2. You’ll need an additional paragraph type for Entity Reference with Layouts to use for attaching layouts. Don’t worry if this seems unclear at first. Just create a new paragraph specifically for your layouts – for example, you might call your new paragraph type, “Section”. Adding fields for your new type is completely optional.
-3. Decide which content type you want to use for creating layouts with paragraphs (for example, Basic Page).
-4. Add a new field to the content type you chose in step 3. Pick “Paragraph with Layout” as the field type. Leave “Paragraph” as the type of item to reference, and “Unlimited” as the allowed number of values. Click “Save field settings”.
-5. Configure your new field. Check out the configuration options below.
-6. Go to Content > Add Content > [Chosen Content Type from Step 3], and start using the new field!
+### Maintainers
+- Creator: [Justin Toupin (justin2pin)](https://www.drupal.org/u/justin2pin)
+- [Italo Mairo (itamair)](https://www.drupal.org/u/itamair)
