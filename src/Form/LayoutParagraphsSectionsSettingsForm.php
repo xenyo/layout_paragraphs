@@ -132,7 +132,7 @@ class LayoutParagraphsSectionsSettingsForm extends ConfigFormBase {
         '#title' => $this->t('Available Layouts for @label Paragraphs', ['@label' => $paragraph_bundle['label']]),
         '#options' => $layout_options,
         '#multiple' => TRUE,
-        '#default_value' => $layout_paragraphs_behavior_config['available_layouts'],
+        '#default_value' => array_keys($layout_paragraphs_behavior_config['available_layouts']),
         '#size' => count($layout_options) < 8 ? count($layout_options) * 2 : 10,
         '#states' => [
           'visible' => [
@@ -152,7 +152,7 @@ class LayoutParagraphsSectionsSettingsForm extends ConfigFormBase {
     $paragraph_bundles = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
     $paragraphs_type_storage = $this->entityTypeManager->getStorage('paragraphs_type');
     $layouts = $this->layoutPluginManager->getSortedDefinitions();
-    foreach ($paragraph_bundles as $name => $paragraph_bundle) {
+    foreach (array_keys($paragraph_bundles) as $name) {
       /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
       $paragraphs_type = $paragraphs_type_storage->load($name);
       $layout_paragraphs_behavior = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
