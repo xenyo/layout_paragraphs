@@ -613,7 +613,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#ajax' => [
           'callback' => [$this, 'editItemAjax'],
         ],
-        '#name' => implode('_', $parents) . '_add_item',
+        '#name' => trim(implode('_', $parents) . '_' . $this->fieldName . '_add_item', '_'),
         '#element_parents' => $parents,
       ];
       // Add region and parent_delta hidden items only in this is a new entity.
