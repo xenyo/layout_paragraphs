@@ -79,11 +79,6 @@ class LayoutParagraphsPlugin extends ParagraphsBehaviorBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    /** @var \Drupal\Core\Entity\EntityInterface $paragraphs_type */
-    $paragraphs_type = $form_state->getFormObject()->getEntity();
-    if ($paragraphs_type->isNew()) {
-      return [];
-    }
     $options = $this->layoutPluginManager->getLayoutOptions();
     $available_layouts = $this->configuration['available_layouts'];
     $form['available_layouts'] = [
