@@ -1133,6 +1133,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#limit_validation_errors' => [
             array_merge($parents, [
               $this->fieldName,
+              'entity_form',
+              $delta,
             ]),
           ],
           '#submit' => [
