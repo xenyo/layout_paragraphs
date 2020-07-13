@@ -14,6 +14,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\Renderer;
+use Drupal\paragraphs\Plugin\EntityReferenceSelection\ParagraphSelection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
@@ -412,6 +413,49 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
+   * Returns the sorted allowed types for a entity reference field.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   (optional) The field definition forwhich the allowed types should be
+   *   returned, defaults to the current field.
+   *
+   * @return array
+   *   A list of arrays keyed by the paragraph type machine name with the
+   *   following properties.
+   *     - label: The label of the paragraph type.
+   *     - weight: The weight of the paragraph type.
+   */
+  public function getAllowedTypes(FieldDefinitionInterface $field_definition = NULL) {
+
+    $return_bundles = [];
+    /** @var \Drupal\Core\Entity\EntityReferenceSelection\SelectionPluginManagerInterface $selection_manager */
+    $selection_manager = \Drupal::service('plugin.manager.entity_reference_selection');
+    $handler = $selection_manager->getSelectionHandler($field_definition ?: $this->fieldDefinition);
+    if ($handler instanceof ParagraphSelection) {
+      $return_bundles = $handler->getSortedAllowedTypes();
+    }
+    // Support for other reference types.
+    else {
+      $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo($field_definition ? $field_definition->getSetting('target_type') : $this->fieldDefinition->getSetting('target_type'));
+      $weight = 0;
+      foreach ($bundles as $machine_name => $bundle) {
+        if (empty($this->getSelectionHandlerSetting('target_bundles'))
+          || in_array($machine_name, $this->getSelectionHandlerSetting('target_bundles'))) {
+
+          $return_bundles[$machine_name] = [
+            'label' => $bundle['label'],
+            'weight' => $weight,
+          ];
+
+          $weight++;
+        }
+      }
+    }
+
+    return $return_bundles;
+  }
+
+  /**
    * Builds the main widget form array container/wrapper.
    *
    * Form elements for individual items are built by formElement().
@@ -424,15 +468,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->wrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-wrapper'), '-');
     $this->itemFormWrapperId = trim(Html::getId(implode('-', $parents) . '-' . $this->fieldName . '-form'), '-');
 
-    $handler_settings = $items->getSetting('handler_settings');
-    $bundles = !empty($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
-    $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (isset($handler_settings["negate"]) && !$handler_settings["negate"]) {
-      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
-    }
-    else {
-      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
-    }
+    $target_bundles = array_keys($this->getAllowedTypes());
     $title = $this->fieldDefinition->getLabel();
     $description = FieldFilteredMarkup::create(\Drupal::token()->replace($this->fieldDefinition->getDescription()));
 
@@ -2008,6 +2044,20 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
+   * Returns the value of a setting for the entity reference selection handler.
+   *
+   * @param string $setting_name
+   *   The setting name.
+   *
+   * @return mixed
+   *   The setting value.
+   */
+  protected function getSelectionHandlerSetting($setting_name) {
+    $settings = $this->getFieldSetting('handler_settings');
+    return isset($settings[$setting_name]) ? $settings[$setting_name] : NULL;
+  }
+
+  /**
    * Gets the layout settings for a paragraph.
    *
    * @param \Drupal\paragraphs\ParagraphInterface $paragraph
@@ -2136,15 +2186,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function settingsSummary() {
 
     $entity_type = $this->getFieldSetting('target_type');
-    $handler_settings = $this->getFieldSetting('handler_settings');
-    $bundles = !empty($handler_settings["target_bundles_drag_drop"]) ? array_keys($handler_settings["target_bundles_drag_drop"]) : [];
-    $selected_bundles = !empty($handler_settings['target_bundles']) ? $handler_settings['target_bundles'] : [];
-    if (isset($handler_settings["negate"]) && !$handler_settings["negate"]) {
-      $target_bundles = empty($selected_bundles) ? $bundles : array_intersect($bundles, $selected_bundles);
-    }
-    else {
-      $target_bundles = empty($selected_bundles) ? [] : array_diff($bundles, $selected_bundles);
-    }
+    $target_bundles = array_keys($this->getAllowedTypes());
     $definition = $this->entityTypeManager->getDefinition($entity_type);
     $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
     $has_layout = FALSE;
