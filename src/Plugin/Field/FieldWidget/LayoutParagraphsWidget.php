@@ -863,7 +863,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $layout_element['preview']['regions'] = ['#weight' => 100] + $layout_element['#layout_instance']->build($layout_element['preview']['regions']);
     $layout_element['preview']['regions']['#parents'] = $layout_element['#parents'];
     foreach ($elements as $index => $element) {
-      if ($element['#parent_uuid'] == $uuid) {
+      if (!empty($element['#region']) && $element['#parent_uuid'] == $uuid) {
         /* @var \Drupal\Core\Entity\EntityInterface $child_entity */
         $child_entity = $element['#entity'];
         $child_uuid = $child_entity->uuid();
