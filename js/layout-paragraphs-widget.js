@@ -122,13 +122,12 @@
         $container.find(".layout-paragraphs-item").each((index, item) => {
           const $item = $(item);
           const $parentUuidInput = $item.find(".layout-paragraphs-parent-uuid");
-          $parentUuidInput.val(
-            $item
-              .parent()
-              .closest(".layout-paragraphs-layout")
-              .find(".layout-paragraphs-uuid")
-              .val()
-          );
+          const parentUuid = $item
+            .parent()
+            .closest(".layout-paragraphs-layout")
+            .find(".layout-paragraphs-uuid")
+            .val();
+          $parentUuidInput.val(parentUuid);
         });
       }
       /**
@@ -378,7 +377,8 @@
         const $parentUuidInput = $widget.find(
           ".layout-paragraphs-new-item-parent-uuid"
         );
-        const parentUuidSelector = '.' + $btn.attr('data-parent-uuid-class');
+        const parentUuidSelectorClass = $btn.attr('data-parent-uuid-class');
+        const parentUuidSelector = parentUuidSelectorClass ? '> .' + parentUuidSelectorClass : '';
         const $menu = $widget.find(".layout-paragraphs-add-more-menu");
         const region = getRegion(
           $btn.closest(".layout-paragraphs-layout-region")
@@ -390,6 +390,7 @@
           ? $btn
               .closest('.layout-paragraphs-item')
               .find(parentUuidSelector)
+              .first()
               .val()
           : "";
         const parentWeight =
