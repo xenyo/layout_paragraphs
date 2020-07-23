@@ -39,6 +39,8 @@ use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsStateResetCommand;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsInsertCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\inline_entity_form\ElementSubmit;
+use Drupal\inline_entity_form\WidgetSubmit;
 
 /**
  * Entity Reference with Layout field widget.
@@ -1160,7 +1162,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#weight' => 1000,
         '#type' => 'actions',
         '#attributes' => ['class' => ['layout-paragraphs-item-form-actions']],
-        'save_item' => [
+        'submit' => [
           '#type' => 'submit',
           '#name' => 'save',
           '#value' => $this->t('Save'),
@@ -1236,6 +1238,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           }
         }
       }
+    }
+    // Add compatibility for Inline Entity Form module.
+    // See https://www.drupal.org/project/inline_entity_form/issues/3160809
+    // and https://www.drupal.org/project/layout_paragraphs/issues/3160806
+    $ief_widget_state = $form_state->get('inline_entity_form');
+    if (!is_null($ief_widget_state)) {
+      ElementSubmit::attach($element['entity_form'], $form_state);
+      WidgetSubmit::attach($element['entity_form'], $form_state);
     }
     return $element;
   }
