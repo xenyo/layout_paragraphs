@@ -14,6 +14,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\Renderer;
+use Drupal\field_group\FormatterHelper;
 use Drupal\paragraphs\Plugin\EntityReferenceSelection\ParagraphSelection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
@@ -989,11 +990,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         'mode' => $display->getMode(),
       ];
       field_group_attach_groups($element['entity_form'], $context);
-      if (function_exists('field_group_form_pre_render')) {
-        $element['entity_form']['#pre_render'][] = 'field_group_form_pre_render';
+      if (method_exists(FormatterHelper::class, 'formProcess')) {
+        $element['subform']['#process'][] = [FormatterHelper::class, 'formProcess'];
       }
-      if (function_exists('field_group_form_process')) {
-        $element['entity_form']['#process'][] = 'field_group_form_process';
+      elseif (function_exists('field_group_form_pre_render')) {
+        $element['subform']['#pre_render'][] = 'field_group_form_pre_render';
+      }
+      elseif (function_exists('field_group_form_process')) {
+        $element['subform']['#process'][] = 'field_group_form_process';
       }
     }
 
