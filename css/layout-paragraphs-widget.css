@@ -178,17 +178,11 @@ fieldset.layout-paragraphs-field > legend {
 .reversed .layout-up {
   background-image: url(../img/icon-up--reversed.png);
 }
-.layout-paragraphs-field .layout-paragraphs-layout:first-child > .layout-controls .layout-up,
-.layout-paragraphs-field .layout-paragraphs-layout:first-child .layout-paragraphs-item:first-child .layout-up {
+.layout-paragraphs-item:first-child > .layout-controls .layout-up {
   pointer-events: none;
   opacity: .15;
 }
-.layout-paragraphs-field .layout-paragraphs-layout:first-child .layout-paragraphs-item:first-child .layout-up {
-  pointer-events: none;
-  opacity: .15;
-}
-.layout-paragraphs-field .layout-paragraphs-layout:last-child > .layout-controls .layout-down,
-.layout-paragraphs-field .layout-paragraphs-layout:last-child .layout-paragraphs-item:nth-last-child(2) .layout-down {
+.layout-paragraphs-item:nth-last-child(2) > .layout-controls .layout-down {
   pointer-events: none;
   opacity: .15;
 }
