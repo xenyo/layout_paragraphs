@@ -991,13 +991,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       ];
       field_group_attach_groups($element['entity_form'], $context);
       if (method_exists(FormatterHelper::class, 'formProcess')) {
-        $element['subform']['#process'][] = [FormatterHelper::class, 'formProcess'];
+        $element['entity_form']['#process'][] = [FormatterHelper::class, 'formProcess'];
       }
       elseif (function_exists('field_group_form_pre_render')) {
-        $element['subform']['#pre_render'][] = 'field_group_form_pre_render';
+        $element['entity_form']['#pre_render'][] = 'field_group_form_pre_render';
       }
       elseif (function_exists('field_group_form_process')) {
-        $element['subform']['#process'][] = 'field_group_form_process';
+        $element['entity_form']['#process'][] = 'field_group_form_process';
       }
     }
 
