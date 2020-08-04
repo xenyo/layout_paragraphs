@@ -1046,7 +1046,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
       // Switching layouts should change the layout plugin options form
       // with Ajax for users with adequate permissions.
-      if ($this->currentUser->hasPermission('edit entity reference layout plugin config')) {
+      if ($this->currentUser->hasPermission('edit layout paragraphs plugin config')) {
         $element['entity_form']['layout_selection']['layout']['#ajax'] = [
           'event' => 'change',
           'callback' => [$this, 'buildLayoutConfigurationFormAjax'],
@@ -1063,7 +1063,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $element['entity_form']['layout_plugin_form'] = [
         '#prefix' => '<div id="layout-config">',
         '#suffix' => '</div>',
-        '#access' => $this->currentUser->hasPermission('edit entity reference layout plugin config'),
+        '#access' => $this->currentUser->hasPermission('edit layout paragraphs plugin config'),
       ];
 
       // Add the layout configuration form if applicable.
