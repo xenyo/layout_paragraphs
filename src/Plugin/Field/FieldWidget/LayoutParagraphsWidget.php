@@ -1007,8 +1007,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     if ($this->isLayoutParagraph($entity)) {
       $available_layouts = $this->getAvailableLayouts($entity);
       $layout_settings = $this->getLayoutSettings($entity);
-      $layout = $layout_settings['layout'];
-      $default_layout = !empty($layout) ? $layout : key($available_layouts);
+      $layout = !empty($layout_settings['layout']) ? $layout_settings['layout'] : key($available_layouts);
       $layout_plugin_config = $layout_settings['config'] ?? [];
 
       $element['entity_form']['layout_selection'] = [
@@ -1018,7 +1017,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#type' => 'radios',
           '#title' => $this->t('Select a layout:'),
           '#options' => $available_layouts,
-          '#default_value' => $default_layout,
+          '#default_value' => $layout,
           '#attributes' => [
             'class' => ['layout-paragraphs-layout-select'],
           ],
