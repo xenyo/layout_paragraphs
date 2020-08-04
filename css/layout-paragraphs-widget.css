@@ -182,7 +182,8 @@ fieldset.layout-paragraphs-field > legend {
   pointer-events: none;
   opacity: .15;
 }
-.layout-paragraphs-item:nth-last-child(2) > .layout-controls .layout-down {
+.layout-paragraphs-layout .layout-paragraphs-item:nth-last-child(2) > .layout-controls .layout-down,
+.active-items > .layout-paragraphs-item:last-child > .layout-controls .layout-down {
   pointer-events: none;
   opacity: .15;
 }
