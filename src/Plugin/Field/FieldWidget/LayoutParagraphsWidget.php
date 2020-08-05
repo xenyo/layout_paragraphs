@@ -1144,7 +1144,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#title' => $this->t('Behaviors'),
         '#element_validate' => [[$this, 'validateBehaviors']],
         '#entity' => $entity,
-        '#weight' => 1000,
+        '#weight' => -99,
       ];
       foreach ($behavior_plugins as $plugin_id => $plugin) {
         $element['entity_form']['behavior_plugins'][$plugin_id] = ['#type' => 'container'];
