@@ -4,10 +4,13 @@ fieldset.layout-paragraphs-field {
   margin: 30px 0;
   padding: 60px 30px;
 }
-fieldset.layout-paragraphs-field > .fieldset-wrapper {
+fieldset.layout-paragraphs-field > .fieldset-wrapper,
+fieldset.layout-paragraphs-field > .fieldset__wrapper  {
   margin-top: 20px;
   padding-bottom: 20px;
+  position: relative;
 }
+
 fieldset.layout-paragraphs-field > legend {
   line-height: 30px;
   top: 15px;
