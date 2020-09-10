@@ -614,10 +614,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
         $path = '';
         // Get the icon and pass to Javascript.
-        if (method_exists($type, 'getIconFile')) {
-          if ($icon = $type->getIconFile()) {
-            $path = $icon->url();
-          }
+        if (method_exists($type, 'getIconUrl')) {
+          $path = $type->getIconUrl();
         }
         $options[$bundle_id] = $bundle_info[$bundle_id]['label'];
         $types[($has_layout ? 'layout' : 'content')][] = [
