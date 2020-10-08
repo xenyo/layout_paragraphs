@@ -23,6 +23,10 @@
       .removeClass("layout-paragraphs-loading")
       .find(".loading")
       .remove();
+    $layoutParagraphsField
+      .find(".layout-paragraphs-add-more-menu")
+      .addClass("hidden")
+      .removeClass("fade-in");
   }
   /**
    * Returns true if the layout-paragraphsField is loading (i.e. waiting for an Ajax response.)
@@ -96,6 +100,491 @@
     }
   }
   /**
+   * Disables layout controls based on their position.
+   * @param {jQuery} $container The jQuery field container object.
+   */
+  function updateLayoutControls($container) {
+    $(".layout-up, .layout-down", $container).prop("disabled", false);
+    $(
+      ".layout-paragraphs-item:first-child > .layout-controls > .layout-up, .layout-paragraphs-item:last-child > .layout-controls > .layout-down",
+      $container
+    )
+      .blur()
+      .prop("disabled", true);
+  }
+  /**
+   * Closes the "add paragraph item" menu.
+   * @param {jQuery} $btn The clicked button.
+   */
+  function closeAddItemMenu($btn) {
+    const $widget = $btn.parents(".layout-paragraphs-field");
+    const $menu = $widget.find(".layout-paragraphs-add-more-menu");
+    $menu.addClass("hidden").removeClass("fade-in");
+    $btn.removeClass("active").blur();
+    $menu.appendTo($widget);
+  }
+  /**
+   * Responds to click outside of the menu.
+   * @param {event} e DOM event (i.e. click)
+   */
+  function handleClickOutsideMenu(e) {
+    if ($(e.target).closest(".layout-paragraphs-add-more-menu").length === 0) {
+      const $btn = $(".layout-paragraphs-add-content__toggle.active");
+      if ($btn.length) {
+        closeAddItemMenu($btn);
+        window.removeEventListener("click", handleClickOutsideMenu);
+      }
+    }
+  }
+  /**
+   * Position the menu correctly.
+   * @param {jQuery} $menu The menu jQuery DOM object.
+   * @param {bool} keepOrientation If true, the menu will stay above/below no matter what.
+   */
+  function positionMenu($menu, keepOrientation) {
+    const $btn = $menu.data("activeButton");
+    // Move the menu to correct spot.
+    const btnOffset = $btn.offset();
+    const menuOffset = $menu.offset();
+    const viewportTop = $(window).scrollTop();
+    const viewportBottom = viewportTop + $(window).height();
+    const menuWidth = $menu.outerWidth();
+    const btnWidth = $btn.outerWidth();
+    const btnHeight = $btn.height();
+    const menuHeight = $menu.outerHeight();
+    // Account for rotation with slight padding.
+    const left =
+      btnWidth / 4 + Math.floor(btnOffset.left + btnWidth / 2 - menuWidth / 2);
+
+    // Default to positioning the menu beneath the button.
+    let orientation = "beneath";
+    let top = Math.floor(btnOffset.top + btnHeight + btnWidth / 2);
+
+    // The menu is above the button, keep it that way.
+    if (keepOrientation === true && menuOffset.top < btnOffset.top) {
+      orientation = "above";
+    }
+    // The menu would go out of the viewport, so keep at top.
+    if (top + menuHeight > viewportBottom) {
+      orientation = "above";
+    }
+    $menu
+      .removeClass("above")
+      .removeClass("beneath")
+      .addClass(orientation);
+    if (orientation === "above") {
+      top = Math.floor(btnOffset.top - 5 - menuHeight);
+    }
+
+    $menu.removeClass("hidden").addClass("fade-in");
+    $menu.offset({ top, left });
+  }
+  /**
+   * Opens the "add pragraph item" menu.
+   * @param {jQuery} $btn The button clicked to open the menu.
+   * @param {object} widgetSettings The widget instance settings.
+   */
+  function openAddItemMenu($btn, widgetSettings) {
+    const $widget = $btn.parents(".layout-paragraphs-field");
+    const $targetInput = $widget.find(".dom-id");
+    const $insertMethodInput = $widget.find(".insert-method");
+
+    const $menu = $widget.find(".layout-paragraphs-add-more-menu");
+    const region = $btn.attr("data-region");
+    const depth = region ? $btn.parents(".layout-paragraphs-layout").length : 0;
+
+    // Hide layout items if we're already at max depth.
+    if (depth > widgetSettings.maxDepth) {
+      $menu.find(".layout-paragraph").addClass("hidden");
+    } else {
+      $menu.find(".layout-paragraph").removeClass("hidden");
+    }
+    // Hide non-layout items if we're at zero depth and layouts are requried.
+    if (widgetSettings.requireLayouts && depth === 0) {
+      $menu
+        .find(".layout-paragraphs-add-more-menu__item:not(.layout-paragraph)")
+        .addClass("hidden");
+    } else {
+      $menu
+        .find(".layout-paragraphs-add-more-menu__item:not(.layout-paragraph)")
+        .removeClass("hidden");
+    }
+    // Hide search if fewer than 7 visible items.
+    if (
+      $menu.find(".layout-paragraphs-add-more-menu__item:not(.hidden)").length <
+      7
+    ) {
+      $menu.find(".layout-paragraphs-add-more-menu__search").addClass("hidden");
+    } else {
+      $menu
+        .find(".layout-paragraphs-add-more-menu__search")
+        .removeClass("hidden");
+    }
+    $menu.data("activeButton", $btn);
+    // Make other buttons inactive.
+    $widget
+      .find("button.layout-paragraphs-add-content__toggle")
+      .removeClass("active");
+    // Hide the menu, for transition effect.
+    $menu.addClass("hidden").removeClass("fade-in");
+    $menu.find('input[type="text"]').val("");
+    $menu.find(".layout-paragraphs-add-more-menu__item").attr("style", "");
+    $btn.addClass("active");
+
+    // Sets the values in the form items
+    // for where a new item should be inserted.
+    $targetInput.val($btn.attr("data-target-id"));
+    $insertMethodInput.val($btn.attr("data-method"));
+
+    // Move the menu element to directly after the
+    // clicked button to ensure correct tab order.
+    $menu.insertAfter($btn);
+
+    setTimeout(() => {
+      positionMenu($menu);
+      if (
+        !$menu
+          .find(".layout-paragraphs-add-more-menu__search")
+          .hasClass("hidden")
+      ) {
+        $menu
+          .find('.layout-paragraphs-add-more-menu__search input[type="text"]')
+          .focus();
+      } else {
+        $menu
+          .find("a")
+          .first()
+          .focus();
+      }
+    }, 100);
+    window.addEventListener("click", handleClickOutsideMenu);
+  }
+  /**
+   * Toggles the add paragraph items menu.
+   * @param {jQuery} $btn The jQuery button.
+   * @param {Object} widgetSettings The widget settings.
+   * @return {boolean} Returns false to prevent button action.
+   */
+  function toggleAddItemMenu($btn, widgetSettings) {
+    if ($btn.hasClass("active")) {
+      closeAddItemMenu($btn);
+    } else {
+      openAddItemMenu($btn, widgetSettings);
+    }
+    return false;
+  }
+  /**
+   * Returns a toggle button jQuery object.
+   * @param {Number} weight The weight of the layout item.
+   * @param {String} region The region name where we are adding an item.
+   * @param {String} parentUuid The uuid of the container layout item.
+   * @param {String} placement A description of where we are placing the new item.
+   * @param {jQuery} $target The target item or sibling.
+   * @param {String} method The jQuery method to use for adding the new item.
+   * @param {Object} widgetSettings The widget's settings.
+   * @return {jQuery} The jQuery button.
+   */
+  function toggleButton(
+    weight,
+    region,
+    parentUuid,
+    placement,
+    $target,
+    method,
+    widgetSettings
+  ) {
+    const labelText = region
+      ? Drupal.t("Add item to @region region ", { "@region": region }) +
+        placement
+      : Drupal.t("Add item ") + placement;
+    const $label = $("<span>")
+      .text(labelText)
+      .addClass("visually-hidden");
+    const $btn = $("<button>").addClass(
+      "layout-paragraphs-add-content__toggle"
+    );
+    $btn.append($label);
+    return $btn
+      .clone()
+      .attr({
+        "data-weight": weight || -1,
+        "data-region": region || "",
+        "data-parent-uuid": parentUuid || "",
+        "data-method": method,
+        "data-target-id": $target.attr("id")
+      })
+      .data("target", $target)
+      .click(e => toggleAddItemMenu($(e.target), widgetSettings));
+  }
+  /**
+   * Removes all toggle buttons.
+   * @param {jQuery} $container The jQuery widget object.
+   */
+  function removeToggleButtons($container) {
+    $(".layout-paragraphs-add-content__toggle", $container).remove();
+  }
+  /**
+   * Adds toggle buttons for creating new content.
+   * @param {jQuery} $container The jQuery layout-paragraphs Field container.
+   * @param {Object} widgetSettings The widget settings object.
+   */
+  function toggleButtons($container) {
+    const widgetSettings = $container.data("widgetSettings");
+    $(".layout-paragraphs-add-content__toggle", $container).remove();
+    if (widgetSettings.isTranslating) {
+      return;
+    }
+    // Add toggle buttons to empty regions.
+    $(".layout-paragraphs-layout-region", $container).each((index, region) => {
+      if ($(".layout-paragraphs-item", region).length === 0) {
+        const $region = $(region);
+        const $layoutContainer = $region.closest(".layout-paragraphs-item");
+        const weight =
+          Number($layoutContainer.find("> .layout-paragraphs-weight").val()) +
+          0.5;
+        const parentUuid = $layoutContainer
+          .find("> .layout-paragraphs-uuid")
+          .val();
+        $region.append(
+          toggleButton(
+            weight,
+            getRegion($region),
+            parentUuid,
+            Drupal.t("inside item @weight", { "@weight": Math.floor(weight) }),
+            $region,
+            "append",
+            widgetSettings
+          )
+        );
+      }
+    });
+    // Add toggle buttons to top and bottom of each paragraph item.
+    $(".layout-paragraphs-item", $container).each((index, paragraph) => {
+      const $paragraph = $(paragraph);
+      const weight = Number(
+        $paragraph.find("> .layout-paragraphs-weight").val()
+      );
+      const region = getRegion($paragraph);
+      const parentUuid = $paragraph
+        .find("> .layout-paragraphs-parent-uuid")
+        .val();
+      $paragraph.prepend(
+        toggleButton(
+          weight - 0.5,
+          region,
+          parentUuid,
+          Drupal.t("before item @weight", { "@weight": weight }),
+          $paragraph,
+          "before",
+          widgetSettings
+        )
+      );
+      $paragraph.append(
+        toggleButton(
+          weight + 0.5,
+          region,
+          parentUuid,
+          Drupal.t("after item @weight", { "@weight": weight }),
+          $paragraph,
+          "after",
+          widgetSettings
+        )
+      );
+    });
+    // Add toggle button if there are no paragraph items.
+    if ($(".layout-paragraphs-item", $container).length === 0) {
+      $container.append(
+        toggleButton(
+          0,
+          "",
+          "",
+          "",
+          $container.find(".active-items"),
+          "append",
+          widgetSettings
+        )
+      );
+    }
+    if ($container.data("focusedElement")) {
+      $(`#${$container.data("focusedElement")}`)
+        .find("button:first")
+        .focus();
+    }
+  }
+  /**
+   * Runs all necessary updates to widget.
+   * @param {jQuery} $widget The jQuery widget item.
+   */
+  function updateWidget($widget) {
+    toggleButtons($widget);
+    updateFields($widget);
+    updateDisabled($widget);
+    updateLayoutControls($widget);
+  }
+  /**
+   * An array reducer to massage the list of posible move positions when an item is moving down.
+   * Layout containers are moved to *after* their contents to correctly order the available DOM positions.
+   * @param {Array} results The results to return.
+   * @param {Array} item The current item.
+   * @return {Object} The massaged results.
+   */
+  function massagePositions(results, item) {
+    const level = $(item).parents(".layout-paragraphs-layout").length;
+    if (level < results.level) {
+      results.positions.push(results.layouts.pop());
+    }
+    if ($(item).is(".layout-paragraphs-layout") && item !== results.item) {
+      // We need to add layout containers *after* their contents.
+      results.layouts.push(item);
+    } else {
+      // All other items just get added to the list.
+      // The item being moved always gets added to the list.
+      results.positions.push(item);
+    }
+    results.level = level;
+    return results;
+  }
+  /**
+   * Return the direction to move based on what key was pressed.
+   * @param {String} keycode The keycode that was pressed.
+   * @return {String} Returns the move direction: up, down, or stop.
+   */
+  function getMoveDirection(keycode) {
+    switch (keycode) {
+      case 37:
+      case 38:
+        return "up";
+      case 39:
+      case 40:
+        return "down";
+      default:
+        return "stop";
+    }
+  }
+  /**
+   * Stops keyboard movement, unbinds the move event and restores UI to main state.
+   * @param {jQuery} $widget The widget object.
+   * @param {function} func The event handler to unbind.
+   */
+  function stopMove($widget, func) {
+    $(document).unbind("keydown", func);
+    $widget
+      .removeClass("is-moving")
+      .find(".is-moving")
+      .removeClass("is-moving");
+    $widget.find(".layout-controls, .layout-paragraphs-actions").show();
+    updateWidget($widget);
+  }
+  /**
+   * Event handler for keyboard movement.
+   * @param {Event} e The keydown event.
+   * @return {Boolean} Returns false to prevent further event propogation.
+   */
+  function move(e) {
+    const { $moveItem, $widget, widgetSettings } = e.data;
+    const spacer =
+      '<div class="layout-paragraphs-item js-layout-paragraphs-temp js-hide"></div>';
+    $widget.find(".js-layout-paragraphs-temp").remove();
+    $widget.find(".layout-paragraphs-moving-message").remove();
+    const dir = getMoveDirection(e.keyCode);
+    if (dir === "stop") {
+      stopMove($widget, move);
+      return false;
+    }
+    // Add spacers into regions, appending or prepending based on direction we are moving.
+    $widget
+      .find(
+        ".layout-paragraphs-layout-region, .active-items, .layout-paragraphs-disabled-items__items"
+      )
+      .each((index, item) => {
+        $(item)[dir === "up" ? "append" : "prepend"](spacer);
+      });
+    // Build a list of all possible positions, excluding children of the item being moved.
+    const positions = $(".layout-paragraphs-item", $widget)
+      .toArray()
+      .filter(i => !$.contains($moveItem[0], i));
+    // If moving down, the positions need to be reordered
+    // to adjust the position of layouts.
+    const reorderedPositions =
+      dir === "down"
+        ? positions.reduce(massagePositions, {
+            positions: [],
+            layouts: [],
+            level: 0,
+            item: $moveItem[0]
+          }).positions
+        : positions;
+    // Get the position (index) of the current item we are moving.
+    const pos = reorderedPositions.findIndex(el => el === $moveItem[0]);
+    // Loop through all possible positons, attempting to move to the next in line.
+    // If a move if not valid, we continue looping until we reach a valid move.
+    // Usually this results in simply bumping one position forward/backward.
+    for (
+      let i = pos + (dir === "up" ? -1 : 1);
+      reorderedPositions[i] !== undefined;
+      i += dir === "up" ? -1 : 1
+    ) {
+      const $next = $(reorderedPositions[i]);
+      const method = dir === "up" ? "before" : "after";
+      let valid = true;
+      // Check for compliance with widget settings.
+      if (
+        widgetSettings.requireLayouts &&
+        !$moveItem.is(".layout-paragraphs-layout") &&
+        $next.closest(".layout-paragraphs-disabled-items__items").length ===
+          0 &&
+        $next.closest(".layout-paragraphs-layout-region").length === 0
+      ) {
+        valid = false;
+      }
+      if (
+        $moveItem.is(".layout-paragraphs-layout") &&
+        $next.parents(".layout-paragraphs-layout").length >
+          widgetSettings.maxDepth
+      ) {
+        valid = false;
+      }
+      if (valid) {
+        $next[method]($moveItem);
+        const rect = $moveItem[0].getBoundingClientRect();
+        if (rect.y + rect.height < 0 || rect.y > window.innerHeight) {
+          $moveItem[0].scrollIntoView();
+        }
+        updateFields($widget);
+        updateDisabled($widget);
+        return false;
+      }
+    }
+  }
+  /**
+   * Event handler for starting keyboard movement.
+   * @param {Event} e The button press event.
+   * @return {Boolean} Returns false to prevent further event propogation.
+   */
+  function startMove(e) {
+    const $moveItem = $(e.currentTarget).closest(".layout-paragraphs-item");
+    const $widget = $moveItem.closest(".layout-paragraphs-field");
+    $(e.currentTarget)
+      .parent(".layout-controls")
+      .after(
+        $(
+          `<div class="layout-paragraphs-moving-message">${Drupal.t(
+            "Use arrow keys to move, any other key to stop."
+          )}</div>`
+        )
+      );
+    removeToggleButtons($widget);
+    $widget.find(".layout-controls, .layout-paragraphs-actions").hide();
+    $moveItem.addClass("is-moving");
+    $widget.addClass("is-moving");
+    $(document).bind(
+      "keydown",
+      { $moveItem, $widget, widgetSettings: $widget.data("widgetSettings") },
+      move
+    );
+    return false;
+  }
+  /**
    * Moves an layout-paragraphs item up.
    * @param {event} e DOM Event (i.e. click).
    * @return {bool} Returns false if state is still loading.
@@ -104,6 +593,7 @@
     const $btn = $(e.currentTarget);
     const $item = $btn.parents(".layout-paragraphs-item:first");
     const $container = $item.parent();
+    const $widget = $btn.closest(".layout-paragraphs-field");
 
     if (isLoading($item)) {
       return false;
@@ -133,7 +623,8 @@
     } else {
       $item.after($item.prev());
     }
-    updateFields($container.closest(".layout-paragraphs-field"));
+    updateWidget($widget);
+    return false;
   }
   /**
    * Moves an layout-paragraphs item down.
@@ -144,6 +635,7 @@
     const $btn = $(e.currentTarget);
     const $item = $btn.parents(".layout-paragraphs-item:first");
     const $container = $item.parent();
+    const $widget = $btn.closest(".layout-paragraphs-field");
 
     if (isLoading($item)) {
       return false;
@@ -173,7 +665,8 @@
     } else {
       $item.before($item.next());
     }
-    updateFields($container.closest(".layout-paragraphs-field"));
+    updateWidget($widget);
+    return false;
   }
   /**
    * Initiates dragula drag/drop functionality.
@@ -215,14 +708,12 @@
               return false;
             }
           }
-          if (widgetSettings.maxDepth) {
-            if (
-              $(el).is(".layout-paragraphs-layout") &&
-              $(target).parents(".layout-paragraphs-layout").length >
-                widgetSettings.maxDepth
-            ) {
-              return false;
-            }
+          if (
+            $(el).is(".layout-paragraphs-layout") &&
+            $(target).parents(".layout-paragraphs-layout").length >
+              widgetSettings.maxDepth
+          ) {
+            return false;
           }
           if ($(target).parents(".layout-paragraphs-disabled-items").length) {
             if (
@@ -235,199 +726,19 @@
         }
       });
       drake.on("drop", el => {
-        updateFields($(el).closest(".layout-paragraphs-field"));
-        updateDisabled($(el).closest(".layout-paragraphs-field"));
+        updateWidget($(el).closest(".layout-paragraphs-field"));
+      });
+      drake.on("drag", el => {
+        removeToggleButtons($(el).closest(".layout-paragraphs-field"));
+      });
+      drake.on("dragend", el => {
+        toggleButtons(
+          $(el).closest(".layout-paragraphs-field"),
+          widgetSettings
+        );
       });
       $widget.data("drake", drake);
     }
-  }
-  /**
-   * Closes the "add paragraph item" menu.
-   * @param {jQuery} $btn The clicked button.
-   */
-  function closeAddItemMenu($btn) {
-    const $widget = $btn.parents(".layout-paragraphs-field");
-    const $menu = $widget.find(".layout-paragraphs-add-more-menu");
-    $menu.addClass("hidden").removeClass("fade-in");
-    $btn.removeClass("active");
-  }
-  /**
-   * Responds to click outside of the menu.
-   * @param {event} e DOM event (i.e. click)
-   */
-  function handleClickOutsideMenu(e) {
-    if ($(e.target).closest(".layout-paragraphs-add-more-menu").length === 0) {
-      const $btn = $(".layout-paragraphs-add-content__toggle.active");
-      if ($btn.length) {
-        closeAddItemMenu($btn);
-        window.removeEventListener("click", handleClickOutsideMenu);
-      }
-    }
-  }
-  /**
-   * Position the menu correctly.
-   * @param {jQuery} $menu The menu jQuery DOM object.
-   * @param {bool} keepOrientation If true, the menu will stay above/below no matter what.
-   */
-  function positionMenu($menu, keepOrientation) {
-    const $btn = $menu.data("activeButton");
-    // Move the menu to correct spot.
-    const btnOffset = $btn.offset();
-    const menuOffset = $menu.offset();
-    const viewportTop = $(window).scrollTop();
-    const viewportBottom = viewportTop + $(window).height();
-    const menuWidth = $menu.outerWidth();
-    const btnWidth = $btn.outerWidth();
-    const btnHeight = $btn.height();
-    const menuHeight = $menu.outerHeight();
-    // Account for rotation with slight padding.
-    const left = 7 + Math.floor(btnOffset.left + btnWidth / 2 - menuWidth / 2);
-
-    // Default to positioning the menu beneath the button.
-    let orientation = "beneath";
-    let top = Math.floor(btnOffset.top + btnHeight + 15);
-
-    // The menu is above the button, keep it that way.
-    if (keepOrientation === true && menuOffset.top < btnOffset.top) {
-      orientation = "above";
-    }
-    // The menu would go out of the viewport, so keep at top.
-    if (top + menuHeight > viewportBottom) {
-      orientation = "above";
-    }
-    $menu
-      .removeClass("above")
-      .removeClass("beneath")
-      .addClass(orientation);
-    if (orientation === "above") {
-      top = Math.floor(btnOffset.top - 5 - menuHeight);
-    }
-
-    $menu.removeClass("hidden").addClass("fade-in");
-    $menu.offset({ top, left });
-  }
-  /**
-   * Opens the "add pragraph item" menu.
-   * @param {jQuery} $btn The button clicked to open the menu.
-   * @param {object} widgetSettings The widget instance settings.
-   */
-  function openAddItemMenu($btn, widgetSettings) {
-    const $widget = $btn.parents(".layout-paragraphs-field");
-    const $regionInput = $widget.find(".layout-paragraphs-new-item-region");
-    const $parentWeightInput = $widget.find(
-      ".layout-paragraphs-new-item-weight"
-    );
-    const $parentUuidInput = $widget.find(
-      ".layout-paragraphs-new-item-parent-uuid"
-    );
-    const parentUuidSelectorClass = $btn.attr("data-parent-uuid-class");
-    const parentUuidSelector = parentUuidSelectorClass
-      ? `> .${parentUuidSelectorClass}`
-      : "";
-    const $menu = $widget.find(".layout-paragraphs-add-more-menu");
-    const region = getRegion($btn.closest(".layout-paragraphs-layout-region"));
-    const depth = region ? $btn.parents(".layout-paragraphs-layout").length : 0;
-    const parentUuid = parentUuidSelector
-      ? $btn
-          .closest(".layout-paragraphs-item")
-          .find(parentUuidSelector)
-          .first()
-          .val()
-      : "";
-    const parentWeight =
-      0.5 +
-      Number(
-        $btn
-          .closest(".layout-paragraphs-item")
-          .find(".layout-paragraphs-weight")
-          .val() || -1
-      );
-    // Hide layout items if we're already at max depth.
-    if (depth > widgetSettings.maxDepth) {
-      $menu.find(".layout-paragraph").addClass("hidden");
-    } else {
-      $menu.find(".layout-paragraph").removeClass("hidden");
-    }
-    // Hide non-layout items if we're at zero depth and layouts are requried.
-    if (widgetSettings.requireLayouts && depth === 0) {
-      $menu
-        .find(".layout-paragraphs-add-more-menu__item:not(.layout-paragraph)")
-        .addClass("hidden");
-    } else {
-      $menu
-        .find(".layout-paragraphs-add-more-menu__item:not(.layout-paragraph)")
-        .removeClass("hidden");
-    }
-    // Hide search if fewer than 7 visible items.
-    if (
-      $menu.find(".layout-paragraphs-add-more-menu__item:not(.hidden)").length <
-      7
-    ) {
-      $menu.find(".layout-paragraphs-add-more-menu__search").addClass("hidden");
-    } else {
-      $menu
-        .find(".layout-paragraphs-add-more-menu__search")
-        .removeClass("hidden");
-    }
-    if (
-      !$menu.find(".layout-paragraphs-add-more-menu__search").hasClass("hidden")
-    ) {
-      $menu
-        .find('.layout-paragraphs-add-more-menu__search input[type="text"]')
-        .focus();
-    }
-    $menu.data("activeButton", $btn);
-    // Make other buttons inactive.
-    $widget
-      .find("button.layout-paragraphs-add-content__toggle")
-      .removeClass("active");
-    // Hide the menu, for transition effect.
-    $menu.addClass("hidden").removeClass("fade-in");
-    $menu.find('input[type="text"]').val("");
-    $menu.find(".layout-paragraphs-add-more-menu__item").attr("style", "");
-    $btn.addClass("active");
-
-    // Sets the values in the form items
-    // for where a new item should be inserted.
-    $regionInput.val(region);
-    $parentWeightInput.val(parentWeight);
-    $parentUuidInput.val(parentUuid);
-    // console.log(region);
-    // console.log(parentWeight);
-    // console.log(parentUuid);
-    setTimeout(() => {
-      positionMenu($menu);
-    }, 100);
-    window.addEventListener("click", handleClickOutsideMenu);
-  }
-  /**
-   * Enhances the radio button select for choosing a layout.
-   * @param {Object} layoutList The list of layout items.
-   */
-  function enhanceRadioSelect(layoutList) {
-    const $layoutRadioItem = $(".layout-select--list-item", layoutList);
-    $layoutRadioItem.click(e => {
-      const $radioItem = $(e.currentTarget);
-      const $layoutParagraphsField = $radioItem.closest(
-        ".layout-paragraphs-field"
-      );
-      if (isLoading($layoutParagraphsField)) {
-        return false;
-      }
-      setLoading($radioItem.closest(".ui-dialog"));
-      $radioItem
-        .find("input[type=radio]")
-        .prop("checked", true)
-        .trigger("change");
-      $radioItem.siblings().removeClass("active");
-      $radioItem.addClass("active");
-    });
-    $layoutRadioItem.each((radioIndex, radioItem) => {
-      const $radioItem = $(radioItem);
-      if ($radioItem.find("input[type=radio]").prop("checked")) {
-        $radioItem.addClass("active");
-      }
-    });
   }
   /**
    * Ajax Command to set state to loaded.
@@ -447,21 +758,18 @@
    */
   Drupal.AjaxCommands.prototype.layoutParagraphsInsert = (ajax, response) => {
     const { settings, content } = response;
-    const weight = Math.floor(settings.weight);
-    const $container = settings.parent_selector
-      ? $(settings.parent_selector, settings.wrapper_selector)
-      : $(".active-items", settings.wrapper_selector);
-    const $sibling = $container.find(
-      `.layout-paragraphs-weight[value="${weight}"]`
-    );
-
-    if ($(settings.selector, settings.wrapper_selector).length) {
-      $(settings.selector, settings.wrapper_selector).replaceWith(content);
-    } else if ($sibling.length) {
-      $sibling.closest(".layout-paragraphs-item").after(content);
-    } else {
-      $container.prepend(content);
+    const $content = $(
+      ".layout-paragraphs-item",
+      `<div>${content}</div>`
+    ).first();
+    if ($(`#${settings.element_id}`).length) {
+      $(`#${settings.element_id}`).replaceWith($content);
+    } else if (settings.target_id && settings.insert_method) {
+      $(`#${settings.target_id}`)[settings.insert_method]($content);
     }
+    $content
+      .closest(".layout-paragraphs-field")
+      .data("focusedElement", $content.attr("id"));
   };
   /**
    * The main layout-paragraphs Widget behavior.
@@ -478,6 +786,7 @@
     }
   };
   Drupal.layoutParagraphsWidget = ($widget, widgetSettings) => {
+    $widget.data("widgetSettings", widgetSettings);
     /**
      * Hide all "add paragraph item" buttons if we have reached cardinality.
      */
@@ -581,19 +890,33 @@
       .once("layout-paragraphs-controls")
       .each((layoutParagraphsItemIndex, layoutParagraphsItem) => {
         $('<div class="layout-controls">')
-          .append($('<div class="layout-handle">'))
-          .append($('<div class="layout-up">').click(moveUp))
-          .append($('<div class="layout-down">').click(moveDown))
-          .prependTo(layoutParagraphsItem);
+          .append(
+            $('<button class="layout-handle">')
+              .click(startMove)
+              .text(
+                Drupal.t(
+                  "Use the arrow keys to move this item, any other key to stop."
+                )
+              )
+          )
+          .append(
+            $(
+              `<button class="layout-up">${Drupal.t("Move up")}</button>`
+            ).click(moveUp)
+          )
+          .append(
+            $(
+              `<button class="layout-down">${Drupal.t("Move down")}</button>`
+            ).click(moveDown)
+          )
+          .prependTo($(layoutParagraphsItem));
       });
     /**
-     * Enhance radio buttons.
+     * Set state to loading when a radio is clicked.
      */
-    $(".layout-select--list", $widget)
-      .once("layout-select-enhance-radios")
-      .each((index, layoutList) => {
-        enhanceRadioSelect(layoutList);
-      });
+    $(".layout-select input[type=radio]", $widget).change(e => {
+      setLoading($(e.target).closest(".layout-select"));
+    });
     /**
      * Only show disabled items if there are items in the field.
      * Runs every time DOM is updated.
@@ -607,8 +930,7 @@
      * Update weights, regions, and disabled area on load.
      * Runs every time DOM is updated.
      */
-    updateFields($widget);
-    updateDisabled($widget);
+    updateWidget($widget);
     /**
      * Dialog close buttons should trigger the "Cancel" action.
      */
