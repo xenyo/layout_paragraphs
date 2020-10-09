@@ -1483,15 +1483,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           $bundle_key => $bundle_id,
         ]);
       $paragraph_entity->setParentEntity($element['#host'], $this->fieldDefinition->getName());
-
-      $path = array_merge($parents, [
-        $this->fieldDefinition->getName(),
-        'add_more',
-        'actions',
-      ]);
       $widget_state['items'][] = [
         'entity' => $paragraph_entity,
         'is_new' => TRUE,
+        'weight' => count($widget_state['items']),
       ];
       $widget_state['open_form'] = $widget_state['items_count'];
       $widget_state['items_count'] = count($widget_state['items']);
