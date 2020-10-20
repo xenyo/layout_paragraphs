@@ -26,7 +26,8 @@
     $layoutParagraphsField
       .find(".layout-paragraphs-add-more-menu")
       .addClass("hidden")
-      .removeClass("fade-in");
+      .removeClass("fade-in")
+      .appendTo($layoutParagraphsField);
   }
   /**
    * Returns true if the layout-paragraphsField is loading (i.e. waiting for an Ajax response.)
