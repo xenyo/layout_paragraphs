@@ -3,6 +3,7 @@ fieldset.layout-paragraphs-field {
   border: none;
   margin: 30px 0;
   padding: 60px 30px;
+  position: relative;
 }
 fieldset.layout-paragraphs-field > .fieldset-wrapper,
 fieldset.layout-paragraphs-field > .fieldset__wrapper  {
