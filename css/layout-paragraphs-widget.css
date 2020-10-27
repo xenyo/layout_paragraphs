@@ -178,6 +178,9 @@ fieldset.layout-paragraphs-field > legend {
   opacity: 1;
   cursor: pointer;
 }
+.layout-handle:hover {
+  cursor: grab;
+}
 .layout-handle:focus,
 .layout-down:focus,
 .layout-up:focus {
@@ -320,7 +323,7 @@ fieldset.layout-paragraphs-field > legend {
   top: 0;
 }
 .layout-paragraphs-item > .layout-paragraphs-add-content__toggle:last-of-type {
-  bottom: -13px;
+  bottom: -17px;
 }
 .reversed .layout-paragraphs-add-content__toggle {
   background-image: url(../img/icon-add--reversed.png);
@@ -336,11 +339,12 @@ fieldset.layout-paragraphs-field > legend {
 .layout-paragraphs-item:focus-within > button.layout-paragraphs-add-content__toggle {
   opacity: .75;
 }
-button.layout-paragraphs-add-content__toggle:hover,
-button.layout-paragraphs-add-content__toggle.active,
-button.layout-paragraphs-add-content__toggle.active,
-button.layout-paragraphs-add-content__toggle:focus {
+.layout-paragraphs-item button.layout-paragraphs-add-content__toggle:hover,
+.layout-paragraphs-item button.layout-paragraphs-add-content__toggle.active,
+.layout-paragraphs-item button.layout-paragraphs-add-content__toggle.active,
+.layout-paragraphs-item button.layout-paragraphs-add-content__toggle:focus {
   opacity: 1;
+  cursor: pointer;
 }
 
 .layout-paragraphs-add-content__group {
