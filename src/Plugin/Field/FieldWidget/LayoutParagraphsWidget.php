@@ -1283,7 +1283,12 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             'callback' => [$this, 'removeItemConfirmAjax'],
             'progress' => 'none',
           ],
-          '#limit_validation_errors' => [],
+          '#limit_validation_errors' => [
+            array_merge($parents, [
+              $this->fieldName,
+              'remove_form',
+            ]),
+          ],
           '#element_parents' => $parents,
         ],
         'cancel' => [
