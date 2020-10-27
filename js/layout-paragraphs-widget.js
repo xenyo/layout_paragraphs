@@ -153,9 +153,10 @@
     const btnWidth = $btn.outerWidth();
     const btnHeight = $btn.height();
     const menuHeight = $menu.outerHeight();
-    // Account for rotation with slight padding.
-    const left =
-      btnWidth / 4 + Math.floor(btnOffset.left + btnWidth / 2 - menuWidth / 2);
+    // Accounts for rotation by calculating distance between points on 45 degree rotated square.
+    const left = Math.floor(
+      btnOffset.left + Math.sqrt(btnWidth ** 2 * 2) / 2 - menuWidth / 2
+    );
 
     // Default to positioning the menu beneath the button.
     let orientation = "beneath";
