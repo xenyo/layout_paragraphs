@@ -393,8 +393,8 @@
       );
     });
     // Add toggle button if there are no paragraph items.
-    if ($(".layout-paragraphs-item", $container).length === 0) {
-      $container.append(
+    if ($(".active-items .layout-paragraphs-item", $container).length === 0) {
+      $(".active-items", $container).append(
         toggleButton(
           0,
           "",
