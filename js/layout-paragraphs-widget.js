@@ -734,6 +734,10 @@
         removeToggleButtons($(el).closest(".layout-paragraphs-field"));
       });
       drake.on("dragend", el => {
+        $(el)
+          .closest(".layout-paragraphs-field")
+          .data("focusedElement", null);
+        $(el).focus();
         toggleButtons(
           $(el).closest(".layout-paragraphs-field"),
           widgetSettings
