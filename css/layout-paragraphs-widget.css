@@ -696,3 +696,11 @@ fieldset.layout-paragraphs-field > legend {
   font-weight: normal !important;
   color: darkgray;
 }
+
+/**
+ * Ensures that autocomplete elements
+ * appear above, not below, the ERL dialog.
+ */
+.ui-autocomplete.ui-front {
+  z-index: 1300;
+}
