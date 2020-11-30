@@ -699,7 +699,7 @@ fieldset.layout-paragraphs-field > legend {
 
 /**
  * Ensures that autocomplete elements
- * appear above, not below, the ERL dialog.
+ * appear above, not below, the Layout Paragraphs dialog.
  */
 .ui-autocomplete.ui-front {
   z-index: 1300;
