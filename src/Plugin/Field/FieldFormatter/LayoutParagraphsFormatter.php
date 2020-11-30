@@ -10,6 +10,8 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\entity_reference_revisions\Plugin\Field\FieldFormatter\EntityReferenceRevisionsEntityFormatter;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -141,7 +143,9 @@ class LayoutParagraphsFormatter extends EntityReferenceRevisionsEntityFormatter 
   public function buildEntityView(ParagraphInterface $entity) {
     $view_mode = $this->getSetting('view_mode');
     $view_builder = \Drupal::entityTypeManager()->getViewBuilder($entity->getEntityTypeId());
-    return $view_builder->view($entity, $view_mode, $entity->language()->getId());
+    $render_array = $view_builder->view($entity, $view_mode, $entity->language()->getId());
+    $render_array['#access'] = $this->checkAccess($entity);
+    return $render_array;
   }
 
   /**
@@ -192,6 +196,46 @@ class LayoutParagraphsFormatter extends EntityReferenceRevisionsEntityFormatter 
     }
     $build['regions'] = ['#weight' => 1000] + $layout_instance->build($build['regions']);
     return $build;
+  }
+
+  /**
+   * Returns the referenced entities for display.
+   *
+   * This implementation removes access checks so we can correctly
+   * prevent rendering the children of unpublished layout sections
+   * further down the line.
+   *
+   * See \Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceFormatterBase::getEntitiesToView().
+   *
+   * @param \Drupal\Core\Field\EntityReferenceFieldItemListInterface $items
+   *   The item list.
+   * @param string $langcode
+   *   The language code of the referenced entities to display.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   *   The array of referenced entities to display, keyed by delta.
+   *
+   * @see ::prepareView()
+   */
+  protected function getEntitiesToView(EntityReferenceFieldItemListInterface $items, $langcode) {
+    $entities = [];
+
+    foreach ($items as $delta => $item) {
+      // Ignore items where no entity could be loaded in prepareView().
+      if (!empty($item->_loaded)) {
+        $entity = $item->entity;
+
+        // Set the entity in the correct language for display.
+        if ($entity instanceof TranslatableInterface) {
+          $entity = \Drupal::service('entity.repository')->getTranslationFromContext($entity, $langcode);
+        }
+        // Add the referring item, in case the formatter needs it.
+        $entity->_referringItem = $items[$delta];
+        $entities[$delta] = $entity;
+      }
+    }
+
+    return $entities;
   }
 
 }
