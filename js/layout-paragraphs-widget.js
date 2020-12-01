@@ -170,6 +170,10 @@
     if (top + menuHeight > viewportBottom) {
       orientation = "above";
     }
+    // If the menu would run above the top of the page, put beneath. Accounting for the height of the admin toolbar(79px).
+    if (top - 79 < menuHeight) {
+      orientation = "beneath";
+    }
     $menu
       .removeClass("above")
       .removeClass("beneath")
