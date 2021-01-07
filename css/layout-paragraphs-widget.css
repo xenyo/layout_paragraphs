@@ -55,9 +55,11 @@ fieldset.layout-paragraphs-field > legend {
   position: absolute;
   opacity: 0;
 }
-.layout-paragraphs-field input:checked + label {
+
+.layout-paragraphs-field .layout-select__item input:checked + label {
   border: 1px solid blue;
 }
+
 .layout-paragraphs-field input:focus + label {
   outline: auto 5px Highlight;
   outline: auto 5px -webkit-focus-ring-color;
