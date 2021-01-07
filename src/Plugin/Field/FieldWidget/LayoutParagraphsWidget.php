@@ -382,7 +382,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'label' => $show_paragraphs_labels ? [
         '#type' => 'label',
         '#title' => $entity->getParagraphType()->label,
-        '#attributes' => ['class' => ['paragraph-type-label']],
+        '#attributes' => ['class' => ['paragraph-type--label']],
       ] : [],
     ];
 
@@ -398,7 +398,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           '#type' => 'label',
           '#title' => $label,
           '#title_display' => $label,
-          '#attributes' => ['class' => ['paragraph-layout-label']],
+          '#attributes' => ['class' => ['paragraph-layout--label']],
         ];
       }
 

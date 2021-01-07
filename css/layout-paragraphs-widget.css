@@ -675,7 +675,7 @@ fieldset.layout-paragraphs-field > legend {
 
 /* -- Paragraphs and Layout Labels. -- */
 
-.paragraph-type-label {
+.paragraph-type--label {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -688,7 +688,7 @@ fieldset.layout-paragraphs-field > legend {
   color: darkgray;
 }
 
-.paragraph-layout-label {
+.paragraph-layout--label {
   position: absolute;
   top: 0;
   left: 50%;
