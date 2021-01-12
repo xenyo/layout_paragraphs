@@ -286,7 +286,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     if (isset($entity)) {
       $preview_view_mode = $this->getSetting('preview_view_mode');
       $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
-      $preview = $view_builder->view($entity, $preview_view_mode);
+      $preview = $view_builder->view($entity, $preview_view_mode, $entity->language()->getId());
       $preview['#cache']['max-age'] = 0;
       $preview['#attributes']['class'][] = Html::cleanCssIdentifier($entity->uuid() . '-preview');
     }
