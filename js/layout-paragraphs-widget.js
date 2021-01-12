@@ -337,7 +337,7 @@
   function toggleButtons($container) {
     const widgetSettings = $container.data("widgetSettings");
     $(".layout-paragraphs-add-content__toggle", $container).remove();
-    if (widgetSettings.isTranslating) {
+    if (!widgetSettings || widgetSettings.isTranslating) {
       return;
     }
     // Add toggle buttons to empty regions.
