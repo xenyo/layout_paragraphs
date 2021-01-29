@@ -194,6 +194,7 @@
     const $widget = $btn.parents(".layout-paragraphs-field");
     const $targetInput = $widget.find(".dom-id");
     const $insertMethodInput = $widget.find(".insert-method");
+    const parentUuid = $btn.attr("data-parent-uuid");
 
     const $menu = $widget.find(".layout-paragraphs-add-more-menu");
     const region = $btn.attr("data-region");
@@ -214,6 +215,24 @@
       $menu
         .find(".layout-paragraphs-add-more-menu__item:not(.layout-paragraph)")
         .removeClass("hidden");
+    }
+    // Hide paragraph types that aren't allowed to be placed in this layout.
+    if (widgetSettings.restrictions) {
+      const $parentRegion = $menu.parents().find("." + parentUuid + "-layout-region--" + region);
+      if ($parentRegion.length) {
+        const allowedTypes = JSON.parse($parentRegion.attr("data-allowed-types"));
+        const $menuLinks = $menu.find(".layout-paragraphs-add-more-menu__group--content a");
+        if (allowedTypes.length > 0) {
+          for (i = 0; i < $menuLinks.length; i++) {
+            let $menuLink = $($menuLinks[i]);
+            let dataType = $menuLink.attr("data-type");
+            let isAllowed = allowedTypes.indexOf(dataType);
+            if (allowedTypes.indexOf(dataType) < 0) {
+              $menuLink.parent().addClass('hidden');
+            }
+          }
+        }
+      }
     }
     // Hide search if fewer than 7 visible items.
     if (
@@ -633,7 +652,7 @@
     return false;
   }
   /**
-   * Moves an layout-paragraphs item down.
+   * Moves a layout-paragraphs item down.
    * @param {event} e DOM Event (i.e. click).
    * @return {bool} Returns false if state is still loading.
    */

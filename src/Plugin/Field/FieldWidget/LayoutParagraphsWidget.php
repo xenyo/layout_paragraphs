@@ -61,6 +61,16 @@ use Drupal\Component\Render\FormattableMarkup;
 class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPluginInterface {
 
   /**
+   * All configured paragraphs are allowed.
+   */
+  const LAYOUT_PARAGRAPHS_MODE_INCLUDE = 'include';
+
+  /**
+   * All configured paragraphs are disallowed.
+   */
+  const LAYOUT_PARAGRAPHS_MODE_EXCLUDE = 'exclude';
+
+  /**
    * The Renderer service property.
    *
    * @var \Drupal\Core\Render\RendererInterface
@@ -159,6 +169,27 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $isTranslating;
 
   /**
+   * The paragraph entity type bundle info object.
+   *
+   * @var \Drupal\paragraphs\Entity\ParagraphsType
+   */
+  protected $paragraphInfo;
+
+  /**
+   * The current paragraph restrictions value.
+   *
+   * @var mixed
+   */
+  protected $restrictions;
+
+  /**
+   * The field settings.
+   *
+   * @var mixed
+   */
+  protected $fieldSettings;
+
+  /**
    * Constructs a WidgetBase object.
    *
    * @param string $plugin_id
@@ -217,6 +248,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->config = $config_factory;
+
+    $this->paragraphInfo = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
+    $this->restrictions = $this->getSetting('restrictions');
+    $this->fieldSettings = $this->fieldDefinition->getSetting('handler_settings');
   }
 
   /**
@@ -402,6 +437,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         ];
       }
 
+      $restrictions = $this->getSetting('restrictions');
+      $restrictions_mode = !empty($restrictions['mode']) ? $restrictions['mode'] : self::LAYOUT_PARAGRAPHS_MODE_INCLUDE;
+      $paragraph_options = $this->getTargetBundlesWithoutLayoutBundles();
       foreach ($layout_instance->getPluginDefinition()->getRegionNames() as $region_name) {
         $element['preview']['regions'][$region_name] = [
           '#attributes' => [
@@ -415,6 +453,22 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             ],
           ],
         ];
+        if (!empty($restrictions['custom_layout'][$layout])) {
+          $region_restrictions = array_filter($restrictions['custom_layout'][$layout][$region_name]);
+          if (!empty($region_restrictions)) {
+            if ($restrictions_mode == self::LAYOUT_PARAGRAPHS_MODE_INCLUDE) {
+              $allowed_types = array_keys($region_restrictions);
+            }
+            else {
+              $allowed_types = array_diff_key($paragraph_options, $region_restrictions);
+              $allowed_types = array_values($allowed_types);
+            }
+          }
+          else {
+            $allowed_types = array_values($paragraph_options);
+          }
+          $element['preview']['regions'][$region_name]['#attributes']['data-allowed-types'] = json_encode($allowed_types);
+        }
       }
     }
 
@@ -771,6 +825,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'isTranslating' => $elements["add_more"]["actions"]["#isTranslating"] ?? NULL,
       'cardinality' => $this->fieldDefinition->getFieldStorageDefinition()->getCardinality(),
       'itemsCount' => $this->activeItemsCount($widget_state['items']),
+      'restrictions' => $this->getSetting('restrictions'),
     ];
     // Add layout_paragraphs_widget library.
     $elements['#attached']['library'][] = 'layout_paragraphs/layout_paragraphs_widget';
@@ -2230,6 +2285,64 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#title' => $this->t('Require paragraphs to be added inside a layout'),
       '#default_value' => $this->getSetting('require_layouts'),
     ];
+
+    // Add a redio element to decide wether all configured paragraph types are
+    // in- or excluded.
+    $element['restrictions'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Configure restrictions'),
+      'mode' => [
+        '#type' => 'radios',
+        '#title' => $this->t('Which paragraph types should be allowed?'),
+        '#options' => [
+          self::LAYOUT_PARAGRAPHS_MODE_INCLUDE => $this->t('Include the selected below'),
+          self::LAYOUT_PARAGRAPHS_MODE_EXCLUDE => $this->t('Exclude the selected below'),
+        ],
+        '#default_value' => !empty($this->getSetting('restrictions')['mode']) ? $this->getSetting('restrictions')['mode'] : self::LAYOUT_PARAGRAPHS_MODE_INCLUDE,
+      ],
+    ];
+    // Get all possible paragraphs machine names and labels.
+    $options = $this->getParagraphLabelsFromKeys($this->getTargetBundlesWithoutLayoutBundles());
+
+    // Get all possible layout bundles.
+    $layout_bundles = $this->getLayoutBundles();
+    // Get all layout definitions.
+    $definitions = $this->layoutPluginManager->getDefinitions();
+    // Initiate the paragraphs storage service.
+    $paragraphs_type_storage = $this->entityTypeManager->getStorage('paragraphs_type');
+    foreach ($layout_bundles as $layout_bundle) {
+      // Get the allowed layouts for this layout paragraph.
+      $allowedLayouts = $this->getAllowedLayouts($layout_bundle);
+      /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraph_type */
+      $paragraph_type = $paragraphs_type_storage->load($layout_bundle);
+      $element['restrictions'][$layout_bundle] = [
+        '#type' => 'fieldset',
+        '#title' => $paragraph_type->label(),
+      ];
+      // Loop over all allowed layouts of this layout paragraph type.
+      foreach ($allowedLayouts as $allowed_layout_type => $allowed_layout_name) {
+        $element['restrictions'][$layout_bundle][$allowed_layout_type] = [
+          '#type' => 'fieldset',
+          '#title' => $allowed_layout_name,
+        ];
+        // If we don't have a definition for this layout type: Skip and
+        // continue.
+        if (empty($definitions[$allowed_layout_type])) {
+          continue;
+        }
+        // Loop over all regions of this layout and add a checkboxes element
+        // with all possible paragraph types as options.
+        foreach ($definitions[$allowed_layout_type]->getRegions() as $region_key => $region) {
+          $element['restrictions'][$layout_bundle][$allowed_layout_type][$region_key] = [
+            '#type' => 'checkboxes',
+            '#title' => $region['label'],
+            '#options' => $options,
+            '#default_value' => isset($this->restrictions[$layout_bundle][$allowed_layout_type][$region_key]) ? $this->restrictions[$layout_bundle][$allowed_layout_type][$region_key] : [],
+          ];
+        }
+      }
+    }
+
     return $element;
   }
 
@@ -2288,6 +2401,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'preview_view_mode' => 'default',
       'nesting_depth' => 0,
       'require_layouts' => 0,
+      'restrictions' => [
+        'mode' => [],
+      ],
     ];
 
     return $defaults;
@@ -2453,6 +2569,112 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $element['#title'] .= $suffix;
     }
     return $element;
+  }
+
+  /**
+   * Return all targets bundles without the layout bundles.
+   *
+   * @return array|mixed
+   *   Returns the target bundles.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function getTargetBundlesWithoutLayoutBundles() {
+    $targetBundles = $this->fieldSettings['target_bundles'];
+    $paragraphs_type_storage = $this->entityTypeManager->getStorage('paragraphs_type');
+
+    foreach ($targetBundles as $key => $targetBundle) {
+      /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
+      $paragraphs_type = $paragraphs_type_storage->load($targetBundle);
+      $layout_paragraphs_behavior = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
+      $layout_paragraphs_behavior_config = $layout_paragraphs_behavior->getConfiguration();
+
+      if (!empty($layout_paragraphs_behavior_config['enabled'])) {
+        unset($targetBundles[$key]);
+      }
+    }
+    return is_null($targetBundles) ? [] : $targetBundles;
+  }
+
+  /**
+   * Gets the paragraph label for an array of paragraph keys and creates a
+   * key=>label array.
+   *
+   * @param array $keys
+   *
+   * @return array
+   */
+  protected function getParagraphLabelsFromKeys(array $keys) {
+    $withLabel = [];
+    foreach ($keys as $key) {
+      if (isset($this->paragraphInfo[$key]['label'])) {
+        $withLabel[$key] = $this->paragraphInfo[$key]['label'];
+      }
+    }
+    return $withLabel;
+  }
+
+  /**
+   * Get all layout bundles from the list of target bundles configured.
+   *
+   * @return array|mixed
+   *   The layout bundles.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function getLayoutBundles() {
+    // Get the target bundles configured for the field.
+    $targetBundles = $this->fieldSettings['target_bundles'];
+    $paragraphs_type_storage = $this->entityTypeManager->getStorage('paragraphs_type');
+
+    // Loop over all the target bundles.
+    foreach ($targetBundles as $key => $targetBundle) {
+      // Load the paragraph type.
+      /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
+      $paragraphs_type = $paragraphs_type_storage->load($targetBundle);
+      // Check if we have a layout paragraphs behavior plugin set for the
+      // paragraph type.
+      $layout_paragraphs_behavior = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
+      $layout_paragraphs_behavior_config = $layout_paragraphs_behavior->getConfiguration();
+      // If the behavior is not active, remove the paragraph bundle from the
+      // possible layout bundles array.
+      if (empty($layout_paragraphs_behavior_config['enabled'])) {
+        unset($targetBundles[$key]);
+      }
+    }
+    return is_null($targetBundles) ? [] : $targetBundles;
+  }
+
+  /**
+   * Returns the allowed layouts configured for a layout paragraph.
+   *
+   * @param string $bundle
+   *   The bundle of the paragraph type.
+   *
+   * @return array
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function getAllowedLayouts($bundle) {
+    $allowedLayouts = [];
+    $paragraphs_type_storage = $this->entityTypeManager->getStorage('paragraphs_type');
+    $paragraphs_type = $paragraphs_type_storage->load($bundle);
+    if (empty($paragraphs_type)) {
+      return [];
+    }
+    $layout_paragraphs_behavior = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
+    if (empty($layout_paragraphs_behavior)) {
+      return [];
+    }
+    $layout_paragraphs_behavior_config = $layout_paragraphs_behavior->getConfiguration();
+    if (!empty($layout_paragraphs_behavior_config['available_layouts'])) {
+      foreach ($layout_paragraphs_behavior_config['available_layouts'] as $layoutKey => $layoutName) {
+        $allowedLayouts[$layoutKey] = $layoutName;
+      }
+    }
+    return $allowedLayouts;
   }
 
 }
