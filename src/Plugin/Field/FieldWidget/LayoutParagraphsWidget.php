@@ -4,6 +4,7 @@ namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -152,6 +153,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $config;
 
   /**
+   * Module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Indicates whether the current widget instance is in translation.
    *
    * @var bool
@@ -189,6 +197,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The entity display repository.
    * @param \drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
    */
   public function __construct(
     $plugin_id,
@@ -204,7 +214,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     LanguageManager $language_manager,
     AccountProxyInterface $current_user,
     EntityDisplayRepositoryInterface $entity_display_repository,
-    ConfigFactoryInterface $config_factory) {
+    ConfigFactoryInterface $config_factory,
+    ModuleHandlerInterface $module_handler) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
     $this->renderer = $renderer;
@@ -217,6 +228,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->currentUser = $current_user;
     $this->entityDisplayRepository = $entity_display_repository;
     $this->config = $config_factory;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -237,7 +249,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $container->get('language_manager'),
       $container->get('current_user'),
       $container->get('entity_display.repository'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('module_handler')
     );
   }
 
@@ -968,7 +981,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
 
     // Support for Field Group module based on Paragraphs module.
     // @todo Remove as part of https://www.drupal.org/node/2640056
-    if (\Drupal::moduleHandler()->moduleExists('field_group')) {
+    if ($this->moduleHandler->moduleExists('field_group')) {
       $context = [
         'entity_type' => $entity->getEntityTypeId(),
         'bundle' => $entity->bundle(),
@@ -1239,6 +1252,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       ElementSubmit::attach($element['entity_form'], $form_state);
       WidgetSubmit::attach($element['entity_form'], $form_state);
     }
+
+    // Allow others modules to adjust the Layout Paragraph Element Dialog Form.
+    $this->moduleHandler->alter('layout_paragraph_element_form', $element['entity_form'], $form_state, $form);
+
     return $element;
   }
 
