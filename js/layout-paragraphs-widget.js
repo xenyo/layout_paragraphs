@@ -968,16 +968,12 @@
 
   // Enables interactions with anything outside of the current CKeditor dialog
   // @see Table Element issue https://www.drupal.org/project/layout_paragraphs/issues/3196477
-  Drupal.behaviors.allowChildDialogInteraction = {
-    attach: function attach() {
-      let orig_allowInteraction = $.ui.dialog.prototype._allowInteraction;
-      $.ui.dialog.prototype._allowInteraction = function(event) {
-        if ($(event.target).closest('.cke_dialog').length) {
-          return true;
-        }
-        return orig_allowInteraction.apply(this, arguments);
-      };
+  let orig_allowInteraction = $.ui.dialog.prototype._allowInteraction;
+  $.ui.dialog.prototype._allowInteraction = function(event) {
+    if ($(event.target).closest('.cke_dialog').length) {
+      return true;
     }
+    return orig_allowInteraction.apply(this, arguments);
   };
 
 })(jQuery, Drupal);
