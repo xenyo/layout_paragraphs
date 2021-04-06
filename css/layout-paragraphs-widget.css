@@ -447,7 +447,8 @@ fieldset.layout-paragraphs-field > legend {
   z-index: 1005;
 }
 .layout-paragraphs-loading div.spinner {
-  text-indent: -9999px;
+  text-indent: 0;
+  font-size: 0;
   opacity: 1;
   width: 49px;
   height: 49px;
