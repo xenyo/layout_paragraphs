@@ -8,3 +8,9 @@ layout_paragraphs.section_settings: # The second plugin ID
   title: 'Layout Sections'
   base_route: layout_paragraphs.label_settings
   weight: 100
+
+layout_paragraphs.update_storage:
+  route_name: layout_paragraphs.update_storage
+  title: 'Update Storage'
+  base_route: layout_paragraphs.label_settings
+  weight: 200

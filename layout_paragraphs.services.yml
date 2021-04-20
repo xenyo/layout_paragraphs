@@ -1,0 +1,12 @@
+services:
+  layout_paragraphs:
+    class: Drupal\layout_paragraphs\LayoutParagraphsService
+    arguments: [ "@plugin.manager.core.layout", "@entity_type.manager", "@entity.repository", "@language_manager"]
+  layout_paragraphs.tempstore_repository:
+    class: Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository
+    arguments: ['@tempstore.private']
+  layout_paragraphs.param_converter:
+    class: Drupal\layout_paragraphs\Routing\LayoutParagraphsParamConverter
+    arguments: ['@layout_paragraphs.tempstore_repository']
+    tags:
+      - { name: paramconverter, priority: 10 }

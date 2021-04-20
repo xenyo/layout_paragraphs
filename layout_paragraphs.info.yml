@@ -4,7 +4,7 @@ description: 'Field widget and formatter for using layouts with paragraph fields
 core: 8.x
 core_version_requirement: ^8 || ^9
 package: 'Paragraphs'
-configure: layout_paragraphs.label_settings
+configure: layout_paragraphs.settings
 dependencies:
   - drupal:paragraphs
   - drupal:layout_discovery

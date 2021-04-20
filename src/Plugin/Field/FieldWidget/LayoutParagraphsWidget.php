@@ -4,7 +4,6 @@ namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -46,6 +45,9 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\inline_entity_form\ElementSubmit;
 use Drupal\inline_entity_form\WidgetSubmit;
 use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Entity Reference with Layout field widget.
@@ -81,6 +83,13 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    * @var \Drupal\Core\Layout\LayoutPluginManager
    */
   protected $layoutPluginManager;
+
+  /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
 
   /**
    * The plugin form manager.
@@ -153,13 +162,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $config;
 
   /**
-   * Module handler service.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected $moduleHandler;
-
-  /**
    * Indicates whether the current widget instance is in translation.
    *
    * @var bool
@@ -195,10 +197,12 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    *   The current user.
    * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entity_display_repository
    *   The entity display repository.
-   * @param \drupal\Core\Config\ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *   The module handler.
+   *   The module handler service.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory service.
    */
   public function __construct(
     $plugin_id,
@@ -215,7 +219,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     AccountProxyInterface $current_user,
     EntityDisplayRepositoryInterface $entity_display_repository,
     ConfigFactoryInterface $config_factory,
-    ModuleHandlerInterface $module_handler) {
+    ModuleHandlerInterface $module_handler,
+    LoggerChannelFactoryInterface $logger_factory) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
     $this->renderer = $renderer;
@@ -229,6 +234,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->entityDisplayRepository = $entity_display_repository;
     $this->config = $config_factory;
     $this->moduleHandler = $module_handler;
+    $this->loggerFactory = $logger_factory;
   }
 
   /**
@@ -250,7 +256,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $container->get('current_user'),
       $container->get('entity_display.repository'),
       $container->get('config.factory'),
-      $container->get('module_handler')
+      $container->get('module_handler'),
+      $container->get('logger.factory')
     );
   }
 
@@ -627,6 +634,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $definition = $this->entityTypeManager->getDefinition($target_type);
       $storage = $this->entityTypeManager->getStorage($definition->getBundleEntityType());
       foreach ($bundle_ids as $bundle_id) {
+        /** @var \Drupal\paragraphs\ParagraphsTypeInterface $type */
         $type = $storage->load($bundle_id);
         $has_layout = count($this->getAvailableLayoutsByType($type)) > 0;
 
@@ -734,7 +742,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $elements['is_translating_warning'] = [
         '#type' => "html_tag",
         '#tag' => 'div',
-        '#value' => t("This is Translation Context (editing a version not in the original language). <b>No new Layout Sections and Paragraphs can be added</b>."),
+        '#value' => $this->t("This is Translation Context (editing a version not in the original language). <b>No new Layout Sections and Paragraphs can be added</b>."),
         '#weight' => -1100,
         '#attributes' => [
           'class' => ['is_translating_warning'],
@@ -1015,7 +1023,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#type' => 'container',
         '#weight' => -1000,
         'layout' => [
-          '#type' => 'radios',
+          '#type' => 'layout_select',
           '#title' => $this->t('Select a layout:'),
           '#options' => $available_layouts,
           '#default_value' => $layout,
@@ -1023,7 +1031,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
             'class' => ['layout-paragraphs-layout-select'],
           ],
           '#required' => TRUE,
-          '#after_build' => [[$this, 'buildLayoutRadios']],
         ],
         'update' => [
           '#type' => 'button',
@@ -1127,7 +1134,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           }
         }
         catch (\Exception $e) {
-          watchdog_exception('Layout Paragraphs, updating_layout', $e);
+          $this->loggerFactory->get('layout_paragraphs')->error('Layout Paragraphs, updating_layout', $e);
         }
       }
     }
@@ -1148,6 +1155,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#weight' => -99,
       ];
       foreach ($behavior_plugins as $plugin_id => $plugin) {
+        if ($plugin_id == 'layout_paragraphs') {
+          continue;
+        }
         $element['entity_form']['behavior_plugins'][$plugin_id] = ['#type' => 'container'];
         $subform_state = SubformState::createForSubform($element['entity_form']['behavior_plugins'][$plugin_id], $form, $form_state);
         $plugin_form = $plugin->buildBehaviorForm($entity, $element['entity_form']['behavior_plugins'][$plugin_id], $subform_state);
@@ -1398,29 +1408,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     return $default_value;
   }
 
-  protected function setUserInput(array $form, FormStateInterface &$form_state, int $delta, $element_name, $value) {
-    $input = $form_state->getUserInput();
-    $parents = $form['#parents'];
-
-    if (is_array($element_name)) {
-      $element_path = array_merge($parents, [
-        $this->fieldName,
-        $delta,
-      ],
-        $element_name);
-    }
-    else {
-      $element_path = array_merge($parents, [
-        $this->fieldName,
-        $delta,
-        $element_name,
-      ]);
-    }
-
-    NestedArray::setValue($input, $element_path, $value);
-    $form_state->setUserInput($input);
-  }
-
   /**
    * Validate paragraph behavior form plugins.
    *
@@ -1515,7 +1502,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $form_state->setRebuild();
     }
     catch (\Exception $e) {
-      watchdog_exception('Layout Paragraphs, new Item Submit', $e);
+      $this->loggerFactory->get('layout_paragraphs')->error('Layout Paragraphs, new Item Submit', $e);
     }
   }
 
@@ -1682,7 +1669,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
           $this->setLayoutSettings($paragraph, $layout_settings);
         }
         catch (\Exception $e) {
-          watchdog_exception('Layout Paragraphs, Layout Instance generation', $e);
+          $this->loggerFactory->get('layout_paragraphs')->error('Layout Paragraphs, Layout Instance generation', $e);
         }
       }
 
@@ -2273,7 +2260,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       }
     }
     catch (\Exception $e) {
-      watchdog_exception('paragraphs layout widget, behaviour plugin', $e);
+      $this->loggerFactory->get('layout_paragraphs')->error('paragraphs layout widget, behaviour plugin', $e);
     }
     if (!$has_layout) {
       $field_name = $this->fieldDefinition->getLabel();
@@ -2351,7 +2338,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         return $this->pluginFormFactory->createInstance($layout, 'configure');
       }
       catch (\Exception $e) {
-        watchdog_exception('Erl, Layout Configuration', $e);
+        $this->loggerFactory->get('layout_paragraphs')->error('Erl, Layout Configuration', $e);
       }
     }
 
@@ -2431,7 +2418,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     // nested paragraphs or similar nested field types.
     // Elements which can have a #title attribute according to FAPI Reference.
     if (!isset($suffix)) {
-      $suffix = ' <span class="translation-entity-all-languages">(' . t('all languages') . ')</span>';
+      $suffix = ' <span class="translation-entity-all-languages">(' . new TranslatableMarkup('all languages') . ')</span>';
       $fapi_title_elements = array_flip([
         'checkbox',
         'checkboxes',
