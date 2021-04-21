@@ -80,8 +80,6 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
         'componentUuid' => $uuid,
       ]
     ));
-
-    $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
     $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
 
     return $response;

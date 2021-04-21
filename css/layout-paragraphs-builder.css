@@ -95,6 +95,7 @@
 }
 .lpb-region {
   min-height: 40px;
+  cursor: default;
 }
 .is-dragging-item .lpb-region {
   outline: 1px dotted blue;
@@ -218,6 +219,7 @@
   -webkit-appearance: none;
   padding: 5px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, .15);
+  cursor: pointer;
 }
 .lpb-toggle::before{
   content: " ";

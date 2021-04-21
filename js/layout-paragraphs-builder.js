@@ -214,6 +214,7 @@
       const region = this.$activeToggle.attr('data-region');
       const uuid = this.$activeToggle.attr('data-container-uuid');
       const type = $(e.currentTarget).attr('data-type');
+      this.removeControls();
       switch (placement) {
         case 'insert':
           this.insertComponentIntoRegion(uuid, region, type);
@@ -475,7 +476,6 @@
         this.openComponentMenu($toggleButton);
       }
     }
-
     /**
      * Opens the component menu.
      * @param {jQuery} $toggleButton The toggle button that was pressed.
@@ -502,7 +502,6 @@
       this.positionComponentMenu();
       this.stopInterval();
     }
-
     /**
      * Position the component menu correctly.
      * @param {bool} keepOrientation If true, the menu will stay above/below no matter what.
@@ -545,11 +544,12 @@
               parseInt(this.$componentMenu.css('padding-bottom'), 10)),
         );
       }
-
       this.$componentMenu.removeClass('hidden').addClass('fade-in');
       this.$componentMenu.offset({ top, left });
     }
-
+    /**
+     * Close the open component menu.
+     */
     closeComponentMenu() {
       this.$componentMenu.remove();
       this.$element.find('.lpb-toggle.active').removeClass('active');
@@ -558,7 +558,6 @@
       this.$activeToggle = false;
       this.startInterval();
     }
-
     /**
      * Loads an edit form.
      */
@@ -577,7 +576,6 @@
           this.removeToggle();
         });
     }
-
     /**
      * Delete a component.
      * @param {jQuery} $item The item to delete.
@@ -589,26 +587,26 @@
       });
       this.edited();
     }
-
     /**
-     * Restores the last deleted item.
+     * Inserts a new component next to an existing sibling component.
+     * @param {string} siblingUuid The uuid of the existing component.
+     * @param {string} type The component type for the component being inserted.
+     * @param {string} placement Where the new component is to be added in comparison to sibling (before or after).
      */
-    restore() {
-      const $item = this.trashBin.pop();
-      const uuid = $item.attr('data-uuid');
-      $(`[data-uuid="${uuid}"]`, this.$elment).replaceWith($item);
-      $item.fadeIn(100);
-    }
-
     insertSiblingComponent(siblingUuid, type, placement) {
       this.request(`insert-sibling/${siblingUuid}/${placement}/${type}`);
     }
-
+    /**
+     * Inserts a new component and loads the edit form dialog.
+     * @param {string} type The component type.
+     */
     insertComponent(type) {
       this.request(`insert-component/${type}`);
     }
-
-    reorderComponents() {
+    /**
+     * Saves the order and nested structure of components for the layout.
+     */
+    saveComponentOrder() {
       this.request('reorder', {
         layoutParagraphsState: JSON.stringify(this.getState()),
       });
@@ -665,7 +663,7 @@
             $sibling[method]($moveItem);
             instance.$activeItem = $moveItem;
             instance.startInterval();
-            instance.reorderComponents();
+            instance.saveComponentOrder();
           },
         },
       );
@@ -726,7 +724,7 @@
           },
         });
         this.drake.on('drop', () => {
-          instance.reorderComponents();
+          instance.saveComponentOrder();
           instance.edited();
         });
         this.drake.on('drag', (el) => {
@@ -818,16 +816,20 @@
         });
     }
   }
-
+  /**
+   * Respond to a component being updated or inserted by an AJAX request.
+   * @param {string} layoutId The layout id.
+   * @param {string} componentUuid The uuid of the updated component.
+   */
   function componentUpdate(layoutId, componentUuid) {
-    console.log(layoutId);
     const builder = $(`[data-lp-builder-id="${layoutId}"`).data('lpbInstance');
     builder.removeControls();
     const $insertedComponent = $(`[data-uuid="${componentUuid}"]`);
-    builder.$activeItem = $insertedComponent;
     const dragContainers = $insertedComponent.find('.lpb-region').get();
     builder.addDragContainers(dragContainers);
     builder.edited();
+    builder.saveComponentOrder();
+    builder.$activeItem = $insertedComponent;
   }
   /**
    * Registers a callback to be called when a specific hook is invoked.
