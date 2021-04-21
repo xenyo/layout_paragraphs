@@ -273,13 +273,11 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
    *   The rendered paragraph.
    */
   protected function renderParagraph(string $uuid) {
-    $layout_paragraphs_builder_element = [
+    return [
       '#type' => 'layout_paragraphs_builder',
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#uuid' => $uuid,
     ];
-    $rendered_item = $this->renderer->render($layout_paragraphs_builder_element);
-    return $rendered_item;
   }
 
 }

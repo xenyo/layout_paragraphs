@@ -8,7 +8,7 @@ use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Form\SubformState;
-use Drupal\layout_paragraphs_editor\Ajax\LayoutParagraphsEditorInvokeHookCommand;
+use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
  * Class LayoutParagraphsComponentEditForm.
@@ -27,7 +27,7 @@ class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBas
 
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand("[data-uuid={$uuid}]", $rendered_item));
-    $response->addCommand(new LayoutParagraphsEditorInvokeHookCommand(
+    $response->addCommand(new LayoutParagraphsBuilderInvokeHookCommand(
       'updateComponent',
       [
         'layoutId' => $this->layoutParagraphsLayout->id(),

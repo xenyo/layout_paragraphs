@@ -143,7 +143,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
 
     $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
     $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('Create @type', ['@type' => $paragraph_type->label()]);
+    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
 
     /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
     $paragraph = $this->entityTypeManager()->getStorage('paragraph')
@@ -195,7 +195,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
 
     $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
     $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('Edit @type', ['@type' => $paragraph_type->label()]);
+    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
 
     /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
     $paragraph = $this->entityTypeManager()->getStorage('paragraph')
@@ -232,7 +232,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
 
     $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
     $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('Edit @type', ['@type' => $paragraph_type->label()]);
+    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
 
     /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
     $paragraph = $this->entityTypeManager()->getStorage('paragraph')
