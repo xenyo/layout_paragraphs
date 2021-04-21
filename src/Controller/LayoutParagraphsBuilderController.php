@@ -103,6 +103,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       $layout_paragraphs_layout->reorderComponents($ordered_components);
       $this->tempstore->set($layout_paragraphs_layout);
     }
+    return ['#markup' => 'success'];
   }
 
   /**
@@ -116,6 +117,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $uuid) {
     $layout_paragraphs_layout->deleteComponent($uuid, TRUE);
     $this->tempstore->set($layout_paragraphs_layout);
+    return ['#markup' => 'success'];
   }
 
   /**
@@ -200,18 +202,14 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       ->create([$bundle_key => $paragraph_type->id()]);
 
     $layout_paragraphs_layout->insertIntoRegion($parent_uuid, $region, $paragraph);
-    $context = [
-      'insert' => TRUE,
-      'parent_uuid' => $parent_uuid,
-      'region' => $region,
-    ];
-
     $response = new AjaxResponse();
+
     $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs_editor\Form\LayoutParagraphsEditorEditForm',
+      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentAddForm',
       $layout_paragraphs_layout,
       $paragraph,
-      $context
+      '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]',
+      'append'
     );
     $this->addFormResponse($response, $label, $form);
     return $response;
@@ -241,16 +239,13 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       ->create([$bundle_key => $paragraph_type->id()]);
     $layout_paragraphs_layout->appendComponent($paragraph);
 
-    $context = [
-      'insert' => TRUE,
-    ];
-
     $response = new AjaxResponse();
     $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs_editor\Form\LayoutParagraphsEditorEditForm',
+      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentAddForm',
       $layout_paragraphs_layout,
       $paragraph,
-      $context
+      '[data-lp-builder-id="' . $layout_paragraphs_layout->id() . '"]',
+      'append'
     );
     $this->addFormResponse($response, $label, $form);
     return $response;

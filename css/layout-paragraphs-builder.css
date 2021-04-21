@@ -111,12 +111,16 @@
 .lpb-component:hover .lpb-region {
   outline: 1px dotted rgba(0, 0, 255, 0.5);
 }
-.js-lpb-active-item,
-.js-lpb-active-item.lpb-region
+.lpb-active-item,
+.lpb-active-item.lpb-region
 .lpb-component:hover .js-lpb-active-item {
   outline: 1px solid blue !important;
 }
-.lpb-layout.js-lpb-active-item {
+.lpb-layout {
+  padding: 20px;
+  margin: 3px;
+}
+.lpb-layout.lpb-active-item {
   outline: 3px solid #fff !important;
   box-shadow: 0 0 0 4px rgba(0, 0, 255, 1);
 }
@@ -144,6 +148,10 @@
   height: 100%;
   overflow: hidden;
   text-indent: -9999px;
+}
+.lpb-controls-label {
+  line-height: 28px;
+  padding: 0 5px 0 10px;
 }
 .lpb-up,
 .lpb-down,

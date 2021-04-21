@@ -7,7 +7,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\AfterCommand;
-use Drupal\Core\Ajax\InsertCommand;
+use Drupal\Core\Ajax\AppendCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Form\SubformState;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
@@ -27,11 +27,11 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
   protected $domSelector;
 
   /**
-   * Whether to insert the new component "before" or "after".
+   * Whether to use "before", "after", or "append.".
    *
    * @var string
    */
-  protected $proximity;
+  protected $method;
 
   /**
    * {@inheritDoc}
@@ -42,10 +42,10 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
     $layout_paragraphs_layout = NULL,
     $paragraph = NULL,
     $dom_selector = NULL,
-    $proximity = NULL) {
+    $method = NULL) {
 
     $this->domSelector = $dom_selector;
-    $this->proximity = $proximity;
+    $this->method = $method;
     return parent::buildForm($form, $form_state, $layout_paragraphs_layout, $paragraph);
   }
 
@@ -59,7 +59,7 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
 
     $response = new AjaxResponse();
 
-    switch ($this->proximity) {
+    switch ($this->method) {
       case 'before':
         $response->addCommand(new BeforeCommand($this->domSelector, $rendered_item));
         break;
@@ -68,8 +68,8 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
         $response->addCommand(new AfterCommand($this->domSelector, $rendered_item));
         break;
 
-      case 'inside':
-        $response->addCommand(new InsertCommand($this->domSelector, $rendered_item));
+      case 'append':
+        $response->addCommand(new AppendCommand($this->domSelector, $rendered_item));
         break;
     }
 

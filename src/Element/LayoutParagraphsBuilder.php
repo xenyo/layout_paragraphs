@@ -188,7 +188,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
 
     // Build the complete Layout Paragraphs Builder UI with attached libraries.
     $entity = $layout->getEntity();
-    $base_url = sprintf('/layout-paragraphs-builder/%s/%d/%s/%s', $entity->getEntityTypeId(), $entity->id(), $layout->getFieldName(), $layout->id());
+    $base_url = sprintf('/layout-paragraphs-builder/%s/%s/%d/%s/%s', $entity->getEntityTypeId(), $entity->bundle(), $entity->id(), $layout->getFieldName(), $layout->id());
     $allowed_types = $this->getComponentTypes($layout);
 
     $component_menu = [
@@ -213,6 +213,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       'toggleButton' => '<button class="lpb-toggle"><span class="visually-hidden">' . $this->t('Create Content') . '</span></button>',
       'baseUrl' => $base_url,
       'emptyContainer' => $this->renderer->render($empty_container),
+      'types' => array_merge($allowed_types['layout'], $allowed_types['content']),
       'options' => $options,
     ];
 
@@ -233,7 +234,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           'js-' . $layout->id(),
         ],
         'data-lp-builder-id' => $layout->id(),
-        'data-uuid' => $layout->getEntity()->uuid(),
       ],
       'build' => [],
     ];
@@ -264,6 +264,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build = $view_builder->view($entity, 'default', $entity->language()->getId());
 
     $build['#attributes']['data-uuid'] = $entity->uuid();
+    $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'lpb-component';
     $build['#attributes']['tabindex'] = 0;
@@ -323,7 +324,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         $path = $paragraphs_type->getIconUrl();
       }
       $bundle_info = $all_bundle_info[$bundle];
-      $types[($has_layout ? 'layout' : 'content')][] = [
+      $types[($has_layout ? 'layout' : 'content')][$bundle] = [
         'id' => $bundle,
         'name' => $bundle_info['label'],
         'image' => $path,

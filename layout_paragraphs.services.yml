@@ -5,8 +5,10 @@ services:
   layout_paragraphs.tempstore_repository:
     class: Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository
     arguments: ['@tempstore.private']
-  layout_paragraphs.param_converter:
-    class: Drupal\layout_paragraphs\Routing\LayoutParagraphsParamConverter
-    arguments: ['@layout_paragraphs.tempstore_repository']
+  layout_paragraphs.param_converter.tempstore:
+    class: Drupal\layout_paragraphs\Routing\LayoutParagraphsTempstoreParamConverter
+    arguments:
+      - '@layout_paragraphs.tempstore_repository'
+      - '@entity_type.manager'
     tags:
       - { name: paramconverter, priority: 10 }

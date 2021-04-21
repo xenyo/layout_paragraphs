@@ -38,6 +38,7 @@ class LayoutParagraphsLayoutTempstoreRepository {
     }
     return $tempstore_layout;
   }
+
   /**
    * Get a layout paragraphs layout frome the tempstore using its storage key.
    *
@@ -78,9 +79,7 @@ class LayoutParagraphsLayoutTempstoreRepository {
    *   The unique key.
    */
   public function getStorageKey(LayoutParagraphsLayout $layout_paragraphs_layout) {
-    return $layout_paragraphs_layout->getEntity()->uuid() .
-      '--' .
-      $layout_paragraphs_layout->getFieldName();
+    return $layout_paragraphs_layout->id();
   }
 
 }

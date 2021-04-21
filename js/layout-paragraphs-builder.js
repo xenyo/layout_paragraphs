@@ -326,21 +326,20 @@
 
       // Remove the current toggle or controls.
       if (this.$activeItem) {
-        this.$activeItem.removeClass('js-lpb-active-item');
+        this.$activeItem.removeClass(['js-lpb-active-item', 'lpb-active-item']);
         this.removeControls();
       }
       // If $element exists and is not false, add the controls.
       if ($item) {
         if ($item.hasClass('lpb-component')) {
           this.insertControls($item);
-          $item.addClass('js-lpb-active-item');
         } else if (
           $item.hasClass('lpb-region') &&
           $item.find('.lpb-component').length === 0
         ) {
           this.insertToggle($item, 'insert', 'append');
-          $item.addClass('js-lpb-active-item');
         }
+        $item.addClass(['js-lpb-active-item', 'lpb-active-item']);
       }
       this._$activeItem = $item;
     }
@@ -441,12 +440,14 @@
     }
 
     insertControls($element) {
-      $element.addClass('js-lpb-active-item');
       const $controls = $(
         `<div class="js-lpb-controls lpb-controls__wrapper">${this.controls}</div>`,
       )
         .css({ position: 'absolute' })
         .hide();
+      $controls
+        .find('.lpb-controls-label')
+        .text(this.settings.types[$element.attr('data-type')].name);
       const offset = $element.offset();
       this.$element.find('.js-lpb-controls').remove();
       $element.prepend($controls.fadeIn(200));
@@ -662,7 +663,7 @@
             $moveItem.css({ transform: 'none' });
             $sibling.css({ transform: 'none' });
             $sibling[method]($moveItem);
-            instance.insertControls($moveItem);
+            instance.$activeItem = $moveItem;
             instance.startInterval();
             instance.reorderComponents();
           },
@@ -800,14 +801,14 @@
     /**
      * Make a Drupal Ajax request.
      * @param {string} apiUrl The request url.
-     * @param {obj} params (optional) Parameters to send as post payload values.
+     * @param {obj} submit (optional) Parameters to submit as post payload values.
      * @param {function} done (optional) A callback function to run when done.
      */
-    request(apiUrl, params = {}, done = null) {
+    request(apiUrl, submit = {}, done = null) {
       const url = `${this.settings.baseUrl}/${apiUrl}`;
       Drupal.ajax({
         url,
-        params,
+        submit,
       })
         .execute()
         .done(() => {
@@ -819,6 +820,7 @@
   }
 
   function componentUpdate(layoutId, componentUuid) {
+    console.log(layoutId);
     const builder = $(`[data-lp-builder-id="${layoutId}"`).data('lpbInstance');
     builder.removeControls();
     const $insertedComponent = $(`[data-uuid="${componentUuid}"]`);
