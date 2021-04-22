@@ -174,9 +174,9 @@
       this.confirm($component, {
         content: Drupal.t('Really delete this @name?', { '@name': typeName }),
         confirmText: Drupal.t('Delete'),
-        confirm: (e) => {
+        confirm: (_e) => {
           deleteComponent($component);
-          e.preventDefault();
+          _e.preventDefault();
         },
       });
       e.preventDefault();
