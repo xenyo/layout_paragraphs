@@ -351,7 +351,13 @@ class LayoutParagraphsLayout {
     // into the new component to be inserted.
     if ($existing_component = $this->getComponentByUuid($sibling_uuid)) {
       // Copy layout settings into the new component.
-      $new_component->setSettings($existing_component->getSettings());
+      $sibling_settings = $existing_component->getSettings();
+      $new_component_settings = [
+        'parent_uuid' => $sibling_settings['uuid'] ?? NULL,
+        'region' => $sibling_settings['region'] ?? NULL,
+        'parent_delta' => $sibling_settings['parent_delta'] ?? NULL,
+      ];
+      $new_component->setSettings($new_component_settings);
       // Get the paragraph entity from the component.
       $new_paragraph = $new_component->getEntity();
       $new_paragraph->setParentEntity($this->getEntity(), $this->getFieldName());

@@ -482,7 +482,7 @@
       this.$componentMenu = $(
         `<div class="js-lpb-component-menu lpb-component-menu__wrapper">${this.componentMenu}</div>`,
       );
-      if (this.options.nestedSections === false) {
+      if (this.options.nestingSections === false) {
         if (this.$activeToggle.parents('.lpb-layout').length > 0) {
           this.$componentMenu.find('.lpb-component-menu__group--layout').hide();
         }

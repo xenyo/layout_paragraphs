@@ -2,6 +2,7 @@
 
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Entity\EntityDisplayBase;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -13,6 +14,7 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Form\FormBuilder;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 
 /**
  * Entity Reference with Layout field widget (refactored).
@@ -72,6 +74,13 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
   protected $formBuilder;
 
   /**
+   * The entity display repository.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
+  /**
    * {@inheritDoc}
    */
   public function __construct(
@@ -83,7 +92,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
-    FormBuilder $form_builder
+    FormBuilder $form_builder,
+    EntityDisplayRepositoryInterface $entity_display_repository
     ) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
@@ -91,6 +101,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     $this->entityTypeManager = $entity_type_manager;
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->formBuilder = $form_builder;
+    $this->entityDisplayRepository = $entity_display_repository;
 
   }
 
@@ -107,7 +118,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
       $container->get('layout_paragraphs.tempstore_repository'),
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
-      $container->get('form_builder')
+      $container->get('form_builder'),
+      $container->get('entity_display.repository')
     );
   }
 
@@ -130,8 +142,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         // @todo derive options from the widget configuration settings.
         // See \Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget
         '#options' => [
-          'nestedSections' => FALSE,
-          'requireSections' => TRUE,
+          'nestingDepth' => $this->getSetting('nesting_depth'),
+          'requireSections' => $this->getSetting('require_layouts'),
           'saveButtonIds' => [
             'edit-submit',
             'edit-preview',
@@ -164,6 +176,68 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     }
     $form_state->setValue($path, $values);
     return parent::extractFormValues($items, $form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $entity_type_id = $this->getFieldSetting('target_type');
+    $element = parent::settingsForm($form, $form_state);
+    $element['preview_view_mode'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Preview view mode'),
+      '#default_value' => $this->getSetting('preview_view_mode'),
+      '#options' => $this->entityDisplayRepository->getViewModeOptions($entity_type_id),
+      '#description' => $this->t('View mode for the referenced entity preview on the edit form. Automatically falls back to "default", if it is not enabled in the referenced entity type displays.'),
+    ];
+    $element['nesting_depth'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Maximum nesting depth'),
+      '#options' => range(0, 10),
+      '#default_value' => $this->getSetting('nesting_depth'),
+      '#description' => $this->t('Choosing 0 will prevent nesting layouts within other layouts.'),
+    ];
+    $element['require_layouts'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Require paragraphs to be added inside a layout'),
+      '#default_value' => $this->getSetting('require_layouts'),
+    ];
+    return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsSummary() {
+    $summary = parent::settingsSummary();
+    $summary[] = $this->t('Preview view mode: @preview_view_mode', ['@preview_view_mode' => $this->getSetting('preview_view_mode')]);
+    $summary[] = $this->t('Maximum nesting depth: @max_depth', ['@max_depth' => $this->getSetting('nesting_depth')]);
+    if ($this->getSetting('require_layouts')) {
+      $summary[] = $this->t('Paragraphs <b>must be</b> added within layouts.');
+    }
+    else {
+      $summary[] = $this->t('Layouts are optional.');
+    }
+    $summary[] = $this->t('Maximum nesting depth: @max_depth', ['@max_depth' => $this->getSetting('nesting_depth')]);
+    return $summary;
+  }
+
+  /**
+   * Default settings for widget.
+   *
+   * @return array
+   *   The default settings array.
+   */
+  public static function defaultSettings() {
+    $defaults = parent::defaultSettings();
+    $defaults += [
+      'preview_view_mode' => 'default',
+      'nesting_depth' => 0,
+      'require_layouts' => 0,
+    ];
+
+    return $defaults;
   }
 
 }
