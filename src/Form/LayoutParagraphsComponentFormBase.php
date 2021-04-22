@@ -112,23 +112,20 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     $this->paragraph = $paragraph;
 
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
+    $display->buildForm($this->paragraph, $form, $form_state);
     $this->paragraphType = $this->paragraph->getParagraphType();
 
-    $form = [
+    $form += [
       '#paragraph' => $this->paragraph,
       '#display' => $display,
       '#tree' => TRUE,
       '#after_build' => [
         [$this, 'afterBuild'],
       ],
-      'entity_form' => [
-        '#weight' => 10,
-        '#parents' => ['entity_form'],
-      ],
       'actions' => [
         '#weight' => 20,
         '#type' => 'actions',
-        'save' => [
+        'submit' => [
           '#type' => 'submit',
           '#value' => $this->t('Save'),
           '#ajax' => [
@@ -170,19 +167,17 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
         'mode' => $display->getMode(),
       ];
       // phpcs:ignore
-      field_group_attach_groups($form['entity_form'], $context);
+      field_group_attach_groups($form, $context);
       if (method_exists(FormatterHelper::class, 'formProcess')) {
-        $form['entity_form']['#process'][] = [FormatterHelper::class, 'formProcess'];
+        $form['#process'][] = [FormatterHelper::class, 'formProcess'];
       }
       elseif (function_exists('field_group_form_pre_render')) {
-        $form['entity_form']['#pre_render'][] = 'field_group_form_pre_render';
+        $form['#pre_render'][] = 'field_group_form_pre_render';
       }
       elseif (function_exists('field_group_form_process')) {
-        $form['entity_form']['#process'][] = 'field_group_form_process';
+        $form['#process'][] = 'field_group_form_process';
       }
     }
-
-    $display->buildForm($this->paragraph, $form['entity_form'], $form_state);
     return $form;
   }
 

@@ -103,7 +103,7 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
     }
 
     $paragraph->setNeedsSave(TRUE);
-    $display->extractFormValues($paragraph, $form['entity_form'], $form_state);
+    $display->extractFormValues($paragraph, $form, $form_state);
 
     $this->layoutParagraphsLayout->setComponent($paragraph);
     $this->tempstore->set($this->layoutParagraphsLayout);
