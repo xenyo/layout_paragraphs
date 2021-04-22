@@ -286,21 +286,19 @@
   background: #fff;
   cursor: grabbing;
 }
-.lpb-status {
+.lpb-confirm {
   font-size: .8em;
   position: relative;
 }
-.lpb-status-container {
+.lpb-confirm-container {
   position: absolute;
   z-index: 99;
-  left: 50%;
-  top: -20px;
+  left: 10px;
+  top: 10px;
 }
-.lpb-status-wrapper {
+.lpb-confirm-wrapper {
   position: relative;
   position: inline-block;
-  left: -50%;
-  border-radius: 25px;
   background: #FFF;
   padding: 20px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, .15);
@@ -308,10 +306,10 @@
   flex-direction: row;
   color: #333;
 }
-.lpb-status__actions {
+.lpb-confirm__actions {
   margin-left: 10px;
 }
-.lpb-status__undo {
+.lpb-confirm__undo {
   text-decoration: none;
 }
 

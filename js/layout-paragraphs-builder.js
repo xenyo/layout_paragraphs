@@ -168,15 +168,15 @@
      */
     onClickDelete(e) {
       const deleteComponent = this.delete.bind(this);
-      $.confirm({
-        title: Drupal.t('Remove Component'),
-        content: Drupal.t('Are you sure you want to remove this?'),
-        useBootstrap: false,
-        buttons: {
-          confirm: () => {
-            deleteComponent($(e.currentTarget).closest('.lpb-component'));
-          },
-          cancel: () => true,
+      const $component = $(e.currentTarget).closest('.lpb-component');
+      const type = $component.attr('data-type');
+      const typeName = this.settings.types[type].name || Drupal.t('Component');
+      this.confirm($component, {
+        content: Drupal.t('Really delete this @name?', { '@name': typeName }),
+        confirmText: Drupal.t('Delete'),
+        confirm: (e) => {
+          deleteComponent($component);
+          e.preventDefault();
         },
       });
       e.preventDefault();
@@ -584,6 +584,38 @@
       $item.fadeOut(200, () => {
         this.request(`delete/${uuid}`, { success: () => this.edited() });
       });
+    }
+
+    /**
+     * A configurable confirmation dialog.
+     * @param {jQuery} $container The container for this confirm dialog.
+     * @param {Object} options The confirmation options.
+     * @return {Object} this
+     */
+    confirm($container, options) {
+      const { content } = options;
+      const confirmText = options.confirmText || Drupal.t('Confirm');
+      const cancelText = options.cancelText || Drupal.t('Cancel');
+      const $content = $(`<div class="lpb-confirm">
+        <div class="lpb-confirm-container">
+          <div class="lpb-confirm-wrapper">
+            <div class="lpb-confirm__content">${content}</div>
+            <div class="lpb-confirm__actions">
+              <button class="lpb-confirm-btn">${confirmText}</button>
+              <button class="lpb-cancel-btn">${cancelText}</button>
+            </div>
+          </div>
+        </div>
+      </div>`);
+      $content.on('click.lpb-confirm', '.lpb-confirm-btn', options.confirm);
+      $content.on('click.lpb-confirm', '.lpb-cancel-btn', (e) => {
+        $content.off('.lp-confirm');
+        $content.remove();
+        e.preventDefault();
+      });
+      $container.prepend($content);
+      $('.lpb-confirm-btn', $content).focus();
+      return this;
     }
 
     /**
