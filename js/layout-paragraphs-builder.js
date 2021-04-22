@@ -609,12 +609,22 @@
       </div>`);
       $content.on('click.lpb-confirm', '.lpb-confirm-btn', options.confirm);
       $content.on('click.lpb-confirm', '.lpb-cancel-btn', (e) => {
-        $content.off('.lp-confirm');
-        $content.remove();
+        this.cancel();
         e.preventDefault();
+      });
+      this.$element.on('keyup.lpb-confirm', '.lpb-confirm', (e) => {
+        if (e.code === 'Escape') {
+          this.cancel();
+          e.preventDefault();
+        }
       });
       $container.prepend($content);
       $('.lpb-confirm-btn', $content).focus();
+      return this;
+    }
+
+    cancel() {
+      $('.lpb-confirm', this.$element).off('.lpb-confirm').remove();
       return this;
     }
 
