@@ -11,19 +11,6 @@ dragula:
   js:
     https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js: {type: external, minified: true}
 
-jquery_confirm:
-  remote: https://craftpip.github.io/jquery-confirm/
-  version: 3.3.4
-  license:
-    name: MIT
-    url: https://github.com/craftpip/jquery-confirm/blob/master/LICENSE
-    gpl-compatible: true
-  css:
-    theme:
-      https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css: {type: external, minified: true}
-  js:
-    https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js: {type: external, minified: true}
-
 layout_paragraphs_builder:
   css:
     layout:
@@ -32,7 +19,6 @@ layout_paragraphs_builder:
     js/layout-paragraphs-builder.js: {}
   dependencies:
     - layout_paragraphs/dragula
-    - layout_paragraphs/jquery_confirm
     - core/jquery
     - core/jquery.ui.draggable
     - core/drupal.dialog
