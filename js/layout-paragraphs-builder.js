@@ -405,6 +405,8 @@
     }
 
     insertSectionMenu($container, placement, method) {
+      const offset = $container.offset();
+      const width = $container.outerWidth();
       const $sectionMenu = $(
         `<div class="js-lpb-section-menu lpb-section-menu__wrapper">${this.sectionMenu}</div>`,
       )
@@ -416,17 +418,9 @@
         })
         .css({ position: 'absolute' })
         [`${method}To`]($container);
-      const offset = $container.offset();
-      const height = $container.outerHeight();
-      const width = $container.width();
-      const sectionMenuHeight = $sectionMenu.height();
-      const sectionMenuWidth = $sectionMenu.width();
+      const sectionMenuWidth = $sectionMenu.outerWidth();
       const left = Math.floor(offset.left + width / 2 - sectionMenuWidth / 2);
-      const top =
-        placement === 'before'
-          ? Math.floor(offset.top - sectionMenuHeight / 2)
-          : Math.floor(offset.top + height - sectionMenuHeight / 2);
-      $sectionMenu.offset({ top, left });
+      $sectionMenu.offset({ left });
     }
 
     removeControls() {
@@ -476,6 +470,7 @@
         this.openComponentMenu($toggleButton);
       }
     }
+
     /**
      * Opens the component menu.
      * @param {jQuery} $toggleButton The toggle button that was pressed.
@@ -502,6 +497,7 @@
       this.positionComponentMenu();
       this.stopInterval();
     }
+
     /**
      * Position the component menu correctly.
      * @param {bool} keepOrientation If true, the menu will stay above/below no matter what.
@@ -547,6 +543,7 @@
       this.$componentMenu.removeClass('hidden').addClass('fade-in');
       this.$componentMenu.offset({ top, left });
     }
+
     /**
      * Close the open component menu.
      */
@@ -558,6 +555,7 @@
       this.$activeToggle = false;
       this.startInterval();
     }
+
     /**
      * Loads an edit form.
      */
@@ -576,6 +574,7 @@
           this.removeToggle();
         });
     }
+
     /**
      * Delete a component.
      * @param {jQuery} $item The item to delete.
@@ -583,10 +582,10 @@
     delete($item) {
       const uuid = $item.attr('data-uuid');
       $item.fadeOut(200, () => {
-        this.request(`delete/${uuid}`);
+        this.request(`delete/${uuid}`, { success: () => this.edited() });
       });
-      this.edited();
     }
+
     /**
      * Inserts a new component next to an existing sibling component.
      * @param {string} siblingUuid The uuid of the existing component.
@@ -596,6 +595,7 @@
     insertSiblingComponent(siblingUuid, type, placement) {
       this.request(`insert-sibling/${siblingUuid}/${placement}/${type}`);
     }
+
     /**
      * Inserts a new component and loads the edit form dialog.
      * @param {string} type The component type.
@@ -603,12 +603,15 @@
     insertComponent(type) {
       this.request(`insert-component/${type}`);
     }
+
     /**
      * Saves the order and nested structure of components for the layout.
      */
     saveComponentOrder() {
       this.request('reorder', {
-        layoutParagraphsState: JSON.stringify(this.getState()),
+        data: {
+          layoutParagraphsState: JSON.stringify(this.getState()),
+        },
       });
     }
 
@@ -786,6 +789,7 @@
 
     isEmpty() {
       this.isNotEmpty();
+      this.$activeItem = false;
       const $emptyContainer = $(
         `<div class="js-lpb-empty lpb-empty-container__wrapper">${this.emptyContainer}</div>`,
       ).appendTo(this.$element);
@@ -799,19 +803,19 @@
     /**
      * Make a Drupal Ajax request.
      * @param {string} apiUrl The request url.
-     * @param {obj} submit (optional) Parameters to submit as post payload values.
-     * @param {function} done (optional) A callback function to run when done.
+     * @param {obj} settings (optional) Request settings.
      */
-    request(apiUrl, submit = {}, done = null) {
+    request(apiUrl, settings = {}) {
       const url = `${this.settings.baseUrl}/${apiUrl}`;
+      const { data, success } = settings;
       Drupal.ajax({
         url,
-        submit,
+        submit: data,
       })
         .execute()
         .done(() => {
-          if (done && typeof done === 'function') {
-            done.call(this);
+          if (success && typeof success === 'function') {
+            success.call(this);
           }
         });
     }

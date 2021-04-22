@@ -247,7 +247,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
    */
   public function cancel(array &$form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $response->addCommand(new CloseDialogCommand('#' . $form_state->getValue('dialog_id')));
+    $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
     return $response;
   }
 

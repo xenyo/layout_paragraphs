@@ -190,6 +190,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $entity = $layout->getEntity();
     $base_url = sprintf('/layout-paragraphs-builder/%s/%s/%d/%s/%s', $entity->getEntityTypeId(), $entity->bundle(), $entity->id(), $layout->getFieldName(), $layout->id());
     $allowed_types = $this->getComponentTypes($layout);
+    $field_definition = $layout_paragraph_layout
+      ->getParagraphsReferenceField()
+      ->getFieldDefinition();
+    $field_label = $field_definition->getLabel();
+    $description = $field_definition->getDescription();
 
     $component_menu = [
       '#theme' => 'layout_paragraphs_builder_component_menu',
@@ -203,8 +208,19 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#theme' => 'layout_paragraphs_builder_controls',
     ];
     $empty_container = [
-      '#theme' => 'layout_paragraphs_builder_empty_container',
+      '#type' => 'fieldset',
+      '#title' => $field_label,
+      '#collapsible' => FALSE,
+      '#attributes' => [
+        'class' => [
+          'lpb-empty-container',
+        ],
+      ],
     ];
+    if ($description) {
+      $empty_container['message'] = ['#markup' => $description];
+    }
+
     $js_settings = [
       'selector' => '.js-' . $layout->id(),
       'componentMenu' => $this->renderer->render($component_menu),

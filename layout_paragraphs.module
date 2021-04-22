@@ -57,9 +57,6 @@ function layout_paragraphs_theme() {
         'types' => NULL,
       ],
     ],
-    'layout_paragraphs_builder_empty_container' => [
-      'variables' => [],
-    ],
   ];
 }
 

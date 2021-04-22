@@ -7,6 +7,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Ajax\AjaxHelperTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenDialogCommand;
+use Drupal\Core\Ajax\RemoveCommand;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
@@ -113,11 +114,16 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The Layout Paragraphs Layout object.
    * @param string $uuid
    *   The uuid of the paragraph to delete.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The Ajax reponse with command to remove deleted item.
    */
   public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $uuid) {
     $layout_paragraphs_layout->deleteComponent($uuid, TRUE);
     $this->tempstore->set($layout_paragraphs_layout);
-    return ['#markup' => 'success'];
+    $response = new AjaxResponse();
+    $response->addCommand(new RemoveCommand('[data-uuid="' . $uuid . '"]'));
+    return $response;
   }
 
   /**
