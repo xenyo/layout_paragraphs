@@ -217,7 +217,11 @@
       this.removeControls();
       switch (placement) {
         case 'insert':
-          this.insertComponentIntoRegion(uuid, region, type);
+          if (uuid) {
+            this.insertComponentIntoRegion(uuid, region, type);
+          } else {
+            this.insertComponent(type);
+          }
           break;
         // If placement is "before" or "after".
         default:
@@ -360,8 +364,11 @@
      * @param {jQuery} $container The container.
      * @param {string} placement Placement - inside|after|before.
      * @param {string} method jQuery method - prepend|append
+     * @param {Object} offset An optional object with top or left offset values.
      */
-    insertToggle($container, placement, method = 'prepend') {
+    insertToggle($container, placement, method = 'prepend', offset = {}) {
+      const offsetTop = offset.top || 0;
+      const offsetLeft = offset.left || 0;
       const $toggleButton = $(
         `<div class="js-lpb-toggle lpb-toggle__wrapper"></div>`,
       )
@@ -379,28 +386,30 @@
         [`${method}To`]($container)
         .fadeIn(100);
 
-      const offset = $container.offset();
+      const containerOffset = $container.offset();
       const toggleHeight = $toggleButton.height();
       const toggleWidth = $toggleButton.outerWidth();
       const height = $container.outerHeight();
       const width = $container.outerWidth();
-      const left = Math.floor(offset.left + width / 2 - toggleWidth / 2);
+      const left = Math.floor(
+        containerOffset.left + width / 2 - toggleWidth / 2 + offsetLeft,
+      );
 
       let top = '';
       switch (placement) {
         case 'insert':
-          top = Math.floor(offset.top + height / 2 - toggleHeight / 2);
+          top = Math.floor(containerOffset.top + height / 2 - toggleHeight / 2);
           break;
         case 'after':
-          top = Math.floor(offset.top + height - toggleHeight / 2) - 1;
+          top = Math.floor(containerOffset.top + height - toggleHeight / 2) - 1;
           break;
         case 'before':
-          top = Math.floor(offset.top - toggleHeight / 2) - 1;
+          top = Math.floor(containerOffset.top - toggleHeight / 2) - 1;
           break;
         default:
           top = null;
       }
-
+      top += offsetTop;
       $toggleButton.offset({ left, top });
     }
 
@@ -838,7 +847,9 @@
       if (this.options.requireSections) {
         this.insertSectionMenu($emptyContainer, 'insert', 'append');
       } else {
-        this.insertToggle($emptyContainer, 'insert', 'append');
+        this.insertToggle($emptyContainer, 'insert', 'append', {
+          top: $('.fieldset-wrapper', $emptyContainer).height(),
+        });
       }
     }
 
