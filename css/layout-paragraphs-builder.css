@@ -28,10 +28,12 @@
   outline: 1px dotted white;
 }
 .lpb-component {
-  cursor: grab;
   outline: 1px solid blue;
   outline-color: transparent;
   transition: all .15s linear;
+}
+.dragula-enabled .lpb-component {
+  cursor: grab;
 }
 .lpb-component:hover .lpb-region {
   outline: 1px dotted rgba(0, 0, 255, 0.5);

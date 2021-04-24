@@ -151,11 +151,22 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $layout_paragraphs_layout,
+        '#movable' => $this->isMovable(),
+        '#draggable' => $this->isDraggable(),
+        '#create_content' => $this->canCreateContent(),
+        '#create_layouts' => $this->canCreateLayouts(),
         // @todo derive options from the widget configuration settings.
         // See \Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget
         '#options' => [
           'nestingDepth' => $this->getSetting('nesting_depth'),
           'requireSections' => $this->getSetting('require_layouts'),
+          'isTranslating' => $this->isTranslating,
+          'movable' => $this->isMovable(),
+          'draggable' => $this->isDraggable(),
+          'createContent' => $this->canCreateContent(),
+          'createLayouts' => $this->canCreateLayouts(),
+          'deleteContent' => $this->canDeleteContent(),
+          'deleteLayouts' => $this->canDeleteLayouts(),
           'saveButtonIds' => [
             'edit-submit',
             'edit-preview',
@@ -354,6 +365,78 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         $items[$delta]->entity = $item->entity;
       }
     }
+  }
+
+  /**
+   * If layout components are moveable.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If movable.
+   */
+  protected function isMovable() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * If layout components are draggable.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If draggable.
+   */
+  protected function isDraggable() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * If user can create content components for a layout.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If can create content.
+   */
+  protected function canCreateContent() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * If user can delete content components for a layout.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If can create content.
+   */
+  protected function canDeleteContent() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * If user can create layout components for a layout.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If can create layouts.
+   */
+  protected function canCreateLayouts() {
+    return !$this->isTranslating;
+  }
+
+  /**
+   * If user can delete layout components for a layout.
+   *
+   * @todo Add permission and permissions check.
+   *
+   * @return bool
+   *   If can create layouts.
+   */
+  protected function canDeleteLayouts() {
+    return !$this->isTranslating;
   }
 
 }

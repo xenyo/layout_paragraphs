@@ -390,6 +390,8 @@ class LayoutParagraphsLayout {
    *
    * @param string $uuid
    *   The uuid of the component to delete.
+   * @param bool $recursive
+   *   Recursively delete child components.
    *
    * @return $this
    */

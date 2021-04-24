@@ -4,6 +4,16 @@
       this._edited = false;
       this.settings = settings;
       this.options = settings.options || {};
+      if (this.options.movable === undefined) this.options.movable = true;
+      if (this.options.draggable === undefined) this.options.draggable = true;
+      if (this.options.createContent === undefined)
+        this.options.createContent = true;
+      if (this.options.createLayouts === undefined)
+        this.options.createLayouts = true;
+      if (this.options.deleteContent === undefined)
+        this.options.deleteContent = true;
+      if (this.options.deleteLayouts === undefined)
+        this.options.deleteLayouts = true;
       this.$element = $(settings.selector);
       this.componentMenu = settings.componentMenu;
       this.sectionMenu = settings.sectionMenu;
@@ -367,6 +377,9 @@
      * @param {Object} offset An optional object with top or left offset values.
      */
     insertToggle($container, placement, method = 'prepend', offset = {}) {
+      if (!this.options.createContent) {
+        return;
+      }
       const offsetTop = offset.top || 0;
       const offsetLeft = offset.left || 0;
       const $toggleButton = $(
@@ -414,6 +427,9 @@
     }
 
     insertSectionMenu($container, placement, method) {
+      if (!this.options.createLayouts) {
+        return;
+      }
       const offset = $container.offset();
       const width = $container.outerWidth();
       const $sectionMenu = $(
@@ -453,6 +469,12 @@
         .find('.lpb-controls-label')
         .text(this.settings.types[$element.attr('data-type')].name);
       const offset = $element.offset();
+      if (!this.options.movable) {
+        $('.lpb-up, .lpb-down', $controls).remove();
+      }
+      if (!this.options.deleteContent) {
+        $('.lpb-delete', $controls).remove();
+      }
       this.$element.find('.js-lpb-controls').remove();
       $element.prepend($controls.fadeIn(200));
       if (
@@ -733,6 +755,9 @@
      * @param {object} widgetSettings The widget instance settings.
      */
     enableDragAndDrop() {
+      if (!this.options.draggable) {
+        return;
+      }
       // this.$element.addClass("dragula-enabled");
       // Turn on drag and drop if dragula function exists.
       if (typeof dragula !== 'undefined') {
