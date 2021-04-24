@@ -65,8 +65,6 @@ class LayoutParagraphsLayout {
    */
   public function getEntity() {
     $entity = $this->paragraphsReferenceField->getEntity();
-    $field_name = $this->getFieldName();
-    $entity->$field_name = $this->paragraphsReferenceField;
     return $entity;
   }
 
