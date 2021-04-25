@@ -66,12 +66,12 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   /**
    * Returns a paragraph edit form as a dialog.
    *
-   * @param Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The editor instance.
    * @param string $paragraph_uuid
    *   The uuid of the paragraph we are editing.
    *
-   * @return AjaxCommand
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   The dialog command with edit form.
    */
   public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
@@ -129,16 +129,16 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   /**
    * Insert a sibling paragraph into the field.
    *
-   * @param Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The Layout Paragraphs Layout object.
    * @param string $sibling_uuid
    *   The uuid of the existing sibling component.
-   * @param Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type for the new content being added.
    * @param string $proximity
    *   Whether to insert the new component "before" or "after" the sibling.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   Returns the edit form render array.
    */
   public function insertSibling(
@@ -181,16 +181,16 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   /**
    * Insert a new component into a section.
    *
-   * @param Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The Layout Paragraphs Layout object.
    * @param string $parent_uuid
    *   The uuid of the parent section.
    * @param string $region
    *   The region to insert into.
-   * @param Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type to add.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   Returns an ajax response object with the add form dialog.
    */
   public function insertIntoRegion(
@@ -224,12 +224,12 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   /**
    * Insert a new component into the layout.
    *
-   * @param Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The layout paragraphs editor from the tempstore.
-   * @param Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type for the new content being added.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   Returns an ajax response object with the add form dialog.
    */
   public function insertComponent(
@@ -261,7 +261,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   /**
    * Adds the paragraph form to an ajax response.
    *
-   * @param Drupal\Core\Ajax\AjaxResponse $response
+   * @param \Drupal\Core\Ajax\AjaxResponse $response
    *   The ajax response object.
    * @param string $title
    *   The form title.
