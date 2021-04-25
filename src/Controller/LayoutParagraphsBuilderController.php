@@ -84,7 +84,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $form = $this->formBuilder()->getForm(
       '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentEditForm',
       $layout_paragraphs_layout,
-      $paragraph,
+      $paragraph
     );
 
     $this->addFormResponse($response, $label, $form);
