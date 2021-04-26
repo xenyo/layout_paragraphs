@@ -95,7 +95,11 @@ class LayoutParagraphsService {
     $regions = $layout->getPluginDefinition()->getRegions();
     foreach (array_keys($regions) as $region) {
       $regions[$region] = array_map(function ($component) use ($view_builder, $view_mode) {
-        return $view_builder->view($component->getEntity(), $view_mode);
+        $entity = $component->getEntity();
+        $access = $entity->access('view', NULL, TRUE);
+        if ($access->isAllowed()) {
+          return $view_builder->view($component->getEntity(), $view_mode);
+        }
       }, $section->getComponentsForRegion($region));
     }
 

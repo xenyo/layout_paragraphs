@@ -7,6 +7,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsComponent;
 use Drupal\Core\TypedData\TranslatableInterface;
+use Drupal\Core\Cache\CacheableMetadata;
 
 /**
  * Layout Paragraphs field formatter.
@@ -24,11 +25,6 @@ class LayoutParagraphsFormatter extends EntityReferenceRevisionsEntityFormatter 
 
   /**
    * Returns the referenced entities for display.
-   *
-   * IMPORTANT: this implementation removes access checks so we can correctly
-   * prevent rendering the children of unpublished layout sections
-   * further down the line. This allows us to preview unpublished paragraphs in
-   * the admin interface.
    *
    * See \Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceFormatterBase::getEntitiesToView().
    *
@@ -52,13 +48,18 @@ class LayoutParagraphsFormatter extends EntityReferenceRevisionsEntityFormatter 
         && LayoutParagraphsComponent::isRootComponent($item->entity)) {
         $entity = $item->entity;
 
-        // Set the entity in the correct language for display.
-        if ($entity instanceof TranslatableInterface) {
-          $entity = \Drupal::service('entity.repository')->getTranslationFromContext($entity, $langcode);
+        $access = $this->checkAccess($entity);
+        // Add the access result's cacheability, ::view() needs it.
+        $item->_accessCacheability = CacheableMetadata::createFromObject($access);
+        if ($access->isAllowed()) {
+          // Set the entity in the correct language for display.
+          if ($entity instanceof TranslatableInterface) {
+            $entity = \Drupal::service('entity.repository')->getTranslationFromContext($entity, $langcode);
+          }
+          // Add the referring item, in case the formatter needs it.
+          $entity->_referringItem = $items[$delta];
+          $entities[$delta] = $entity;
         }
-        // Add the referring item, in case the formatter needs it.
-        $entity->_referringItem = $items[$delta];
-        $entities[$delta] = $entity;
       }
     }
 
