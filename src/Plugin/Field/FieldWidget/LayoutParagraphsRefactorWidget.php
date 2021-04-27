@@ -376,7 +376,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If movable.
    */
   protected function isMovable() {
-    return !$this->isTranslating;
+    return TRUE;
   }
 
   /**
@@ -388,7 +388,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If draggable.
    */
   protected function isDraggable() {
-    return !$this->isTranslating;
+    return TRUE;
   }
 
   /**
