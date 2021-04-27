@@ -836,6 +836,7 @@
      * @param {array} containers The containers to add.
      */
     addDragContainers(containers) {
+      if (this.drake === undefined) return;
       containers.forEach((value) => {
         if (this.drake.containers.indexOf(value) === -1) {
           this.drake.containers.push(value);
