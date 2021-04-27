@@ -134,6 +134,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
         '#wrapper' => $wrapper_id,
         '#callback' => [$this, 'ajaxUpdateOptions'],
       ],
+      '#weight' => 0,
     ];
     if ($plugin_form) {
       $form['config'] = [
@@ -141,6 +142,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
         '#suffix' => '</div>',
         '#type' => 'fieldset',
         '#title' => $this->t('Layout Options'),
+        '#weight' => 10,
       ];
       $form['config'] += $plugin_form->buildConfigurationForm([], $form_state);
     }

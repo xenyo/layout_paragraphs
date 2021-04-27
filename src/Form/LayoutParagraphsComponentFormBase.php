@@ -15,7 +15,7 @@ use Drupal\Core\Form\SubformState;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Render\Renderer;
+use Drupal\Core\Layout\LayoutPluginManager;
 
 /**
  * Class LayoutParagraphsComponentFormBase.
@@ -40,13 +40,16 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
    */
   protected $entityTypeManager;
 
+  /**
+   * The layout plugin manager service.
+   *
+   * @var \Drupal\Core\Layout\LayoutPluginManager
+   */
+  protected $layoutPluginManager;
 
   /**
-   * The renderer service.
-   *
-   * @var \Drupal\Core\Render\Renderer
+   * The layout plugin manager service.
    */
-  protected $renderer;
 
   /**
    * The layout object.
@@ -75,10 +78,10 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
   public function __construct(
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
-    Renderer $renderer) {
+    LayoutPluginManager $layout_plugin_manager) {
     $this->tempstore = $tempstore;
     $this->entityTypeManager = $entity_type_manager;
-    $this->renderer = $renderer;
+    $this->layoutPluginManager = $layout_plugin_manager;
   }
 
   /**
@@ -88,7 +91,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     return new static(
       $container->get('layout_paragraphs.tempstore_repository'),
       $container->get('entity_type.manager'),
-      $container->get('renderer')
+      $container->get('plugin.manager.core.layout')
     );
   }
 
@@ -217,7 +220,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
    * @return array
    *   The processed element.
    */
-  public function layoutParagraphsBehaviorForm(array $element, FormStateInterface $form_state, array $form) {
+  public function layoutParagraphsBehaviorForm(array $element, FormStateInterface $form_state, array &$form) {
 
     $layout_paragraphs_plugin = $this->paragraphType->getEnabledBehaviorPlugins()['layout_paragraphs'];
     $subform_state = SubformState::createForSubform($element, $form, $form_state);
@@ -273,6 +276,39 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#uuid' => $uuid,
     ];
+  }
+
+  /**
+   * Returns an array of region names for a given layout.
+   *
+   * @param string $layout_id
+   *   The layout id.
+   *
+   * @return array
+   *   An array of regions.
+   */
+  protected function getLayoutRegionNames($layout_id) {
+    return array_map(function ($region) {
+      return $region['label'];
+    }, $this->getLayoutRegions($layout_id));
+  }
+
+  /**
+   * Returns an array of regions for a given layout.
+   *
+   * @param string $layout_id
+   *   The layout id.
+   *
+   * @return array
+   *   An array of regions.
+   */
+  protected function getLayoutRegions($layout_id) {
+    if (!$layout_id) {
+      return [];
+    }
+    $instance = $this->layoutPluginManager->createInstance($layout_id);
+    $definition = $instance->getPluginDefinition();
+    return $definition->getRegions();
   }
 
 }
