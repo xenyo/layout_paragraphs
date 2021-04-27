@@ -174,6 +174,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           }
         }
         $output['#components'][$uuid]['regions'] = $layout_plugin_instance->build($output['#components'][$uuid]['regions']);
+        $output['#components'][$uuid]['regions']['#weight'] = 1000;
       }
     }
 
