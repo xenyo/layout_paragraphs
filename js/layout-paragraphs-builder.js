@@ -451,6 +451,7 @@
     removeControls() {
       if (this.$activeItem) {
         this.$activeItem.find('.js-lpb-controls').remove();
+        this.$activeItem.find('.lpb-layout-label').remove();
       }
       this.$element.find('.js-lpb-toggle').remove();
       this.$element.find('.js-lpb-section-menu').remove();
@@ -465,9 +466,19 @@
       )
         .css({ position: 'absolute' })
         .hide();
-      $controls
-        .find('.lpb-controls-label')
-        .text(this.settings.types[$element.attr('data-type')].name);
+      const $label = $controls.find('.lpb-controls-label');
+      const labelText = [];
+      if (this.options.showTypeLabels) {
+        labelText.push(this.settings.types[$element.attr('data-type')].name);
+      }
+      if (this.options.showLayoutLabels && $element.attr('data-layout')) {
+        labelText.push(this.settings.layouts[$element.attr('data-layout')]);
+      }
+      if (labelText.length) {
+        $label.text(labelText.join(' - '));
+      } else {
+        $label.remove();
+      }
       const offset = $element.offset();
       if (!this.options.movable) {
         $('.lpb-up, .lpb-down', $controls).remove();

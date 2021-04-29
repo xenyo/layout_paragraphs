@@ -50,6 +50,13 @@
   padding: 20px;
   margin: 3px;
 }
+.lpb-layout .lpb-layout-label {
+  position: absolute;
+  right: 0;
+  border: 1px dotted #ccc;
+  padding: 5px 10px;
+  font-size: small;
+}
 .lpb-layout.lpb-active-item {
   outline: 3px solid #fff !important;
   box-shadow: 0 0 0 4px rgba(0, 0, 255, 1);

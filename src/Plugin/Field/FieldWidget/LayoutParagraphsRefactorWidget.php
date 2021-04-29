@@ -16,6 +16,7 @@ use Drupal\Core\Form\FormBuilder;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\paragraphs\ParagraphInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
  * Entity Reference with Layout field widget (refactored).
@@ -89,6 +90,13 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
   protected $isTranslating;
 
   /**
+   * The module configuration.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $config;
+
+  /**
    * {@inheritDoc}
    */
   public function __construct(
@@ -101,7 +109,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
     FormBuilder $form_builder,
-    EntityDisplayRepositoryInterface $entity_display_repository
+    EntityDisplayRepositoryInterface $entity_display_repository,
+    ConfigFactoryInterface $config_factory
     ) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
@@ -110,6 +119,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->formBuilder = $form_builder;
     $this->entityDisplayRepository = $entity_display_repository;
+    $this->config = $config_factory->get('layout_paragraphs.settings');
 
   }
 
@@ -127,7 +137,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
       $container->get('form_builder'),
-      $container->get('entity_display.repository')
+      $container->get('entity_display.repository'),
+      $container->get('config.factory')
     );
   }
 
@@ -158,6 +169,8 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         // @todo derive options from the widget configuration settings.
         // See \Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget
         '#options' => [
+          'showTypeLabels' => $this->config->get('show_paragraph_labels'),
+          'showLayoutLabels' => $this->config->get('show_layout_labels'),
           'nestingDepth' => $this->getSetting('nesting_depth'),
           'requireSections' => $this->getSetting('require_layouts'),
           'isTranslating' => $this->isTranslating,

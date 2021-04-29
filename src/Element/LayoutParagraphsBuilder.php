@@ -221,6 +221,10 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     if ($description) {
       $empty_container['message'] = ['#markup' => $description];
     }
+    $layouts = [];
+    foreach ($allowed_types['layout'] as $name => $type) {
+      $layouts = array_merge($layouts, $this->getAvailableLayouts($name));
+    }
 
     $js_settings = [
       'selector' => '.js-' . $layout->id(),
@@ -231,6 +235,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       'baseUrl' => $base_url,
       'emptyContainer' => $this->renderer->render($empty_container),
       'types' => array_merge($allowed_types['layout'], $allowed_types['content']),
+      'layouts' => $layouts,
       'options' => $options,
     ];
 
@@ -292,6 +297,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $region_names = $layout_instance->getPluginDefinition()->getRegionNames();
 
       $build['#attributes']['class'][] = 'lpb-layout';
+      $build['#attributes']['data-layout'] = $section->getLayoutId();
       $build['#layout_plugin_instance'] = $layout_instance;
       $build['regions'] = [];
       foreach ($region_names as $region_name) {
@@ -419,6 +425,25 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $layout_config = $section->getLayoutConfiguration();
     $layout_instance = $this->layoutPluginManager->createInstance($layout_id, $layout_config);
     return $layout_instance;
+  }
+
+  /**
+   * Returns a list of available layouts.
+   *
+   * @param string $bundle_name
+   *   The paragraph bundle name.
+   *
+   * @return array
+   *   A list of layouts.
+   */
+  protected function getAvailableLayouts(string $bundle_name) {
+    /** @var \Drupal\paragraphs\ParagraphsTypeInterface $paragraphs_type */
+    $paragraphs_type = $this->entityTypeManager->getStorage('paragraphs_type')->load($bundle_name);
+    if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
+      $plugin = $paragraphs_type->getBehaviorPlugin('layout_paragraphs');
+      return $plugin->getConfiguration()['available_layouts'];
+    }
+    return [];
   }
 
 }
