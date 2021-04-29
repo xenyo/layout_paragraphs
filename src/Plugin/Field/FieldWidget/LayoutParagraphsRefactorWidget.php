@@ -140,17 +140,17 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
     $this->initIsTranslating($form_state, $items->getEntity());
     $this->initTranslations($items, $form_state);
 
-    $layout_paragraphs_layout = new LayoutParagraphsLayout($items);
+    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items);
     if (!$form_state->getUserInput()) {
-      $this->tempstore->set($layout_paragraphs_layout);
+      $this->tempstore->set($this->layoutParagraphsLayout);
     }
     else {
-      $layout_paragraphs_layout = $this->tempstore->get($layout_paragraphs_layout);
+      $this->layoutParagraphsLayout = $this->tempstore->get($this->layoutParagraphsLayout);
     }
     $element += [
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
-        '#layout_paragraphs_layout' => $layout_paragraphs_layout,
+        '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
         '#movable' => $this->isMovable(),
         '#draggable' => $this->isDraggable(),
         '#create_content' => $this->canCreateContent(),
@@ -400,7 +400,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If can create content.
    */
   protected function canCreateContent() {
-    return !$this->isTranslating;
+    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
   }
 
   /**
@@ -412,7 +412,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If can create content.
    */
   protected function canDeleteContent() {
-    return !$this->isTranslating;
+    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
   }
 
   /**
@@ -424,7 +424,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If can create layouts.
    */
   protected function canCreateLayouts() {
-    return !$this->isTranslating;
+    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
   }
 
   /**
@@ -436,7 +436,22 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
    *   If can create layouts.
    */
   protected function canDeleteLayouts() {
-    return !$this->isTranslating;
+    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
   }
+
+  /**
+   * Whether or not to support asymmetric translations.
+   *
+   * @see https://www.drupal.org/project/paragraphs/issues/2461695
+   * @see https://www.drupal.org/project/paragraphs/issues/2904705
+   * @see https://www.drupal.org/project/paragraphs_asymmetric_translation_widgets
+   *
+   * @return bool
+   *   True if asymmetric tranlation is supported.
+   */
+  protected function supportsAsymmetricTranslations() {
+    return $this->layoutParagraphsLayout->getParagraphsReferenceField()->getFieldDefinition()->isTranslatable();
+  }
+
 
 }
