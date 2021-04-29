@@ -175,6 +175,31 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         ],
       ],
     ];
+    if ($this->isTranslating && !$this->supportsAsymmetricTranslations()) {
+      $element['translation_warning'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['messages', 'messages--warning'],
+        ],
+        '#weight' => -10,
+        'message' => [
+          '#markup' => $this->t('You are in tranlsation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
+        ],
+      ];
+    }
+    if ($this->isTranslating && $this->supportsAsymmetricTranslations()) {
+      $element['translation_warning'] = [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['alert'],
+          'class' => ['messages', 'messages--warning'],
+        ],
+        '#weight' => -10,
+        'message' => [
+          '#markup' => $this->t('You are in tranlsation mode. Changes will only affect the current language.'),
+        ],
+      ];
+    }
     return $element;
   }
 
