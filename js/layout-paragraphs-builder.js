@@ -14,6 +14,7 @@
         this.options.deleteContent = true;
       if (this.options.deleteLayouts === undefined)
         this.options.deleteLayouts = true;
+      this.options.nestingDepth = Number(this.options.nestingDepth);
       this.$element = $(settings.selector);
       this.componentMenu = settings.componentMenu;
       this.sectionMenu = settings.sectionMenu;
@@ -265,6 +266,12 @@
           this.closeComponentMenu();
         }
       }
+      if (e.code === 'ArrowDown' && this.$activeItem) {
+        this.navDown(this.$activeItem);
+      }
+      if (e.code === 'ArrowUp' && this.$activeItem) {
+        this.navUp(this.$activeItem);
+      }
     }
 
     /**
@@ -490,7 +497,7 @@
       $element.prepend($controls.fadeIn(200));
       if (
         $element.parents('.lpb-layout').length === 0 &&
-        this.options.requireSections
+        this.options.requireLayouts
       ) {
         this.insertSectionMenu($element, 'before', 'prepend');
         this.insertSectionMenu($element, 'after', 'append');
@@ -761,6 +768,80 @@
     }
 
     /**
+     * Moves the active component down the DOM when an arrow key is pressed.
+     */
+    navDown() {
+      this.nav(1);
+    }
+
+    /**
+     * Moves the active component up the DOM when an arrow key is pressed.
+     */
+    navUp() {
+      this.nav(-1);
+    }
+
+    /**
+     * Moves the active component up or down the DOM when an arrow key is pressed.
+     * @param {int} dir The direction to move (1 == down, -1 == up).
+     */
+    nav(dir) {
+      if (!this.$activeItem) return;
+      this.removeControls();
+      // We need to stop listening to hover events to prevent another
+      // item from immediately becoming the active one. Hover will presume
+      // when the mouse is moved.
+      this.stopInterval();
+      // Add shims as target elements.
+      $('.lpb-region', this.$element)[dir === 1 ? 'prepend' : 'append'](
+        '<div class="lpb-shim"></div>',
+      );
+      $('.lpb-layout:not(.lpb-active-item)', this.$element)[
+        dir === 1 ? 'after' : 'before'
+      ]('<div class="lpb-shim"></div>');
+      // Build a list of possible targets, or move destinatons.
+      const targets = $('.lpb-component, .lpb-shim', this.$element)
+        .toArray()
+        // Remove child components from possible targets.
+        .filter((i) => !$.contains(this.$activeItem[0], i))
+        // Remove layout elements that are not self from possible targets.
+        .filter(
+          (i) =>
+            i.className.indexOf('lpb-layout') === -1 ||
+            i === this.$activeItem[0],
+        );
+      const currentElement = this.$activeItem[0];
+      let pos = targets.indexOf(currentElement);
+      // Check to see if the next position is allowed by calling the 'accepts' callback.
+      while (
+        targets[pos + dir] !== undefined &&
+        Drupal.lpBuilderInvokeCallbacks('accepts', {
+          el: this.$activeItem[0],
+          target: targets[pos + dir].parentNode,
+          lpBuilder: this,
+        }).indexOf(false) !== -1
+      ) {
+        pos += dir;
+      }
+      if (targets[pos + dir] !== undefined) {
+        // Move after or before the target based on direction.
+        $(targets[pos + dir])[dir === 1 ? 'after' : 'before'](this.$activeItem);
+      }
+      // Remove the shims and save the order.
+      $('.lpb-shim', this.$element).remove();
+      this.saveComponentOrder();
+    }
+
+    addShims() {
+      this.removeShims();
+      $('.lpb-region', this.$element).prepend('<div class="lpb-shim"></div>');
+    }
+
+    removeShims() {
+      $('.lpb-shim', this.$element).remove();
+    }
+
+    /**
      * Initiates dragula drag/drop functionality.
      * @param {object} $widget ERL field item to attach drag/drop behavior to.
      * @param {object} widgetSettings The widget instance settings.
@@ -798,6 +879,7 @@
                 target,
                 source,
                 sibling,
+                lpBuilder: instance,
               }).indexOf(false) === -1
             );
           },
@@ -881,7 +963,7 @@
       const $emptyContainer = $(
         `<div class="js-lpb-empty lpb-empty-container__wrapper">${this.emptyContainer}</div>`,
       ).appendTo(this.$element);
-      if (this.options.requireSections) {
+      if (this.options.requireLayouts) {
         this.insertSectionMenu($emptyContainer, 'insert', 'append');
       } else {
         this.insertToggle($emptyContainer, 'insert', 'append', {
@@ -983,13 +1065,18 @@
     Drupal.lpBuilderInvokeCallbacks(response.hook, response.params);
   };
   Drupal.lpBuilderRegisterCallback('accepts', (params) => {
-    const { el, target } = params;
-    // Layout sections can only go at the root level.
+    const { el, target, lpBuilder } = params;
+    // Ensure correct nesting depth.
     if (el.className.indexOf('lpb-layout') > -1) {
-      return target.className.indexOf('lp-builder') > -1;
+      return (
+        $(target).parents('.lpb-layout').length <=
+        lpBuilder.options.nestingDepth
+      );
     }
-    if (el.className.indexOf('lpb-component') > -1) {
-      return target.className.indexOf('lpb-region') > -1;
+    if (lpBuilder.options.requireLayouts) {
+      if (el.className.indexOf('lpb-component') > -1) {
+        return target.className.indexOf('lpb-region') > -1;
+      }
     }
   });
   Drupal.lpBuilderRegisterCallback('save', (layoutId) => {

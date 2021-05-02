@@ -23,10 +23,10 @@
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
   bottom: 20px;
 }
-.is-dragging-item .lpb-region {
+.is-dragging .lpb-region {
   outline: 1px dotted blue;
 }
-.is-dragging-item .t-reversed .lpb-region {
+.is-dragging .t-reversed .lpb-region {
   outline: 1px dotted white;
 }
 .lpb-component {

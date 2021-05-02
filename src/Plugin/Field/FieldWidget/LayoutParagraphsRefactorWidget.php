@@ -172,7 +172,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
           'showTypeLabels' => $this->config->get('show_paragraph_labels'),
           'showLayoutLabels' => $this->config->get('show_layout_labels'),
           'nestingDepth' => $this->getSetting('nesting_depth'),
-          'requireSections' => $this->getSetting('require_layouts'),
+          'requireLayouts' => $this->getSetting('require_layouts'),
           'isTranslating' => $this->isTranslating,
           'movable' => $this->isMovable(),
           'draggable' => $this->isDraggable(),
