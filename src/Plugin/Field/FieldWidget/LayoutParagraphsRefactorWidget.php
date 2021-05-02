@@ -196,7 +196,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         ],
         '#weight' => -10,
         'message' => [
-          '#markup' => $this->t('You are in tranlsation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
+          '#markup' => $this->t('You are in translation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
         ],
       ];
     }
@@ -209,7 +209,7 @@ class LayoutParagraphsRefactorWidget extends WidgetBase implements ContainerFact
         ],
         '#weight' => -10,
         'message' => [
-          '#markup' => $this->t('You are in tranlsation mode. Changes will only affect the current language.'),
+          '#markup' => $this->t('You are in translation mode. Changes will only affect the current language.'),
         ],
       ];
     }
