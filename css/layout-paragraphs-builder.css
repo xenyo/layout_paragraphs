@@ -11,7 +11,7 @@
   min-height: 40px;
   cursor: default;
   box-sizing: border-box;
-  padding: 10px;
+  padding: 5px;
 }
 .lpb-empty-container__wrapper {
   position: relative;
@@ -33,7 +33,7 @@
   outline: 1px solid blue;
   outline-color: transparent;
   transition: all .15s linear;
-  padding: 20px;
+  padding: 5px;
 }
 .dragula-enabled .lpb-component {
   cursor: grab;

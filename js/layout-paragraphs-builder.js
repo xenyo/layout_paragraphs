@@ -544,6 +544,10 @@
         this.$componentMenu.find('.lpb-component-menu__search').hide();
       }
       this.positionComponentMenu();
+      Drupal.lpBuilderInvokeCallbacks('componentMenu', {
+        $menu: this.$componentMenu,
+        lpBuilder: this,
+      });
       this.stopInterval();
     }
 
@@ -1064,6 +1068,13 @@
   ) => {
     Drupal.lpBuilderInvokeCallbacks(response.hook, response.params);
   };
+  Drupal.lpBuilderRegisterCallback('componentMenu', (params) => {
+    const { $menu, lpBuilder } = params;
+    // Ensure correct nesting depth.
+    if ($menu.parents('.lpb-layout').length > lpBuilder.options.nestingDepth) {
+      $('.lpb-component-menu__group--layout', $menu).remove();
+    }
+  });
   Drupal.lpBuilderRegisterCallback('accepts', (params) => {
     const { el, target, lpBuilder } = params;
     // Ensure correct nesting depth.
