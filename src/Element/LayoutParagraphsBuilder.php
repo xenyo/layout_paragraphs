@@ -227,6 +227,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     }
 
     $js_settings = [
+      'id' => $layout->id(),
       'selector' => '.js-' . $layout->id(),
       'componentMenu' => $this->renderer->render($component_menu),
       'sectionMenu' => $this->renderer->render($section_menu),

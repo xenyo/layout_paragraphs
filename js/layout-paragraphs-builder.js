@@ -4,6 +4,7 @@
       this._edited = false;
       this.settings = settings;
       this.options = settings.options || {};
+      this.id = settings.id || Math.random().toString(36).substring(7);
       if (this.options.movable === undefined) this.options.movable = true;
       if (this.options.draggable === undefined) this.options.draggable = true;
       if (this.options.createContent === undefined)
@@ -199,12 +200,16 @@
       const $component = $(e.currentTarget).closest('.lpb-component');
       const type = $component.attr('data-type');
       const typeName = this.settings.types[type].name || Drupal.t('Component');
+      this.removeControls();
       this.confirm($component, {
         content: Drupal.t('Really delete this @name?', { '@name': typeName }),
         confirmText: Drupal.t('Delete'),
         confirm: (_e) => {
           deleteComponent($component);
           _e.preventDefault();
+        },
+        cancel: () => {
+          this.insertControls(this.$activeItem);
         },
       });
       e.preventDefault();
@@ -573,10 +578,6 @@
         $('.lpb-component-menu__group--layout', this.$componentMenu).remove();
       }
       this.positionComponentMenu();
-      Drupal.lpBuilderInvokeCallbacks('componentMenu', {
-        $menu: this.$componentMenu,
-        lpBuilder: this,
-      });
       this.stopInterval();
       this.emit('openmenu', this.$componentMenu);
     }
@@ -683,6 +684,7 @@
       const { content } = options;
       const confirmText = options.confirmText || Drupal.t('Confirm');
       const cancelText = options.cancelText || Drupal.t('Cancel');
+      const cancel = options.cancel || false;
       const $content = $(`<div class="lpb-confirm">
         <div class="lpb-confirm-container">
           <div class="lpb-confirm-wrapper">
@@ -696,12 +698,12 @@
       </div>`);
       $content.on('click.lpb-confirm', '.lpb-confirm-btn', options.confirm);
       $content.on('click.lpb-confirm', '.lpb-cancel-btn', (e) => {
-        this.cancel();
+        this.cancel(cancel);
         e.preventDefault();
       });
       this.$element.on('keyup.lpb-confirm', '.lpb-confirm', (e) => {
         if (e.code === 'Escape') {
-          this.cancel();
+          this.cancel(cancel);
           e.preventDefault();
         }
       });
@@ -710,7 +712,10 @@
       return this;
     }
 
-    cancel() {
+    cancel(callback) {
+      if (callback) {
+        callback.apply(this);
+      }
       $('.lpb-confirm', this.$element).off('.lpb-confirm').remove();
       return this;
     }
@@ -1117,41 +1122,6 @@
     builder.saveComponentOrder();
     builder.$activeItem = $insertedComponent;
   }
-  /**
-   * Registers a callback to be called when a specific hook is invoked.
-   * @param {String} hook The name of the hook.
-   * @param {function} callback The function to call.
-   */
-  Drupal.lpBuilderRegisterCallback = (hook, callback) => {
-    if (Drupal.lpBuilderCallbacks === undefined) {
-      Drupal.lpBuilderCallbacks = [];
-    }
-    Drupal.lpBuilderCallbacks.push({ hook, callback });
-  };
-  /**
-   * Removes a callback from the list.
-   * @param {String} hook The name of the hook.
-   */
-  Drupal.lpBuilderUnRegisterCallback = (hook) => {
-    Drupal.lpBuilderCallbacks = Drupal.lpBuilderCallbacks.filter(
-      (item) => item.hook !== hook,
-    );
-  };
-  /**
-   * Invoke all callbacks for a specific hook.
-   * @param {string} hook The name of the hook.
-   * @param {object} param The parameter object which will be passed to the callback.
-   * @return {array} an array of returned values from callback functions.
-   */
-  Drupal.lpBuilderInvokeCallbacks = (hook, param) => {
-    const applicableCallbacks = Drupal.lpBuilderCallbacks.filter(
-      (item) => item.hook.split('.')[0] === hook,
-    );
-    return applicableCallbacks.map((callback) =>
-      typeof callback.callback === 'function' ? callback.callback(param) : null,
-    );
-  };
-
   Drupal.lpBuilder = (settings) => {
     const instance = new LPBuilder(settings);
     Drupal.lpBuilder.instances.push(instance);
@@ -1171,6 +1141,14 @@
               .once('lp-builder')
               .each((index, element) => {
                 const builder = Drupal.lpBuilder(builderSettings);
+                builder.on('updatecomponent', (params) => {
+                  const { layoutId, componentUuid } = params;
+                  componentUpdate(layoutId, componentUuid);
+                });
+                builder.on('insertcomponent', (params) => {
+                  const { layoutId, componentUuid } = params;
+                  componentUpdate(layoutId, componentUuid);
+                });
                 $(element)
                   .addClass('js-lpb-container')
                   .data('lpbInstance', builder);
@@ -1184,17 +1162,8 @@
     ajax,
     response,
   ) => {
-    Drupal.lpBuilderInvokeCallbacks(response.hook, response.params);
+    Drupal.lpBuilder.instances.forEach((instance) => {
+      instance.emit(response.hook.toLowerCase(), response.params);
+    });
   };
-  Drupal.lpBuilderRegisterCallback('save', (layoutId) => {
-    $(`[data-lp-builder-id="${layoutId}"`).data('lpbInstance').saved();
-  });
-  Drupal.lpBuilderRegisterCallback('updateComponent', (params) => {
-    const { layoutId, componentUuid } = params;
-    componentUpdate(layoutId, componentUuid);
-  });
-  Drupal.lpBuilderRegisterCallback('insertComponent', (params) => {
-    const { layoutId, componentUuid } = params;
-    componentUpdate(layoutId, componentUuid);
-  });
 })(jQuery, Drupal, drupalSettings, dragula);
