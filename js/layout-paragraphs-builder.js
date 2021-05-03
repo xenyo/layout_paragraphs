@@ -27,6 +27,7 @@
       this._interval = 200;
       this._statusIntervalId = 0;
       this._statusInterval = 3000;
+      this._events = {};
 
       if (this.$element.find('.lpb-component').length === 0) {
         this.isEmpty();
@@ -106,6 +107,22 @@
             minWidth: '350px',
           });
         });
+
+      // Respond to attempt to move an element.
+      this.on('accepts', (params) => {
+        const { el, target } = params;
+        // Ensure correct nesting depth.
+        if (el.className.indexOf('lpb-layout') > -1) {
+          return (
+            $(target).parents('.lpb-layout').length <= this.options.nestingDepth
+          );
+        }
+        if (this.options.requireLayouts) {
+          if (el.className.indexOf('lpb-component') > -1) {
+            return target.className.indexOf('lpb-region') > -1;
+          }
+        }
+      });
     }
 
     onMouseMove() {
@@ -364,6 +381,7 @@
         $item.addClass(['js-lpb-active-item', 'lpb-active-item']);
       }
       this._$activeItem = $item;
+      this.emit('focus', $item);
     }
 
     get $activeItem() {
@@ -431,6 +449,7 @@
       }
       top += offsetTop;
       $toggleButton.offset({ left, top });
+      this.emit('drawtoggle', this);
     }
 
     insertSectionMenu($container, placement, method) {
@@ -453,6 +472,7 @@
       const sectionMenuWidth = $sectionMenu.outerWidth();
       const left = Math.floor(offset.left + width / 2 - sectionMenuWidth / 2);
       $sectionMenu.offset({ left });
+      this.emit('openmenu', $sectionMenu);
     }
 
     removeControls() {
@@ -465,6 +485,7 @@
       this.$element.find('.lp-builder-controls-menu').remove();
       this.$componentMenu = false;
       this.$activeToggle = false;
+      this.emit('removecontrols');
     }
 
     insertControls($element) {
@@ -506,6 +527,7 @@
         this.insertToggle($element, 'after', 'append');
       }
       $controls.offset(offset);
+      this.emit('insertcontrols', $controls);
     }
 
     /**
@@ -543,12 +565,20 @@
       } else {
         this.$componentMenu.find('.lpb-component-menu__search').hide();
       }
+      // Remove layout items if nesting depth has been reached.
+      if (
+        this.$componentMenu.parents('.lpb-layout').length >
+        this.options.nestingDepth
+      ) {
+        $('.lpb-component-menu__group--layout', this.$componentMenu).remove();
+      }
       this.positionComponentMenu();
       Drupal.lpBuilderInvokeCallbacks('componentMenu', {
         $menu: this.$componentMenu,
         lpBuilder: this,
       });
       this.stopInterval();
+      this.emit('openmenu', this.$componentMenu);
     }
 
     /**
@@ -607,6 +637,7 @@
       this.$componentMenu = false;
       this.$activeToggle = false;
       this.startInterval();
+      this.emit('closemenu');
     }
 
     /**
@@ -625,6 +656,7 @@
         .done(() => {
           this.removeControls();
           this.removeToggle();
+          this.emit('editform', uuid);
         });
     }
 
@@ -637,6 +669,8 @@
       $item.fadeOut(200, () => {
         this.request(`delete/${uuid}`, { success: () => this.edited() });
       });
+      // @todo Should we pass more meaningful data?
+      this.emit('delete', uuid);
     }
 
     /**
@@ -689,6 +723,7 @@
      */
     insertSiblingComponent(siblingUuid, type, placement) {
       this.request(`insert-sibling/${siblingUuid}/${placement}/${type}`);
+      this.emit('insertsibling', siblingUuid, placement, type);
     }
 
     /**
@@ -697,17 +732,20 @@
      */
     insertComponent(type) {
       this.request(`insert-component/${type}`);
+      this.emit('insert', type);
     }
 
     /**
      * Saves the order and nested structure of components for the layout.
      */
     saveComponentOrder() {
+      const state = JSON.stringify(this.getState());
       this.request('reorder', {
         data: {
-          layoutParagraphsState: JSON.stringify(this.getState()),
+          layoutParagraphsState: state,
         },
       });
+      this.emit('saveorder', state);
     }
 
     /**
@@ -718,6 +756,7 @@
      */
     insertComponentIntoRegion(parentUuid, region, type) {
       this.request(`insert-into-region/${parentUuid}/${region}/${type}`);
+      this.emit('insertintoregion', parentUuid, region, type);
     }
 
     /**
@@ -819,10 +858,9 @@
       // Check to see if the next position is allowed by calling the 'accepts' callback.
       while (
         targets[pos + dir] !== undefined &&
-        Drupal.lpBuilderInvokeCallbacks('accepts', {
+        this.emit('accepts', {
           el: this.$activeItem[0],
           target: targets[pos + dir].parentNode,
-          lpBuilder: this,
         }).indexOf(false) !== -1
       ) {
         pos += dir;
@@ -878,13 +916,12 @@
           accepts(el, target, source, sibling) {
             // Returns false if any registered callback returns false.
             return (
-              Drupal.lpBuilderInvokeCallbacks('accepts', {
-                el,
-                target,
-                source,
-                sibling,
-                lpBuilder: instance,
-              }).indexOf(false) === -1
+              instance
+                .emit('accepts', {
+                  el,
+                  target,
+                })
+                .indexOf(false) === -1
             );
           },
           moves(el, source, handle) {
@@ -995,7 +1032,76 @@
           }
         });
     }
-  }
+
+    /**
+     * Add an event listener.
+     * @param {string} type The event type.
+     * @param {function} fn The callback function.
+     * @return {LPBuilder} The LPBuilder instance.
+     */
+    on(type, fn) {
+      if (!this._events[type]) {
+        this._events[type] = [fn];
+      } else {
+        this._events[type].push(fn);
+      }
+      return this;
+    }
+
+    /**
+     * Add an event listener to fire only once.
+     * @param {string} type The event type.
+     * @param {function} fn The callback function.
+     * @return {LPBuilder} The LPBuilder instance.
+     */
+    once(type, fn) {
+      fn._once = true; // thing.off(fn) still works!
+      this.on(type, fn);
+      return this;
+    }
+
+    /**
+     * Remove an event listener.
+     * @param {string} type The event type.
+     * @param {function} fn The callback function.
+     * @return {LPBuilder} The LPBuilder instance.
+     */
+    off(type = false, fn = false) {
+      if (type && !fn) {
+        delete this._events[type];
+      } else if (!type && !fn) {
+        Object.keys(this._events).forEach((key) => {
+          delete this._events[key];
+        });
+      } else {
+        const et = this._events[type];
+        if (!et) {
+          return this;
+        }
+        et.splice(et.indexOf(fn), 1);
+      }
+      return this;
+    }
+
+    /**
+     * Emit an event listener.
+     * @param {*} type The event type.
+     * @return {array} An array of returned results from listeners.
+     */
+    emit(...args) {
+      const type = args.shift();
+      const et = (this._events[type] || []).slice(0);
+      const results = [];
+      et.forEach((listener) => {
+        results.push(listener.apply(this, args));
+        if (listener._once) {
+          this.off(type, listener);
+        }
+      });
+      return results;
+    }
+  } // End LPBuilder class.
+
   /**
    * Respond to a component being updated or inserted by an AJAX request.
    * @param {string} layoutId The layout id.
@@ -1045,17 +1151,29 @@
       typeof callback.callback === 'function' ? callback.callback(param) : null,
     );
   };
+
+  Drupal.lpBuilder = (settings) => {
+    const instance = new LPBuilder(settings);
+    Drupal.lpBuilder.instances.push(instance);
+    return instance;
+  };
+  Drupal.lpBuilder.instances = [];
+  Drupal.lpBuilder.get = (id) => {
+    return Drupal.lpBuilder.filter((lpBuilder) => lpBuilder.id === id).pop();
+  };
+
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      if (settings.layoutParagraphsBuilder) {
+      if (settings.layoutParagraphsBuilder !== undefined) {
         Object.values(settings.layoutParagraphsBuilder).forEach(
           (builderSettings) => {
             $(builderSettings.selector)
               .once('lp-builder')
               .each((index, element) => {
+                const builder = Drupal.lpBuilder(builderSettings);
                 $(element)
                   .addClass('js-lpb-container')
-                  .data('lpbInstance', new LPBuilder(builderSettings));
+                  .data('lpbInstance', builder);
               });
           },
         );
@@ -1068,28 +1186,6 @@
   ) => {
     Drupal.lpBuilderInvokeCallbacks(response.hook, response.params);
   };
-  Drupal.lpBuilderRegisterCallback('componentMenu', (params) => {
-    const { $menu, lpBuilder } = params;
-    // Ensure correct nesting depth.
-    if ($menu.parents('.lpb-layout').length > lpBuilder.options.nestingDepth) {
-      $('.lpb-component-menu__group--layout', $menu).remove();
-    }
-  });
-  Drupal.lpBuilderRegisterCallback('accepts', (params) => {
-    const { el, target, lpBuilder } = params;
-    // Ensure correct nesting depth.
-    if (el.className.indexOf('lpb-layout') > -1) {
-      return (
-        $(target).parents('.lpb-layout').length <=
-        lpBuilder.options.nestingDepth
-      );
-    }
-    if (lpBuilder.options.requireLayouts) {
-      if (el.className.indexOf('lpb-component') > -1) {
-        return target.className.indexOf('lpb-region') > -1;
-      }
-    }
-  });
   Drupal.lpBuilderRegisterCallback('save', (layoutId) => {
     $(`[data-lp-builder-id="${layoutId}"`).data('lpbInstance').saved();
   });
