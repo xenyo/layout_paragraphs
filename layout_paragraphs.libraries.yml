@@ -24,6 +24,7 @@ layout_paragraphs_builder:
     - core/drupal.dialog
     - core/drupal.dialog.ajax
     - core/drupal.ajax
+    - core/drupal.debounce
 
 layout_select:
   css:

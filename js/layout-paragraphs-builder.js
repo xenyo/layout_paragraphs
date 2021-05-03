@@ -1,4 +1,4 @@
-(($, Drupal, drupalSettings, dragula) => {
+(($, Drupal, debounce, drupalSettings, dragula) => {
   class LPBuilder {
     constructor(settings) {
       this._edited = false;
@@ -29,6 +29,11 @@
       this._statusIntervalId = 0;
       this._statusInterval = 3000;
       this._events = {};
+
+      // Debounce prevent too many API calls.
+      this.debouncedSaveComponentOrder = Drupal.debounce(() => {
+        this.saveComponentOrder();
+      }, 250);
 
       if (this.$element.find('.lpb-component').length === 0) {
         this.isEmpty();
@@ -876,7 +881,7 @@
       }
       // Remove the shims and save the order.
       $('.lpb-shim', this.$element).remove();
-      this.saveComponentOrder();
+      this.debouncedSaveComponentOrder();
     }
 
     addShims() {
@@ -1166,4 +1171,4 @@
       instance.emit(response.hook.toLowerCase(), response.params);
     });
   };
-})(jQuery, Drupal, drupalSettings, dragula);
+})(jQuery, Drupal, Drupal.debounce, drupalSettings, dragula);
