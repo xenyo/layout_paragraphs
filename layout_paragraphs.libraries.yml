@@ -25,20 +25,6 @@ layout_paragraphs_builder:
     - core/drupal.dialog.ajax
     - core/drupal.ajax
 
-layout_paragraphs_widget:
-  css:
-    layout:
-      css/layout-paragraphs-widget.css: {}
-  js:
-    js/layout-paragraphs-widget.js: {}
-  dependencies:
-    - layout_paragraphs/dragula
-    - core/jquery
-    - core/jquery.ui.draggable
-    - core/drupal.dialog
-    - core/drupal.dialog.ajax
-    - core/drupal.ajax
-
 layout_select:
   css:
     layout:
