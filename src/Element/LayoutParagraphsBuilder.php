@@ -102,6 +102,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   public function getInfo() {
     return [
       '#layout_paragraphs_layout' => NULL,
+      '#preview_view_mode' => 'default',
       '#options' => [],
       '#uuid' => NULL,
       '#pre_render' => [
@@ -118,6 +119,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $element['layout_paragraphs_layout'] = $this->renderLayout(
         $element['#layout_paragraphs_layout'],
         $element['#options'],
+        $element['#preview_view_mode'],
         $element['#uuid']
       );
     }
@@ -136,6 +138,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   The layout paragraphs layout domain object.
    * @param array $options
    *   Additional options to pass to the Layout Paragraphs Builder JS.
+   * @param string $preview_view_mode
+   *   The view mode to use for rendering paragraphs.
    * @param string $element_uuid
    *   If provided, returns the render array for a single component.
    *
@@ -145,6 +149,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   protected function renderLayout(
     LayoutParagraphsLayout $layout_paragraph_layout,
     array $options,
+    string $preview_view_mode = 'default',
     string $element_uuid = NULL) {
 
     $output = [
@@ -157,7 +162,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     // Build a flat list of component build arrays.
     foreach ($layout->getComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
-      $output['#components'][$component->getEntity()->uuid()] = $this->buildComponent($layout, $component);
+      $output['#components'][$component->getEntity()->uuid()] = $this->buildComponent($layout, $component, $preview_view_mode);
     }
 
     // Nest child components inside their respective sections and regions.
@@ -189,7 +194,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
 
     // Build the complete Layout Paragraphs Builder UI with attached libraries.
     $entity = $layout->getEntity();
-    $base_url = sprintf('/layout-paragraphs-builder/%s/%s/%d/%s/%s', $entity->getEntityTypeId(), $entity->bundle(), $entity->id(), $layout->getFieldName(), $layout->id());
+    $base_url = sprintf(
+      '/layout-paragraphs-builder/%s/%s/%d/%s/%s/%s',
+      $entity->getEntityTypeId(), $entity->bundle(),
+      $entity->id(),
+      $layout->getFieldName(),
+      $layout->id(),
+      $preview_view_mode
+    );
     $allowed_types = $this->getComponentTypes($layout);
     $field_definition = $layout_paragraph_layout
       ->getParagraphsReferenceField()
@@ -277,14 +289,16 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   THe Layout Paragraphs Layout object.
    * @param \Drupal\layout_paragraphs\LayoutParagraphsComponent $component
    *   The component to render.
+   * @param string $preview_view_mode
+   *   The view mode to use for rendering paragraphs.
    *
    * @return array
    *   The build array.
    */
-  protected function buildComponent(LayoutParagraphsLayout $layout, LayoutParagraphsComponent $component) {
+  protected function buildComponent(LayoutParagraphsLayout $layout, LayoutParagraphsComponent $component, $preview_view_mode = 'default') {
     $entity = $component->getEntity();
     $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
-    $build = $view_builder->view($entity, 'default', $entity->language()->getId());
+    $build = $view_builder->view($entity, $preview_view_mode, $entity->language()->getId());
 
     $build['#attributes']['data-uuid'] = $entity->uuid();
     $build['#attributes']['data-type'] = $entity->bundle();

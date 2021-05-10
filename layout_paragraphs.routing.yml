@@ -13,16 +13,8 @@ layout_paragraphs.section_settings:
   requirements:
     _permission: 'administer site configuration'
 
-layout_paragraphs.edit_component:
-  path: '/admin/layout_paragraphs/{storage_key}/{component_uuid}'
-  defaults:
-    _form: '\Drupal\layout_paragraphs\Form\LayoutParagraphsEditComponentForm'
-    _title: 'Edit Component'
-  requirements:
-    _custom_access: '\Drupal\layout_paragraphs\Form\LayoutParagraphsEditComponentForm::access'
-
 layout_paragraphs.builder.edit_item:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/edit/{paragraph_uuid}'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/edit/{paragraph_uuid}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::editForm'
   options:
@@ -33,7 +25,7 @@ layout_paragraphs.builder.edit_item:
   requirements:
     _permission: 'administer content'
 layout_paragraphs.builder.insert_sibling:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{proximity}/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-sibling/{sibling_uuid}/{proximity}/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertSibling'
   options:
@@ -46,7 +38,7 @@ layout_paragraphs.builder.insert_sibling:
   requirements:
     _permission: 'administer content'
 layout_paragraphs.builder.insert:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/insert-component/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-component/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertComponent'
   options:
@@ -59,7 +51,7 @@ layout_paragraphs.builder.insert:
   requirements:
     _permission: 'administer content'
 layout_paragraphs.builder.insert_into_region:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertIntoRegion'
   options:
@@ -72,7 +64,7 @@ layout_paragraphs.builder.insert_into_region:
   requirements:
     _permission: 'administer content'
 layout_paragraphs.builder.delete:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/delete/{uuid}'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/delete/{uuid}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::deleteComponent'
   options:
@@ -85,7 +77,7 @@ layout_paragraphs.builder.delete:
   requirements:
     _permission: 'administer content'
 layout_paragraphs.builder.reorder:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/reorder'
+  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/reorder'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::reorderComponents'
   options:

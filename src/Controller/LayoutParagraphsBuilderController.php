@@ -70,11 +70,13 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The editor instance.
    * @param string $paragraph_uuid
    *   The uuid of the paragraph we are editing.
+   * @param string $preview_view_mode
+   *   The view mode to use for rendering paragraphs.
    *
    * @return \Drupal\Core\Ajax\AjaxResponse
    *   The dialog command with edit form.
    */
-  public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
+  public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid, string $preview_view_mode) {
     $response = new AjaxResponse();
     $paragraph = $layout_paragraphs_layout
       ->getComponentByUuid($paragraph_uuid)
@@ -84,7 +86,8 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $form = $this->formBuilder()->getForm(
       '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentEditForm',
       $layout_paragraphs_layout,
-      $paragraph
+      $paragraph,
+      $preview_view_mode
     );
 
     $this->addFormResponse($response, $label, $form);

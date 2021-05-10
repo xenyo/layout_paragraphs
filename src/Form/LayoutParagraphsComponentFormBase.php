@@ -15,6 +15,7 @@ use Drupal\Core\Form\SubformState;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Layout\LayoutPluginManager;
 
 /**
@@ -48,10 +49,6 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
   protected $layoutPluginManager;
 
   /**
-   * The layout plugin manager service.
-   */
-
-  /**
    * The layout object.
    *
    * @var \Drupal\layout_paragraphs\LayoutParagraphsLayout
@@ -73,15 +70,31 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
   protected $paragraph;
 
   /**
+   * The view mode to use for rendering paragraphs.
+   *
+   * @var string
+   */
+  protected $previewViewMode;
+
+  /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandler
+   */
+  protected $moduleHandler;
+
+  /**
    * {@inheritDoc}
    */
   public function __construct(
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
-    LayoutPluginManager $layout_plugin_manager) {
+    LayoutPluginManager $layout_plugin_manager,
+    ModuleHandler $module_handler) {
     $this->tempstore = $tempstore;
     $this->entityTypeManager = $entity_type_manager;
     $this->layoutPluginManager = $layout_plugin_manager;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -91,7 +104,8 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     return new static(
       $container->get('layout_paragraphs.tempstore_repository'),
       $container->get('entity_type.manager'),
-      $container->get('plugin.manager.core.layout')
+      $container->get('plugin.manager.core.layout'),
+      $container->get('module_handler')
     );
   }
 
@@ -109,10 +123,12 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     array $form,
     FormStateInterface $form_state,
     $layout_paragraphs_layout = NULL,
-    $paragraph = NULL) {
+    $paragraph = NULL,
+    $preview_view_mode = '') {
 
     $this->layoutParagraphsLayout = $layout_paragraphs_layout;
     $this->paragraph = $paragraph;
+    $this->previewViewMode = $preview_view_mode;
 
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);
@@ -160,7 +176,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
 
     // Support for Field Group module based on Paragraphs module.
     // @todo Remove as part of https://www.drupal.org/node/2640056
-    if (\Drupal::moduleHandler()->moduleExists('field_group')) {
+    if ($this->moduleHandler->moduleExists('field_group')) {
       $context = [
         'entity_type' => $this->paragraph->getEntityTypeId(),
         'bundle' => $this->paragraph->bundle(),
@@ -275,6 +291,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
       '#type' => 'layout_paragraphs_builder',
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#uuid' => $uuid,
+      '#preview_view_mode' => $this->previewViewMode,
     ];
   }
 

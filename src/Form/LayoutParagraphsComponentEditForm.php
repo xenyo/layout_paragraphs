@@ -24,9 +24,10 @@ class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBas
     array $form,
     FormStateInterface $form_state,
     $layout_paragraphs_layout = NULL,
-    $paragraph = NULL) {
+    $paragraph = NULL,
+    $preview_view_mode = '') {
 
-    $form = parent::buildForm($form, $form_state, $layout_paragraphs_layout, $paragraph);
+    $form = parent::buildForm($form, $form_state, $layout_paragraphs_layout, $paragraph, $preview_view_mode);
     if ($selected_layout = $form_state->getValue(['layout_paragraphs', 'layout'])) {
       $section = $this->layoutParagraphsLayout->getLayoutSection($this->paragraph);
       if ($section && $selected_layout != $section->getLayoutId()) {

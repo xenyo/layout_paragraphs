@@ -162,6 +162,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
+        '#preview_view_mode' => $this->getSetting('preview_view_mode'),
         '#movable' => $this->isMovable(),
         '#draggable' => $this->isDraggable(),
         '#create_content' => $this->canCreateContent(),

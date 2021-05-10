@@ -2,43 +2,58 @@
   class LPBuilder {
     constructor(settings) {
       this._edited = false;
-      this.settings = settings;
-      this.options = settings.options || {};
-      this.id = settings.id || Math.random().toString(36).substring(7);
-      if (this.options.movable === undefined) this.options.movable = true;
-      if (this.options.draggable === undefined) this.options.draggable = true;
-      if (this.options.createContent === undefined)
-        this.options.createContent = true;
-      if (this.options.createLayouts === undefined)
-        this.options.createLayouts = true;
-      if (this.options.deleteContent === undefined)
-        this.options.deleteContent = true;
-      if (this.options.deleteLayouts === undefined)
-        this.options.deleteLayouts = true;
-      this.options.nestingDepth = Number(this.options.nestingDepth);
-      this.$element = $(settings.selector);
-      this.componentMenu = settings.componentMenu;
-      this.sectionMenu = settings.sectionMenu;
-      this.controls = settings.controls;
-      this.toggleButton = settings.toggleButton;
-      this.emptyContainer = settings.emptyContainer;
-      this.$actions = this.$element.find('.lpb-controls');
-      this.trashBin = [];
       this._intervalId = 0;
       this._interval = 200;
-      this._statusIntervalId = 0;
-      this._statusInterval = 3000;
       this._events = {};
+      this._validMoves = [];
+
+      this.options = {
+        movevable: true,
+        draggable: true,
+        createContent: true,
+        createLayouts: true,
+        deleteContent: true,
+        deleteLayouts: true,
+        nestingDepth: 0,
+      };
+      $.extend(this.options, settings.options);
+
+      this.settings = settings;
+      this.id = settings.id || Math.random().toString(36).substring(7);
+
+      // The main container element for the layout builder.
+      this.$element = $(settings.selector);
+
+      // HTML templates passed in settings.
+      this.componentMenuTpl = settings.componentMenu;
+      this.sectionMenuTpl = settings.sectionMenu;
+      this.controlsTpl = settings.controls;
+      this.toggleButtonTpl = settings.toggleButton;
+      this.emptyContainerTpl = settings.emptyContainer;
 
       // Debounce prevent too many API calls.
-      this.debouncedSaveComponentOrder = Drupal.debounce(() => {
-        this.saveComponentOrder();
+      this.saveComponentOrder = debounce(() => {
+        this._saveComponentOrder();
       }, 250);
+
+      // Add basic move validation.
+      this.addMoveValidator((el, target) => {
+        // Ensure correct nesting depth.
+        if (el.className.indexOf('lpb-layout') > -1) {
+          return (
+            $(target).parents('.lpb-layout').length > this.options.nestingDepth
+          );
+        }
+        if (this.options.requireLayouts) {
+          if (el.className.indexOf('lpb-component') > -1) {
+            return target.className.indexOf('lpb-region') === -1;
+          }
+        }
+      });
 
       if (this.$element.find('.lpb-component').length === 0) {
         this.isEmpty();
       }
-
       this.attachEventListeners();
       this.enableDragAndDrop();
       this.saved();
@@ -113,22 +128,9 @@
             minWidth: '350px',
           });
         });
-
-      // Respond to attempt to move an element.
-      this.on('accepts', (params) => {
-        const { el, target } = params;
-        // Ensure correct nesting depth.
-        if (el.className.indexOf('lpb-layout') > -1) {
-          return (
-            $(target).parents('.lpb-layout').length <= this.options.nestingDepth
-          );
-        }
-        if (this.options.requireLayouts) {
-          if (el.className.indexOf('lpb-component') > -1) {
-            return target.className.indexOf('lpb-region') > -1;
-          }
-        }
-      });
+      // Respond to updating or inserting a component.
+      this.on('component:update', this.onComponentUpdate.bind(this));
+      this.on('component:insert', this.onComponentUpdate.bind(this));
     }
 
     onMouseMove() {
@@ -333,6 +335,22 @@
       }
     }
 
+    /**
+     * Respond to a component being updated.
+     * @param {string} componentUuid The uuid of the updated component.
+     */
+    onComponentUpdate(componentUuid) {
+      this.removeControls();
+      const $insertedComponent = this.$element.find(
+        `[data-uuid="${componentUuid}"]`,
+      );
+      const dragContainers = $insertedComponent.find('.lpb-region').get();
+      this.addDragContainers(dragContainers);
+      this.edited();
+      this.saveComponentOrder();
+      this.$activeItem = $insertedComponent;
+    }
+
     detachEventListeners() {
       this.$element.off('.lp-builder');
       this.$element.off('.lp-builder');
@@ -391,7 +409,7 @@
         $item.addClass(['js-lpb-active-item', 'lpb-active-item']);
       }
       this._$activeItem = $item;
-      this.emit('focus', $item);
+      this.emit('component:focus', $item);
     }
 
     get $activeItem() {
@@ -421,7 +439,7 @@
         `<div class="js-lpb-toggle lpb-toggle__wrapper"></div>`,
       )
         .append(
-          $(this.toggleButton).attr({
+          $(this.toggleButtonTpl).attr({
             'data-placement': placement,
             'data-region': $container.attr('data-region'),
             'data-container-uuid': $container
@@ -459,7 +477,7 @@
       }
       top += offsetTop;
       $toggleButton.offset({ left, top });
-      this.emit('drawtoggle', this);
+      this.emit('toggle:hide', this);
     }
 
     insertSectionMenu($container, placement, method) {
@@ -469,7 +487,7 @@
       const offset = $container.offset();
       const width = $container.outerWidth();
       const $sectionMenu = $(
-        `<div class="js-lpb-section-menu lpb-section-menu__wrapper">${this.sectionMenu}</div>`,
+        `<div class="js-lpb-section-menu lpb-section-menu__wrapper">${this.sectionMenuTpl}</div>`,
       )
         .attr({
           'data-placement': placement,
@@ -482,7 +500,7 @@
       const sectionMenuWidth = $sectionMenu.outerWidth();
       const left = Math.floor(offset.left + width / 2 - sectionMenuWidth / 2);
       $sectionMenu.offset({ left });
-      this.emit('openmenu', $sectionMenu);
+      this.emit('menu:show', $sectionMenu);
     }
 
     removeControls() {
@@ -495,12 +513,12 @@
       this.$element.find('.lp-builder-controls-menu').remove();
       this.$componentMenu = false;
       this.$activeToggle = false;
-      this.emit('removecontrols');
+      this.emit('controls:hide');
     }
 
     insertControls($element) {
       const $controls = $(
-        `<div class="js-lpb-controls lpb-controls__wrapper">${this.controls}</div>`,
+        `<div class="js-lpb-controls lpb-controls__wrapper">${this.controlsTpl}</div>`,
       )
         .css({ position: 'absolute' })
         .hide();
@@ -537,7 +555,7 @@
         this.insertToggle($element, 'after', 'append');
       }
       $controls.offset(offset);
-      this.emit('insertcontrols', $controls);
+      this.emit('controls:show', $controls);
     }
 
     /**
@@ -561,7 +579,7 @@
       this.$activeToggle.addClass('active');
       this.$element.find('.lpb-toggle, .js-lpb-controls').not('.active').hide();
       this.$componentMenu = $(
-        `<div class="js-lpb-component-menu lpb-component-menu__wrapper">${this.componentMenu}</div>`,
+        `<div class="js-lpb-component-menu lpb-component-menu__wrapper">${this.componentMenuTpl}</div>`,
       );
       if (this.options.nestingSections === false) {
         if (this.$activeToggle.parents('.lpb-layout').length > 0) {
@@ -584,7 +602,7 @@
       }
       this.positionComponentMenu();
       this.stopInterval();
-      this.emit('openmenu', this.$componentMenu);
+      this.emit('menu:show', this.$componentMenu);
     }
 
     /**
@@ -643,7 +661,7 @@
       this.$componentMenu = false;
       this.$activeToggle = false;
       this.startInterval();
-      this.emit('closemenu');
+      this.emit('menu:close');
     }
 
     /**
@@ -662,7 +680,7 @@
         .done(() => {
           this.removeControls();
           this.removeToggle();
-          this.emit('editform', uuid);
+          this.emit('component:edit', uuid);
         });
     }
 
@@ -676,7 +694,7 @@
         this.request(`delete/${uuid}`, { success: () => this.edited() });
       });
       // @todo Should we pass more meaningful data?
-      this.emit('delete', uuid);
+      this.emit('component:delete', uuid);
     }
 
     /**
@@ -733,7 +751,7 @@
      */
     insertSiblingComponent(siblingUuid, type, placement) {
       this.request(`insert-sibling/${siblingUuid}/${placement}/${type}`);
-      this.emit('insertsibling', siblingUuid, placement, type);
+      this.emit('component:edit', type, siblingUuid, placement);
     }
 
     /**
@@ -742,20 +760,20 @@
      */
     insertComponent(type) {
       this.request(`insert-component/${type}`);
-      this.emit('insert', type);
+      this.emit('component:edit', type);
     }
 
     /**
      * Saves the order and nested structure of components for the layout.
      */
-    saveComponentOrder() {
+    _saveComponentOrder() {
       const state = JSON.stringify(this.getState());
       this.request('reorder', {
         data: {
           layoutParagraphsState: state,
         },
       });
-      this.emit('saveorder', state);
+      this.emit('layout:reorder', state);
     }
 
     /**
@@ -766,7 +784,7 @@
      */
     insertComponentIntoRegion(parentUuid, region, type) {
       this.request(`insert-into-region/${parentUuid}/${region}/${type}`);
-      this.emit('insertintoregion', parentUuid, region, type);
+      this.emit('component:insert', parentUuid, region, type);
     }
 
     /**
@@ -868,7 +886,7 @@
       // Check to see if the next position is allowed by calling the 'accepts' callback.
       while (
         targets[pos + dir] !== undefined &&
-        this.emit('accepts', {
+        this.emit('layout:accepts', {
           el: this.$activeItem[0],
           target: targets[pos + dir].parentNode,
         }).indexOf(false) !== -1
@@ -881,7 +899,7 @@
       }
       // Remove the shims and save the order.
       $('.lpb-shim', this.$element).remove();
-      this.debouncedSaveComponentOrder();
+      this.saveComponentOrder();
     }
 
     addShims() {
@@ -923,16 +941,10 @@
           return;
         }
         this.drake = dragula(items, {
-          accepts(el, target, source, sibling) {
-            // Returns false if any registered callback returns false.
-            return (
-              instance
-                .emit('accepts', {
-                  el,
-                  target,
-                })
-                .indexOf(false) === -1
-            );
+          accepts(el, target) {
+            // Returns false if any registered validator returns a value.
+            // @see addMoveValidator()
+            return instance.moveErrors(el, target).length === 0;
           },
           moves(el, source, handle) {
             const $handle = $(handle);
@@ -1012,7 +1024,7 @@
       this.isNotEmpty();
       this.$activeItem = false;
       const $emptyContainer = $(
-        `<div class="js-lpb-empty lpb-empty-container__wrapper">${this.emptyContainer}</div>`,
+        `<div class="js-lpb-empty lpb-empty-container__wrapper">${this.emptyContainerTpl}</div>`,
       ).appendTo(this.$element);
       if (this.options.requireLayouts) {
         this.insertSectionMenu($emptyContainer, 'insert', 'append');
@@ -1024,9 +1036,30 @@
     }
 
     /**
+     * Adds a "move validator" function to determine if a particular move (drag/drop or keyboard) is valid.
+     * Move validators should only return a value if an error is present.
+     * @param {function} fn A validator function with argumnets el and target.
+     */
+    addMoveValidator(fn) {
+      this._validMoves.push(fn);
+    }
+
+    /**
+     * Returns a list of errors for an attempted move, or an empty array if no errors.
+     * @param {Element} el The element being moved.
+     * @param {Element} target The target container element is being moved into.
+     * @return {Array} A list of errors.
+     */
+    moveErrors(el, target) {
+      return this._validMoves
+        .map((validator) => validator.apply(this, [el, target]))
+        .filter((errors) => errors !== false && errors !== undefined);
+    }
+
+    /**
      * Make a Drupal Ajax request.
      * @param {string} apiUrl The request url.
-     * @param {obj} settings (optional) Request settings.
+     * @param {object} settings (optional) Request settings.
      */
     request(apiUrl, settings = {}) {
       const url = `${this.settings.baseUrl}/${apiUrl}`;
@@ -1044,7 +1077,27 @@
     }
 
     /**
-     * Add an event listener.
+     * Subscribes to an event type.
+     *
+     * @todo The event system is in progress. Need to determine best way to handle events, respond to triggers, etc.
+     *
+     * Supported event types:
+     *
+     * - component:edit
+     * - component:focus
+     * - component:update
+     * - component:insert
+     * - component:delete
+     * - component:error
+     * - component:move
+     * - toggle:show
+     * - toggle:hide
+     * - menu:show
+     * - menu:hide
+     * - controls:show
+     * - controls:hide
+     * - layout:reorder
+     *
      * @param {string} type The event type.
      * @param {function} fn The callback function.
      * @return {LPBuilder} The LPBuilder instance.
@@ -1101,32 +1154,16 @@
     emit(...args) {
       const type = args.shift();
       const et = (this._events[type] || []).slice(0);
-      const results = [];
-      et.forEach((listener) => {
-        results.push(listener.apply(this, args));
+      return et.map((listener) => {
+        const val = listener.apply(this, args);
         if (listener._once) {
           this.off(type, listener);
         }
+        return val;
       });
-      return results;
     }
   } // End LPBuilder class.
 
-  /**
-   * Respond to a component being updated or inserted by an AJAX request.
-   * @param {string} layoutId The layout id.
-   * @param {string} componentUuid The uuid of the updated component.
-   */
-  function componentUpdate(layoutId, componentUuid) {
-    const builder = $(`[data-lp-builder-id="${layoutId}"`).data('lpbInstance');
-    builder.removeControls();
-    const $insertedComponent = $(`[data-uuid="${componentUuid}"]`);
-    const dragContainers = $insertedComponent.find('.lpb-region').get();
-    builder.addDragContainers(dragContainers);
-    builder.edited();
-    builder.saveComponentOrder();
-    builder.$activeItem = $insertedComponent;
-  }
   Drupal.lpBuilder = (settings) => {
     const instance = new LPBuilder(settings);
     Drupal.lpBuilder.instances.push(instance);
@@ -1134,7 +1171,9 @@
   };
   Drupal.lpBuilder.instances = [];
   Drupal.lpBuilder.get = (id) => {
-    return Drupal.lpBuilder.filter((lpBuilder) => lpBuilder.id === id).pop();
+    return Drupal.lpBuilder.instances
+      .filter((lpBuilder) => lpBuilder.id === id)
+      .pop();
   };
 
   Drupal.behaviors.layoutParagraphsBuilder = {
@@ -1144,16 +1183,8 @@
           (builderSettings) => {
             $(builderSettings.selector)
               .once('lp-builder')
-              .each((index, element) => {
+              .each((_index, element) => {
                 const builder = Drupal.lpBuilder(builderSettings);
-                builder.on('updatecomponent', (params) => {
-                  const { layoutId, componentUuid } = params;
-                  componentUpdate(layoutId, componentUuid);
-                });
-                builder.on('insertcomponent', (params) => {
-                  const { layoutId, componentUuid } = params;
-                  componentUpdate(layoutId, componentUuid);
-                });
                 $(element)
                   .addClass('js-lpb-container')
                   .data('lpbInstance', builder);
@@ -1164,11 +1195,11 @@
     },
   };
   Drupal.AjaxCommands.prototype.layoutParagraphsBuilderInvokeHook = (
-    ajax,
+    _ajax,
     response,
   ) => {
-    Drupal.lpBuilder.instances.forEach((instance) => {
-      instance.emit(response.hook.toLowerCase(), response.params);
-    });
+    Drupal.lpBuilder
+      .get(response.params.layoutId)
+      .emit(response.hook.toLowerCase(), response.params);
   };
 })(jQuery, Drupal, Drupal.debounce, drupalSettings, dragula);
