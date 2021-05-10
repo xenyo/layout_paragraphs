@@ -88,7 +88,7 @@
         '.lpb-toggle',
         this.onClickToggle.bind(this),
       );
-      $(window).on('click.lp-builder', this.onClickToggle.bind(this));
+      this.$element.on('click.lp-builder', this.onClickToggle.bind(this));
       this.$element.on(
         'click.lp-builder',
         '.lpb-down',
