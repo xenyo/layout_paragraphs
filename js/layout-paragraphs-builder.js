@@ -1103,23 +1103,7 @@
      * @return {LPBuilder} The LPBuilder instance.
      */
     on(type, fn) {
-      if (!this._events[type]) {
-        this._events[type] = [fn];
-      } else {
-        this._events[type].push(fn);
-      }
-      return this;
-    }
-
-    /**
-     * Add an event listener to fire only once.
-     * @param {string} type The event type.
-     * @param {function} fn The callback function.
-     * @return {LPBuilder} The LPBuilder instance.
-     */
-    once(type, fn) {
-      fn._once = true; // thing.off(fn) still works!
-      this.on(type, fn);
+      this.$element.on(`lpb:${type}.lp-builder`, fn);
       return this;
     }
 
@@ -1130,37 +1114,20 @@
      * @return {LPBuilder} The LPBuilder instance.
      */
     off(type = false, fn = false) {
-      if (type && !fn) {
-        delete this._events[type];
-      } else if (!type && !fn) {
-        Object.keys(this._events).forEach((key) => {
-          delete this._events[key];
-        });
-      } else {
-        const et = this._events[type];
-        if (!et) {
-          return this;
-        }
-        et.splice(et.indexOf(fn), 1);
-      }
+      this.$element.off(`lpb:${type}.lp-builder`, fn);
       return this;
     }
 
     /**
      * Emit an event listener.
-     * @param {*} type The event type.
-     * @return {array} An array of returned results from listeners.
+     * @param {array} args An array of arguments.
+     * @return {LPBuilder} The LPBuilder instance.
      */
     emit(...args) {
       const type = args.shift();
-      const et = (this._events[type] || []).slice(0);
-      return et.map((listener) => {
-        const val = listener.apply(this, args);
-        if (listener._once) {
-          this.off(type, listener);
-        }
-        return val;
-      });
+      args.unshift(this);
+      this.$element.trigger(`lpb:${type}.lp-builder`, args);
+      return this;
     }
   } // End LPBuilder class.
 

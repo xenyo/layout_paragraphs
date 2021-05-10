@@ -74,7 +74,7 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
     }
 
     $response->addCommand(new LayoutParagraphsBuilderInvokeHookCommand(
-      'updateComponent',
+      'component:insert',
       [
         'layoutId' => $this->layoutParagraphsLayout->id(),
         'componentUuid' => $uuid,

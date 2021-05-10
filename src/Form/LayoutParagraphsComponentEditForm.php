@@ -55,7 +55,7 @@ class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBas
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand("[data-uuid={$uuid}]", $rendered_item));
     $response->addCommand(new LayoutParagraphsBuilderInvokeHookCommand(
-      'updateComponent',
+      'component:update',
       [
         'layoutId' => $this->layoutParagraphsLayout->id(),
         'componentUuid' => $uuid,
