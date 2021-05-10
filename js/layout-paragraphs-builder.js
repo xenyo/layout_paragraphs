@@ -88,6 +88,7 @@
         '.lpb-toggle',
         this.onClickToggle.bind(this),
       );
+      $(window).on('click.lp-builder', this.onClickToggle.bind(this));
       this.$element.on(
         'click.lp-builder',
         '.lpb-down',
@@ -196,6 +197,7 @@
       e.currentTarget.classList.add('loading');
       this.editForm();
       e.preventDefault();
+      e.stopPropagation();
     }
 
     /**
@@ -220,6 +222,7 @@
         },
       });
       e.preventDefault();
+      e.stopPropagation();
     }
 
     /**
@@ -229,6 +232,7 @@
     onClickToggle(e) {
       this.toggleComponentMenu($(e.currentTarget));
       e.preventDefault();
+      e.stopPropagation();
     }
 
     /**
@@ -238,6 +242,7 @@
     onClickUp(e) {
       this.move(-1);
       e.preventDefault();
+      e.stopPropagation();
     }
 
     /**
@@ -247,6 +252,7 @@
     onClickDown(e) {
       this.move(1);
       e.preventDefault();
+      e.stopPropagation();
     }
 
     onClickComponentAction(e) {
@@ -255,6 +261,8 @@
       const uuid = this.$activeToggle.attr('data-container-uuid');
       const type = $(e.currentTarget).attr('data-type');
       this.removeControls();
+      e.preventDefault();
+      e.stopPropagation();
       switch (placement) {
         case 'insert':
           if (uuid) {
@@ -268,7 +276,6 @@
           this.insertSiblingComponent(uuid, type, placement);
           break;
       }
-      e.preventDefault();
     }
 
     onClickSectionAction(e) {
@@ -283,6 +290,7 @@
         this.insertComponent(type);
       }
       e.preventDefault();
+      e.stopPropagation();
     }
 
     /**
@@ -565,7 +573,7 @@
     toggleComponentMenu($toggleButton) {
       if (this.$componentMenu) {
         this.closeComponentMenu($toggleButton);
-      } else {
+      } else if ($toggleButton.hasClass('lpb-toggle')) {
         this.openComponentMenu($toggleButton);
       }
     }

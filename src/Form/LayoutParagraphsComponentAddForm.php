@@ -8,7 +8,6 @@ use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\AfterCommand;
 use Drupal\Core\Ajax\AppendCommand;
-use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Form\SubformState;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
