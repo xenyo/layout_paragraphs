@@ -2,13 +2,14 @@
 
 namespace Drupal\layout_paragraphs\Form;
 
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CloseDialogCommand;
-use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\AfterCommand;
-use Drupal\Core\Ajax\AppendCommand;
+use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
+use Drupal\Core\Ajax\AppendCommand;
+use Drupal\Core\Ajax\BeforeCommand;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\CloseDialogCommand;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
@@ -79,6 +80,7 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
         'componentUuid' => $uuid,
       ]
     ));
+    $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
     $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
 
     return $response;

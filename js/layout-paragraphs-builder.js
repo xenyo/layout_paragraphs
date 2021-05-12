@@ -57,6 +57,7 @@
       this.attachEventListeners();
       this.enableDragAndDrop();
       this.saved();
+      this.emit('layout:init');
     }
 
     attachEventListeners() {
@@ -195,7 +196,7 @@
      */
     onClickEdit(e) {
       e.currentTarget.classList.add('loading');
-      this.editForm();
+      this.editForm($(e.currentTarget));
       e.preventDefault();
       e.stopPropagation();
     }
@@ -260,9 +261,10 @@
       const region = this.$activeToggle.attr('data-region');
       const uuid = this.$activeToggle.attr('data-container-uuid');
       const type = $(e.currentTarget).attr('data-type');
-      this.removeControls();
+      this.closeComponentMenu();
       e.preventDefault();
       e.stopPropagation();
+
       switch (placement) {
         case 'insert':
           if (uuid) {
@@ -284,13 +286,13 @@
       const placement = $sectionMenu.attr('data-placement');
       const uuid = $sectionMenu.attr('data-container-uuid');
       const type = $button.attr('data-type');
+      e.preventDefault();
+      e.stopPropagation();
       if (uuid) {
         this.insertSiblingComponent(uuid, type, placement);
       } else {
         this.insertComponent(type);
       }
-      e.preventDefault();
-      e.stopPropagation();
     }
 
     /**
@@ -345,10 +347,13 @@
 
     /**
      * Respond to a component being updated.
-     * @param {string} componentUuid The uuid of the updated component.
+     * @param {Event} _e The triggering event.
+     * @param {LPBuilder} _instance The instance is always passed by the emiter.
+     * @param {object} params Params with layoutId and componentUuid.
      */
-    onComponentUpdate(componentUuid) {
+    onComponentUpdate(_e, _instance, params) {
       this.removeControls();
+      const { componentUuid } = params;
       const $insertedComponent = this.$element.find(
         `[data-uuid="${componentUuid}"]`,
       );
@@ -357,6 +362,7 @@
       this.edited();
       this.saveComponentOrder();
       this.$activeItem = $insertedComponent;
+      //this.insertControls($insertedComponent);
     }
 
     detachEventListeners() {
@@ -674,8 +680,9 @@
 
     /**
      * Loads an edit form.
+     * @param {jQuery} $btn The button that triggered the form being opened.
      */
-    editForm() {
+    editForm($btn) {
       const uuid = this.$activeItem.attr('data-uuid');
       const endpoint = `${this.settings.baseUrl}/edit/${uuid}`;
       Drupal.ajax({
@@ -686,8 +693,7 @@
       })
         .execute()
         .done(() => {
-          this.removeControls();
-          this.removeToggle();
+          $btn.removeClass('loading');
           this.emit('component:edit', uuid);
         });
     }
@@ -792,7 +798,7 @@
      */
     insertComponentIntoRegion(parentUuid, region, type) {
       this.request(`insert-into-region/${parentUuid}/${region}/${type}`);
-      this.emit('component:insert', parentUuid, region, type);
+      this.emit('component:edit', parentUuid, region, type);
     }
 
     /**
@@ -1021,6 +1027,7 @@
       } else {
         this.isEmpty();
       }
+      this.emit('layout:edited');
       this._edited = true;
     }
 
@@ -1091,20 +1098,21 @@
      *
      * Supported event types:
      *
-     * - component:edit
-     * - component:focus
-     * - component:update
-     * - component:insert
-     * - component:delete
-     * - component:error
-     * - component:move
-     * - toggle:show
-     * - toggle:hide
-     * - menu:show
-     * - menu:hide
-     * - controls:show
-     * - controls:hide
-     * - layout:reorder
+     * @event component:edit Component is being edited and edit form is opened.
+     * @event component:focus Component has focus.
+     * @event component:update Component was updated.
+     * @event component:insert Component was inserted.
+     * @event component:delete Component was deleted.
+     * @event component:error Error encountered.
+     * @event component:move Component was moved.
+     * @event toggle:show Toggle buttons (+) are shown.
+     * @event toggle:hide Toggle buttons (+) are hidden.
+     * @event menu:show The component menu to add content is shown.
+     * @event menu:hide The component menu to add content is hidden.
+     * @event controls:show The move/edit/delete controls are shown.
+     * @event controls:hide The move/edit/delete controls are hidden.
+     * @event layout:reorder The layout was reordered.
+     * @event layout:edited The layout was edited and has not been saved permanently (aka state is dirty).
      *
      * @param {string} type The event type.
      * @param {function} fn The callback function.
@@ -1142,6 +1150,7 @@
   Drupal.lpBuilder = (settings) => {
     const instance = new LPBuilder(settings);
     Drupal.lpBuilder.instances.push(instance);
+    instance.emit('layout:loaded');
     return instance;
   };
   Drupal.lpBuilder.instances = [];

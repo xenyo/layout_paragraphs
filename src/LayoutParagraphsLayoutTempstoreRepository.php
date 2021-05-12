@@ -45,7 +45,7 @@ class LayoutParagraphsLayoutTempstoreRepository {
    * @param string $key
    *   The storage key.
    *
-   * @return Drupal\layout_paragraphs\LayoutParagraphsLayout
+   * @return \Drupal\layout_paragraphs\LayoutParagraphsLayout
    *   The layout.
    */
   public function getWithStorageKey(string $key) {
