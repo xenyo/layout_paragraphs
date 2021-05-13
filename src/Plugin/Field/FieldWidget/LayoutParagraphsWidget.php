@@ -246,6 +246,17 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $entity_type_id = $this->getFieldSetting('target_type');
     $element = parent::settingsForm($form, $form_state);
+    $element['field_label'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Show field label'),
+      '#default_value' => $this->getSetting('field_label'),
+      '#options' => [
+        $this->t('Never'),
+        $this->t('When field is empty'),
+        $this->t('Always'),
+      ],
+      '#description' => $this->t('View mode for the referenced entity preview on the edit form. Automatically falls back to "default", if it is not enabled in the referenced entity type displays.'),
+    ];
     $element['preview_view_mode'] = [
       '#type' => 'select',
       '#title' => $this->t('Preview view mode'),
@@ -294,6 +305,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public static function defaultSettings() {
     $defaults = parent::defaultSettings();
     $defaults += [
+      'field_label' => 0,
       'preview_view_mode' => 'default',
       'nesting_depth' => 0,
       'require_layouts' => 0,

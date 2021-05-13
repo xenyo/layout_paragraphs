@@ -130,9 +130,11 @@
             minWidth: '350px',
           });
         });
-      // Respond to updating or inserting a component.
+
+      // Handle native events.
       this.on('component:update', this.onComponentUpdate.bind(this));
       this.on('component:insert', this.onComponentUpdate.bind(this));
+      this.on('layout:save', this.saved.bind(this));
     }
 
     onMouseMove() {
@@ -1158,6 +1160,15 @@
     return Drupal.lpBuilder.instances
       .filter((lpBuilder) => lpBuilder.id === id)
       .pop();
+  };
+  Drupal.lpBuilder.destroy = (id) => {
+    const index = Drupal.lpBuilder.instances.findIndex(
+      (lpBuilder) => lpBuilder.id === id,
+    );
+    if (index > 0) {
+      Drupal.instances[index].detachEventListeners();
+      delete Drupal.instances[index];
+    }
   };
 
   Drupal.behaviors.layoutParagraphsBuilder = {

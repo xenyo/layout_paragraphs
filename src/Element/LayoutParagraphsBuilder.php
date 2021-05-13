@@ -221,9 +221,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#theme' => 'layout_paragraphs_builder_controls',
     ];
     $empty_container = [
-      '#type' => 'fieldset',
-      '#title' => $field_label,
-      '#collapsible' => FALSE,
+      '#type' => 'container',
       '#attributes' => [
         'class' => [
           'lpb-empty-container',
