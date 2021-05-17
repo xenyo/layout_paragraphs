@@ -158,18 +158,17 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     else {
       $this->layoutParagraphsLayout = $this->tempstore->get($this->layoutParagraphsLayout);
     }
-    $element += [
+    $element  += [
+      '#type' => 'fieldset',
+      '#title' => $this->fieldDefinition->getLabel(),
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
         '#preview_view_mode' => $this->getSetting('preview_view_mode'),
-        '#movable' => $this->isMovable(),
-        '#draggable' => $this->isDraggable(),
-        '#create_content' => $this->canCreateContent(),
-        '#create_layouts' => $this->canCreateLayouts(),
         // @todo derive options from the widget configuration settings.
         // See \Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget
         '#options' => [
+          'emptyMessage' => $this->getSetting('empty_message'),
           'showTypeLabels' => $this->config->get('show_paragraph_labels'),
           'showLayoutLabels' => $this->config->get('show_layout_labels'),
           'nestingDepth' => $this->getSetting('nesting_depth'),
@@ -246,17 +245,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $entity_type_id = $this->getFieldSetting('target_type');
     $element = parent::settingsForm($form, $form_state);
-    $element['field_label'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Show field label'),
-      '#default_value' => $this->getSetting('field_label'),
-      '#options' => [
-        $this->t('Never'),
-        $this->t('When field is empty'),
-        $this->t('Always'),
-      ],
-      '#description' => $this->t('View mode for the referenced entity preview on the edit form. Automatically falls back to "default", if it is not enabled in the referenced entity type displays.'),
-    ];
     $element['preview_view_mode'] = [
       '#type' => 'select',
       '#title' => $this->t('Preview view mode'),
@@ -275,6 +263,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       '#type' => 'checkbox',
       '#title' => $this->t('Require paragraphs to be added inside a layout'),
       '#default_value' => $this->getSetting('require_layouts'),
+    ];
+    $element['empty_message'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Placeholder message to display when field is empty'),
+      '#default_value' => $this->getSetting('empty_message'),
     ];
     return $element;
   }
@@ -305,7 +298,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   public static function defaultSettings() {
     $defaults = parent::defaultSettings();
     $defaults += [
-      'field_label' => 0,
+      'empty_message' => '',
       'preview_view_mode' => 'default',
       'nesting_depth' => 0,
       'require_layouts' => 0,

@@ -3,23 +3,20 @@
   z-index: 700;
 }
 .lp-builder {
-  margin-bottom: 20px;
   min-height: 55px;
   position: relative;
+  padding: 10px 0;
 }
 .lpb-region {
   min-height: 40px;
   cursor: default;
   box-sizing: border-box;
-  padding: 5px;
 }
 .lpb-empty-container__wrapper {
   position: relative;
-  padding: 40px;
 }
 .lpb-empty-container {
   text-align: center;
-  padding: 0 0 30px 0;
 }
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
   bottom: 20px;

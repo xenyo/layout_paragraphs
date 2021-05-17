@@ -14,6 +14,7 @@
         createLayouts: true,
         deleteContent: true,
         deleteLayouts: true,
+        emptyMessage: null,
         nestingDepth: 0,
       };
       $.extend(this.options, settings.options);
@@ -61,6 +62,9 @@
     }
 
     attachEventListeners() {
+
+      $(window).on('click.lp-builder', this.onClickAnywhere.bind(this));
+
       this.$element.on(
         'focus.lp-builder',
         '.lpb-component',
@@ -89,7 +93,6 @@
         '.lpb-toggle',
         this.onClickToggle.bind(this),
       );
-      this.$element.on('click.lp-builder', this.onClickToggle.bind(this));
       this.$element.on(
         'click.lp-builder',
         '.lpb-down',
@@ -135,6 +138,19 @@
       this.on('component:update', this.onComponentUpdate.bind(this));
       this.on('component:insert', this.onComponentUpdate.bind(this));
       this.on('layout:save', this.saved.bind(this));
+    }
+
+    /**
+     * Handles clicks anywere in window.
+     * @param {Event} e The click event.
+     */
+    onClickAnywhere(e) {
+      // Close the active menu when user clicks outside it.
+      if (this.$componentMenu) {
+        if ($(e.target).closest('.js-lpb-component-menu').length === 0) {
+          this.closeComponentMenu();
+        }
+      }
     }
 
     onMouseMove() {
@@ -364,12 +380,15 @@
       this.edited();
       this.saveComponentOrder();
       this.$activeItem = $insertedComponent;
-      //this.insertControls($insertedComponent);
     }
 
+    /**
+     * Detaches event listeners for instance teardown.
+     */
     detachEventListeners() {
       this.$element.off('.lp-builder');
-      this.$element.off('.lp-builder');
+      $(window).off('.lb-builder');
+      $(document).off('.lb-builder');
       clearInterval(this._intervalId);
       document.removeEventListener('keydown', this.onKeyPress);
       window.removeEventListener('onbeforeunload', this.onBeforeUnload);
@@ -1040,14 +1059,19 @@
     isEmpty() {
       this.isNotEmpty();
       this.$activeItem = false;
+      const emptyMessage = this.options.emptyMessage
+        ? `<div class="lpb-empty-message">${this.options.emptyMessage}</div>`
+        : '';
       const $emptyContainer = $(
-        `<div class="js-lpb-empty lpb-empty-container__wrapper">${this.emptyContainerTpl}</div>`,
+        `<div class="js-lpb-empty lpb-empty-container__wrapper">
+          <div class="lpb-empty-container">${emptyMessage}</div>
+        </div>`,
       ).appendTo(this.$element);
       if (this.options.requireLayouts) {
         this.insertSectionMenu($emptyContainer, 'insert', 'append');
       } else {
         this.insertToggle($emptyContainer, 'insert', 'append', {
-          top: $('.fieldset-wrapper', $emptyContainer).height(),
+          top: $('.lpb-empty-container', $emptyContainer).height() + 15,
         });
       }
     }
