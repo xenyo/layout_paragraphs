@@ -460,19 +460,16 @@
     /**
      * Insertss a toggle button into a container.
      * @param {jQuery} $container The container.
-     * @param {string} placement Placement - inside|after|before.
-     * @param {string} method jQuery method - prepend|append
+     * @param {string} placement Where to place new content - inside|after|before.
+     * @param {string} method jQuery method for appending the toggle - prepend|append
      * @param {Object} offset An optional object with top or left offset values.
      */
     insertToggle($container, placement, method = 'prepend', offset = {}) {
       if (!this.options.createContent) {
         return;
       }
-      const offsetTop = offset.top || 0;
-      const offsetLeft = offset.left || 0;
-      const $toggleButton = $(
-        `<div class="js-lpb-toggle lpb-toggle__wrapper"></div>`,
-      )
+      $(`<div class="js-lpb-toggle lpb-toggle__wrapper"></div>`)
+        .attr('data-placement', placement)
         .append(
           $(this.toggleButtonTpl).attr({
             'data-placement': placement,
@@ -487,40 +484,14 @@
         [`${method}To`]($container)
         .fadeIn(100);
 
-      const containerOffset = $container.offset();
-      const toggleHeight = $toggleButton.height();
-      const toggleWidth = $toggleButton.outerWidth();
-      const height = $container.outerHeight();
-      const width = $container.outerWidth();
-      const left = Math.floor(
-        containerOffset.left + width / 2 - toggleWidth / 2 + offsetLeft,
-      );
-
-      let top = '';
-      switch (placement) {
-        case 'insert':
-          top = Math.floor(containerOffset.top + height / 2 - toggleHeight / 2);
-          break;
-        case 'after':
-          top = Math.floor(containerOffset.top + height - toggleHeight / 2) - 1;
-          break;
-        case 'before':
-          top = Math.floor(containerOffset.top - toggleHeight / 2) - 1;
-          break;
-        default:
-          top = null;
-      }
-      top += offsetTop;
-      $toggleButton.offset({ left, top });
-      this.emit('toggle:hide', this);
+      this.positionInsertButtons();
+      this.emit('toggle:show');
     }
 
     insertSectionMenu($container, placement, method) {
       if (!this.options.createLayouts) {
         return;
       }
-      const offset = $container.offset();
-      const width = $container.outerWidth();
       const $sectionMenu = $(
         `<div class="js-lpb-section-menu lpb-section-menu__wrapper">${this.sectionMenuTpl}</div>`,
       )
@@ -532,10 +503,29 @@
         })
         .css({ position: 'absolute' })
         [`${method}To`]($container);
-      const sectionMenuWidth = $sectionMenu.outerWidth();
-      const left = Math.floor(offset.left + width / 2 - sectionMenuWidth / 2);
-      $sectionMenu.offset({ left });
+      this.positionInsertButtons();
       this.emit('menu:show', $sectionMenu);
+    }
+
+    positionInsertButtons() {
+      this.$element
+        .find('.js-lpb-section-menu, .js-lpb-toggle')
+        .each((index, elem) => {
+          const $elem = $(elem);
+          const placement = $elem.attr('data-placement');
+          const $container = $elem.parent();
+          const cOffset = $container.offset();
+          const cHeight = $container.outerHeight();
+          const cWidth = $container.outerWidth();
+          const eHeight = $elem.height();
+          const eWidth = $elem.outerWidth();
+          const left = Math.floor(cOffset.left + cWidth / 2 - eWidth / 2);
+          const top =
+            placement === 'insert'
+              ? Math.floor(cOffset.top + cHeight / 2 - eHeight / 2)
+              : null;
+          $elem.offset({ left, top });
+        });
     }
 
     removeControls() {
@@ -1064,15 +1054,15 @@
         : '';
       const $emptyContainer = $(
         `<div class="js-lpb-empty lpb-empty-container__wrapper">
-          <div class="lpb-empty-container">${emptyMessage}</div>
+          ${emptyMessage}
+          <div class="lpb-empty-toggle"></div>
         </div>`,
       ).appendTo(this.$element);
+      const $toggleContainer = $('.lpb-empty-toggle', $emptyContainer);
       if (this.options.requireLayouts) {
-        this.insertSectionMenu($emptyContainer, 'insert', 'append');
+        this.insertSectionMenu($toggleContainer, 'insert', 'append');
       } else {
-        this.insertToggle($emptyContainer, 'insert', 'append', {
-          top: $('.lpb-empty-container', $emptyContainer).height() + 15,
-        });
+        this.insertToggle($toggleContainer, 'insert', 'append');
       }
     }
 
