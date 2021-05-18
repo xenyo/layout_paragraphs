@@ -339,11 +339,10 @@
   background-image: none;
   opacity: 1;
   border: 3px solid #0074bd;
-  margin-left: -3px;
-  margin-top: -3px;
   border-radius: 50%;
   border-left-color: transparent;
   border-right-color: transparent;
+  box-sizing: border-box;
   animation: cssload-spin 575ms infinite linear;
   -o-animation: cssload-spin 575ms infinite linear;
   -webkit-animation: cssload-spin 575ms infinite linear;
