@@ -911,10 +911,8 @@
       // Check to see if the next position is allowed by calling the 'accepts' callback.
       while (
         targets[pos + dir] !== undefined &&
-        this.emit('layout:accepts', {
-          el: this.$activeItem[0],
-          target: targets[pos + dir].parentNode,
-        }).indexOf(false) !== -1
+        this.moveErrors(this.$activeItem[0], targets[pos + dir].parentNode)
+          .length > 0
       ) {
         pos += dir;
       }
