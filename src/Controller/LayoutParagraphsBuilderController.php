@@ -46,6 +46,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $this->modalSettings = [
       'width' => '70%',
       'minWidth' => 500,
+      'maxWidth' => 1000,
       'draggable' => TRUE,
       'classes' => [
         'ui-dialog' => 'lpe-dialog',

@@ -120,7 +120,9 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     $layout_settings = $layout_paragraphs_section->getSetting('config');
     $available_layouts = $this->configuration['available_layouts'];
     $path = array_merge($form['#parents'], ['layout']);
-    $layout_id = Html::escape(NestedArray::getValue($form_state->getUserInput(), $path)) ?? $layout_paragraphs_section->getLayoutId();
+    $input_layout_id = NestedArray::getValue($form_state->getUserInput(), $path);
+    $layout_id = $input_layout_id ?? $layout_paragraphs_section->getLayoutId();
+    $layout_id = Html::escape($layout_id);
     $default_value = !empty($layout_id) ? $layout_id : key($available_layouts);
     // @todo - Throw an error if plugin instance cannot be loaded.
     $plugin_instance = $this->layoutPluginManager->createInstance($default_value, $layout_settings);
@@ -132,8 +134,8 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       '#options' => $available_layouts,
       '#default_value' => $default_value,
       '#ajax' => [
-        'wrapper' => $wrapper_id,
-        'callback' => [$this, 'ajaxUpdateOptions'],
+        //'wrapper' => $wrapper_id,
+        //'callback' => [$this, 'ajaxUpdateOptions'],
         'progress' => [
           'type' => 'none',
           'message' => NULL,
