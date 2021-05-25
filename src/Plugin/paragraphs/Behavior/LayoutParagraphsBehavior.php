@@ -17,6 +17,7 @@ use Drupal\Core\Layout\LayoutInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\NestedArray;
 
 /**
  * Provides a way to define grid based layouts.
@@ -118,29 +119,32 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     $layout_paragraphs_section = new LayoutParagraphsSection($paragraph);
     $layout_settings = $layout_paragraphs_section->getSetting('config');
     $available_layouts = $this->configuration['available_layouts'];
-    $layout_id = $form_state->getValue('layout') ?? $layout_paragraphs_section->getLayoutId();
+    $path = array_merge($form['#parents'], ['layout']);
+    $layout_id = Html::escape(NestedArray::getValue($form_state->getUserInput(), $path)) ?? $layout_paragraphs_section->getLayoutId();
     $default_value = !empty($layout_id) ? $layout_id : key($available_layouts);
+    // @todo - Throw an error if plugin instance cannot be loaded.
     $plugin_instance = $this->layoutPluginManager->createInstance($default_value, $layout_settings);
     $plugin_form = $this->getLayoutPluginForm($plugin_instance);
-
-    $wrapper_id = Html::getUniqueId('layout-options');
+    $wrapper_id = Html::getId(implode('-', array_merge($form['#parents'], ['layout-options'])));
     $form['layout'] = [
       '#title' => $this->t('Choose a layout:'),
       '#type' => 'layout_select',
       '#options' => $available_layouts,
       '#default_value' => $default_value,
       '#ajax' => [
-        '#event' => 'onchange',
-        '#wrapper' => $wrapper_id,
-        '#callback' => [$this, 'ajaxUpdateOptions'],
+        'wrapper' => $wrapper_id,
+        'callback' => [$this, 'ajaxUpdateOptions'],
+        'progress' => [
+          'type' => 'none',
+          'message' => NULL,
+        ],
       ],
       '#weight' => 0,
     ];
     if ($plugin_form) {
       $form['config'] = [
-        '#prefix' => '<div class="' . $wrapper_id . '">',
-        '#suffix' => '</div>',
-        '#type' => 'fieldset',
+        '#type' => 'details',
+        '#id' => $wrapper_id,
         '#title' => $this->t('Layout Options'),
         '#weight' => 10,
       ];
@@ -155,15 +159,19 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    *
    * @param array $form
    *   The form array.
-   * @param FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
    *
    * @return array
    *   The layout options form.
    */
   public function ajaxUpdateOptions(array $form, FormStateInterface $form_state) {
-    if (isset($form['config'])) {
-      return $form['config'];
+    $triggering_element = $form_state->getTriggeringElement();
+    $parents = $triggering_element['#parents'];
+    array_splice($parents, -1, 1, ['config']);
+    $config_form = NestedArray::getValue($form, $parents);
+    if (isset($config_form)) {
+      return $config_form;
     }
     return [];
   }
