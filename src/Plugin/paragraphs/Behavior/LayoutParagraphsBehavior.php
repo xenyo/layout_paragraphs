@@ -134,8 +134,8 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       '#options' => $available_layouts,
       '#default_value' => $default_value,
       '#ajax' => [
-        //'wrapper' => $wrapper_id,
-        //'callback' => [$this, 'ajaxUpdateOptions'],
+        'wrapper' => $wrapper_id,
+        'callback' => [$this, 'ajaxUpdateOptions'],
         'progress' => [
           'type' => 'none',
           'message' => NULL,
