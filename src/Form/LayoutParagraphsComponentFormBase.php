@@ -242,8 +242,32 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     $subform_state = SubformState::createForSubform($element, $form, $form_state);
     if ($layout_paragraphs_plugin_form = $layout_paragraphs_plugin->buildBehaviorForm($this->paragraph, $element, $subform_state)) {
       $element = $layout_paragraphs_plugin_form;
+      // Adjust the Ajax callback to include the entire layout paragraphs form.
+      $element_id = Html::getId('layout-paragraphs-element');
+      $element['#prefix'] = '<div id="' . $element_id . '">';
+      $element['#suffix'] = '</div>';
+      $element['layout']['#ajax']['callback'] = [$this, 'ajaxCallback'];
+      $element['layout']['#ajax']['wrapper'] = $element_id;
     }
     return $element;
+  }
+
+  /**
+   * Ajax form callback.
+   *
+   * Returns the layout paragraphs behavior form,
+   * which includes the orphaned items element when necessary.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @return array
+   *   The render array.
+   */
+  public function ajaxCallback(array $form, FormStateInterface $form_state) {
+    return $form['layout_paragraphs'];
   }
 
   /**
