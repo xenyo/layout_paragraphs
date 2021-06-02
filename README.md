@@ -41,7 +41,7 @@ Maintainers are currently refactoring Layout Paragraphs to better encapsulate st
 - \Drupal\layout_paragraphs\LayoutParagraphsSection
 - \Drupal\layout_paragraphs\LayoutParagraphsComponent
 
-**A Layout Paragraphs service** (LayoutParagraphsService) provides a simple method for rendering a Layout Paragraph section.
+**A Layout Paragraphs Renderer service** (LayoutParagraphsRendererService) provides a simple method for rendering a Layout Paragraph section.
 
 **The UI is provided through Plugins:**
 

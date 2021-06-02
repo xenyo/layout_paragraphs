@@ -9,11 +9,11 @@
     {% endif %}
     {% for type in types.layout %}
       <div class="lpb-component-menu__item type-{{type.id}} is-layout">
-        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.title }}">
+        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.label }}">
         {% if type.image %}
         <img src="{{ type.image }}" alt ="" />
         {% endif %}
-        <div>{{ type.name }}</div>
+        <a href="{{ base_url }}{{ type.id }}" class="use-ajax">{{ type.label }}</a>
         </a>
       </div>
     {% endfor %}
@@ -25,11 +25,11 @@
     {% endif %}
     {% for type in types.content %}
       <div class="lpb-component-menu__item type-{{type.id}}">
-        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.title }}">
+        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.label }}">
         {% if type.image %}
         <img src="{{ type.image }}" alt ="" />
         {% endif %}
-        <div>{{ type.name }}</div>
+        <a href="{{ base_url }}{{ type.id }}" class="use-ajax">{{ type.label }}</a>
         </a>
       </div>
     {% endfor %}

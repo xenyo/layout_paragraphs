@@ -2,7 +2,11 @@
 
 namespace Drupal\layout_paragraphs\Element;
 
+use Drupal\core\Url;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
+use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Render\Element\RenderElement;
@@ -206,7 +210,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $field_definition = $layout_paragraph_layout
       ->getParagraphsReferenceField()
       ->getFieldDefinition();
-    $field_label = $field_definition->getLabel();
     $description = $field_definition->getDescription();
 
     $component_menu = [
@@ -304,6 +307,29 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['class'][] = 'lpb-component';
     $build['#attributes']['tabindex'] = 0;
 
+    $build['toggle_before'] = $this->toggleButton(
+      [
+        '#attributes' => ['class' => ['before']],
+        '#weight' => -1000,
+      ],
+      [
+        'layout_paragraphs_layout' => $layout->id(),
+        'sibling_uuid' => $entity->uuid(),
+        'proximity' => 'before',
+      ]
+    );
+    $build['toggle_after'] = $this->toggleButton(
+      [
+        '#attributes' => ['class' => ['after']],
+        '#weight' => 10000,
+      ],
+      [
+        'layout_paragraphs_layout' => $layout->id(),
+        'sibling_uuid' => $entity->uuid(),
+        'proximity' => 'after',
+      ]
+    );
+
     if ($component->isLayout()) {
       $section = $layout->getLayoutSection($entity);
       $layout_instance = $this->layoutPluginInstance($section);
@@ -325,6 +351,40 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       }
     }
     return $build;
+  }
+
+  /**
+   * Returns the render array for a toggle button.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout object.
+   * @param array $properties
+   *   An array of properties to merge.
+   *
+   * @return array
+   *   The render array.
+   */
+  protected function toggleButton(array $properties = [], $route_params = []) {
+    return NestedArray::mergeDeep([
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['lpb-toggle__wrapper'],
+      ],
+      'link' => [
+        '#type' => 'link',
+        '#title' => Markup::create('<span class="visually-hidden">' . $this->t('Choose component') . '</span>'),
+        '#attributes' => [
+          'class' => ['lpb-toggle', 'use-ajax'],
+          'data-dialog-type' => 'dialog',
+          'data-dialog-options' => Json::encode([
+            'width' => 1200,
+            'height' => 500,
+            'modal' => TRUE,
+          ]),
+        ],
+        '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+      ],
+    ], $properties);
   }
 
   /**

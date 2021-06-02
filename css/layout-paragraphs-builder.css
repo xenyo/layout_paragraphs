@@ -123,13 +123,13 @@
   background: url(../img/icon-down.png) 0 0 no-repeat;
   background-size: cover;
 }
-.lpb-component:last-of-type .lpb-down:hover,
-.lpb-component:first-of-type .lpb-up:hover {
+.lpb-down[disabled]:hover,
+.lpb-up[disabled]:hover {
   background-color: transparent;
   box-shadow: none;
 }
-.lpb-component:last-of-type .lpb-down,
-.lpb-component:first-of-type .lpb-up {
+.lpb-down[disabled],
+.lpb-up[disabled] {
   opacity: .3;
   cursor: default;
 }
@@ -145,6 +145,7 @@
   line-height: 1;
 }
 .lpb-toggle {
+  display: inline-block;
   border: none;
   color: #333;
   font-weight: normal;

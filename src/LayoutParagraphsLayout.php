@@ -2,11 +2,13 @@
 
 namespace Drupal\layout_paragraphs;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Component\Utility\Crypt;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Drupal\Core\Config\Entity\ThirdPartySettingsInterface;
 
 /**
  * Provides a domain object for a complete Layout Paragraphs Layout.
@@ -22,7 +24,7 @@ use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
  * - Drupal\layout_paragraphs\LayoutParagraphsComponent
  * - Drupal\layout_paragraphs\LayoutParagraphsSection
  */
-class LayoutParagraphsLayout {
+class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
 
   use DependencySerializationTrait;
 
@@ -34,13 +36,38 @@ class LayoutParagraphsLayout {
   protected $paragraphsReferenceField;
 
   /**
+   * Third party settings.
+   *
+   * An array of key/value pairs keyed by provider.
+   *
+   * @var array[]
+   */
+  protected $thirdPartySettings = [];
+
+
+  /**
+   * Settings.
+   *
+   * An array of key/value pairs.
+   *
+   * @var array[]
+   */
+  protected $settings;
+
+  /**
    * Class constructor.
    *
    * @param \Drupal\Core\Field\EntityReferenceFieldItemListInterface $paragraphs_reference_field
    *   The paragraph reference field this layout is attached to.
+   * @param array[] $settings
+   *   An array of settings.
    */
-  public function __construct(EntityReferenceFieldItemListInterface $paragraphs_reference_field) {
+  public function __construct(
+    EntityReferenceFieldItemListInterface $paragraphs_reference_field,
+    array $settings = []
+  ) {
     $this->paragraphsReferenceField = $paragraphs_reference_field;
+    $this->settings = $settings;
   }
 
   /**
@@ -79,6 +106,38 @@ class LayoutParagraphsLayout {
   public function setEntity(EntityInterface $entity) {
     $this->entity = $entity;
     return $this;
+  }
+
+  /**
+   * Sets the settings array.
+   *
+   * @param array[] $settings
+   *   An associative array of settings.
+   *
+   * @return $this
+   */
+  public function setSettings(array $settings) {
+    $this->settings = $settings;
+    return $this;
+  }
+
+  /**
+   * Returns the settings array.
+   */
+  public function getSettings() {
+    return $this->settings;
+  }
+
+  /**
+   * Returns a single setting from the settings array.
+   *
+   * @param string $key
+   *   The key of the setting to return.
+   * @param mixed $default
+   *   The default value to return if the setting is empty.
+   */
+  public function getSetting(string $key, $default = NULL) {
+    return $this->settings[$key] ?? $default;
   }
 
   /**
@@ -429,6 +488,48 @@ class LayoutParagraphsLayout {
       }
     }
     return -1;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getThirdPartySetting($provider, $key, $default = NULL) {
+    return isset($this->thirdPartySettings[$provider][$key]) ? $this->thirdPartySettings[$provider][$key] : $default;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getThirdPartySettings($provider) {
+    return isset($this->thirdPartySettings[$provider]) ? $this->thirdPartySettings[$provider] : [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setThirdPartySetting($provider, $key, $value) {
+    $this->thirdPartySettings[$provider][$key] = $value;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function unsetThirdPartySetting($provider, $key) {
+    unset($this->thirdPartySettings[$provider][$key]);
+    // If the third party is no longer storing any information, completely
+    // remove the array holding the settings for this provider.
+    if (empty($this->thirdPartySettings[$provider])) {
+      unset($this->thirdPartySettings[$provider]);
+    }
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getThirdPartyProviders() {
+    return array_keys($this->thirdPartySettings);
   }
 
 }

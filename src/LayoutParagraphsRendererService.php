@@ -9,7 +9,7 @@ use Drupal\paragraphs\Entity\Paragraph;
 /**
  * Class definition for a layout paragraphs service.
  */
-class LayoutParagraphsService {
+class LayoutParagraphsRendererService {
 
   /**
    * The layout plugin manager service.

@@ -151,14 +151,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->initIsTranslating($form_state, $items->getEntity());
     $this->initTranslations($items, $form_state);
 
-    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items);
+    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
     if (!$form_state->getUserInput()) {
       $this->tempstore->set($this->layoutParagraphsLayout);
     }
     else {
       $this->layoutParagraphsLayout = $this->tempstore->get($this->layoutParagraphsLayout);
     }
-    $element  += [
+    $element += [
       '#type' => 'fieldset',
       '#title' => $this->fieldDefinition->getLabel(),
       'layout_paragraphs_builder' => [

@@ -1,7 +1,10 @@
 services:
-  layout_paragraphs:
-    class: Drupal\layout_paragraphs\LayoutParagraphsService
+  layout_paragraphs.renderer:
+    class: Drupal\layout_paragraphs\LayoutParagraphsRendererService
     arguments: [ "@plugin.manager.core.layout", "@entity_type.manager", "@entity.repository", "@language_manager"]
+  layout_paragraphs.builder:
+    class: Drupal\layout_paragraphs\LayoutParagraphsBuilderService
+    arguments: [ "@entity_type.manager", "@entity_type.bundle.info"]
   layout_paragraphs.tempstore_repository:
     class: Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository
     arguments: ['@tempstore.private']

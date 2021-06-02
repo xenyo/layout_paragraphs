@@ -20,7 +20,11 @@
       $.extend(this.options, settings.options);
 
       this.settings = settings;
-      this.id = settings.id || Math.random().toString(36).substring(7);
+      this.id =
+        settings.id ||
+        Math.random()
+          .toString(36)
+          .substring(7);
 
       // The main container element for the layout builder.
       this.$element = $(settings.selector);
@@ -32,7 +36,7 @@
       this.toggleButtonTpl = settings.toggleButton;
       this.emptyContainerTpl = settings.emptyContainer;
 
-      // Debounce prevent too many API calls.
+      // Debounce to prevent too many API calls.
       this.saveComponentOrder = debounce(() => {
         this._saveComponentOrder();
       }, 250);
@@ -58,11 +62,10 @@
       this.attachEventListeners();
       this.enableDragAndDrop();
       this.saved();
-      this.emit('layout:init');
+      this.emit('lp-builder:init');
     }
 
     attachEventListeners() {
-
       $(window).on('click.lp-builder', this.onClickAnywhere.bind(this));
 
       this.$element.on(
@@ -118,7 +121,7 @@
         '.lpb-component-menu-search-input',
         this.onKeyPressSearch.bind(this),
       );
-      this.options.saveButtonIds.forEach((id) => {
+      this.options.saveButtonIds.forEach(id => {
         $(document).on('click.lp-builder', `#${id}`, this.saved.bind(this));
       });
       this.onKeyPress = this.onKeyPress.bind(this);
@@ -148,7 +151,7 @@
       // Close the active menu when user clicks outside it.
       if (this.$componentMenu) {
         if ($(e.target).closest('.js-lpb-component-menu').length === 0) {
-          this.closeComponentMenu();
+          this.hideComponentMenu();
         }
       }
     }
@@ -164,8 +167,10 @@
      * @param {Event} e The event.
      */
     onFocusComponent(e) {
-      this.$activeItem = $(e.currentTarget);
-      e.stopPropagation();
+      if (e.currentTarget.classList.contains('lpb-component')) {
+        this.$activeItem = $(e.currentTarget);
+        e.stopPropagation();
+      }
     }
 
     /**
@@ -173,8 +178,18 @@
      * @param {Event} e The event.
      */
     onFocusRegion(e) {
-      if ($('.lpb-component', e.currentTarget)) {
-        this.$activeItem = $(e.currentTarget);
+      console.log(e.target);
+      if (e.target.classList.contains('lpb-region')) {
+        this.$activeItem = $(e.target);
+        if ($('.lpb-component', this.$activeItem).length > 0) {
+          console.log('has component');
+          $('.lpb-component', this.$activeItem)
+            .first()
+            .focus();
+        } else {
+          console.log('focus toggle');
+          $('.lpb-toggle', this.$activeItem).focus();
+        }
         e.stopPropagation();
       }
     }
@@ -232,12 +247,12 @@
       this.confirm($component, {
         content: Drupal.t('Really delete this @name?', { '@name': typeName }),
         confirmText: Drupal.t('Delete'),
-        confirm: (_e) => {
+        confirm: _e => {
           deleteComponent($component);
           _e.preventDefault();
         },
         cancel: () => {
-          this.insertControls(this.$activeItem);
+          this.showControls(this.$activeItem);
         },
       });
       e.preventDefault();
@@ -279,7 +294,7 @@
       const region = this.$activeToggle.attr('data-region');
       const uuid = this.$activeToggle.attr('data-container-uuid');
       const type = $(e.currentTarget).attr('data-type');
-      this.closeComponentMenu();
+      this.hideComponentMenu();
       e.preventDefault();
       e.stopPropagation();
 
@@ -320,7 +335,7 @@
     onKeyPress(e) {
       if (e.code === 'Escape') {
         if (this.$componentMenu) {
-          this.closeComponentMenu();
+          this.hideComponentMenu();
         }
       }
       if (e.code === 'ArrowDown' && this.$activeItem) {
@@ -397,16 +412,38 @@
     getState() {
       return $('.lpb-component', this.$element)
         .get()
-        .map((item) => {
+        .map(item => {
           const $item = $(item);
           return {
             uuid: $item.attr('data-uuid'),
             parentUuid:
-              $item.parents('.lpb-component').first().attr('data-uuid') || null,
+              $item
+                .parents('.lpb-component')
+                .first()
+                .attr('data-uuid') || null,
             region:
-              $item.parents('.lpb-region').first().attr('data-region') || null,
+              $item
+                .parents('.lpb-region')
+                .first()
+                .attr('data-region') || null,
           };
         });
+    }
+
+    focusComponent(uuid) {
+      const $c = $(`[data-uuid=${uuid}]`, this.$element);
+      $c.addClass(['js-lpb-active-item', 'lpb-active-item']);
+      this.showControls($c);
+      this.showToggle($c, 'before', 'prepend');
+      this.showToggle($c, 'after', 'append');
+    }
+
+    hideAllControls() {
+
+    }
+
+    hideAllToggles() {
+
     }
 
     set $activeItem($item) {
@@ -421,6 +458,13 @@
       ) {
         return;
       }
+
+      // Remove active-item classes.
+      $('.js-lpb-active-item', this.$element).removeClass([
+        'js-lpb-active-item',
+        'lpb-active-item',
+      ]);
+
       // If item is false and activeItem is also false, do nothing.
       if ($item === false && this._$activeItem === false) {
         return;
@@ -428,18 +472,17 @@
 
       // Remove the current toggle or controls.
       if (this.$activeItem) {
-        this.$activeItem.removeClass(['js-lpb-active-item', 'lpb-active-item']);
         this.removeControls();
       }
       // If $element exists and is not false, add the controls.
       if ($item) {
         if ($item.hasClass('lpb-component')) {
-          this.insertControls($item);
+          this.showControls($item);
         } else if (
           $item.hasClass('lpb-region') &&
           $item.find('.lpb-component').length === 0
         ) {
-          this.insertToggle($item, 'insert', 'append');
+          this.showToggle($item, 'insert', 'append');
         }
         $item.addClass(['js-lpb-active-item', 'lpb-active-item']);
       }
@@ -451,7 +494,7 @@
       return this._$activeItem;
     }
 
-    removeToggle() {
+    hideToggle() {
       if (this.$componentMenu) {
         this.$componentMenu.remove();
       }
@@ -464,7 +507,7 @@
      * @param {string} method jQuery method for appending the toggle - prepend|append
      * @param {Object} offset An optional object with top or left offset values.
      */
-    insertToggle($container, placement, method = 'prepend', offset = {}) {
+    showToggle($container, placement, method = 'prepend', offset = {}) {
       if (!this.options.createContent) {
         return;
       }
@@ -541,7 +584,7 @@
       this.emit('controls:hide');
     }
 
-    insertControls($element) {
+    showControls($element) {
       const $controls = $(
         `<div class="js-lpb-controls lpb-controls__wrapper">${this.controlsTpl}</div>`,
       )
@@ -564,6 +607,12 @@
       if (!this.options.movable) {
         $('.lpb-up, .lpb-down', $controls).remove();
       }
+      if ($element.is(':first-child')) {
+        $('.lpb-up', $controls).attr('disabled', true);
+      }
+      if ($element.is(':last-child')) {
+        $('.lpb-down', $controls).attr('disabled', true);
+      }
       if (!this.options.deleteContent) {
         $('.lpb-delete', $controls).remove();
       }
@@ -576,8 +625,8 @@
         this.insertSectionMenu($element, 'before', 'prepend');
         this.insertSectionMenu($element, 'after', 'append');
       } else {
-        this.insertToggle($element, 'before', 'prepend');
-        this.insertToggle($element, 'after', 'append');
+        this.showToggle($element, 'before', 'prepend');
+        this.showToggle($element, 'after', 'append');
       }
       $controls.offset(offset);
       this.emit('controls:show', $controls);
@@ -589,9 +638,9 @@
      */
     toggleComponentMenu($toggleButton) {
       if (this.$componentMenu) {
-        this.closeComponentMenu($toggleButton);
+        this.hideComponentMenu($toggleButton);
       } else if ($toggleButton.hasClass('lpb-toggle')) {
-        this.openComponentMenu($toggleButton);
+        this.showComponentMenu($toggleButton);
       }
     }
 
@@ -599,10 +648,13 @@
      * Opens the component menu.
      * @param {jQuery} $toggleButton The toggle button that was pressed.
      */
-    openComponentMenu($toggleButton) {
+    showComponentMenu($toggleButton) {
       this.$activeToggle = $toggleButton;
       this.$activeToggle.addClass('active');
-      this.$element.find('.lpb-toggle, .js-lpb-controls').not('.active').hide();
+      this.$element
+        .find('.lpb-toggle, .js-lpb-controls')
+        .not('.active')
+        .hide();
       this.$componentMenu = $(
         `<div class="js-lpb-component-menu lpb-component-menu__wrapper">${this.componentMenuTpl}</div>`,
       );
@@ -679,7 +731,7 @@
     /**
      * Close the open component menu.
      */
-    closeComponentMenu() {
+    hideComponentMenu() {
       this.$componentMenu.remove();
       this.$element.find('.lpb-toggle.active').removeClass('active');
       this.$element.find('.lpb-toggle, .js-lpb-controls').show();
@@ -745,11 +797,11 @@
         </div>
       </div>`);
       $content.on('click.lpb-confirm', '.lpb-confirm-btn', options.confirm);
-      $content.on('click.lpb-confirm', '.lpb-cancel-btn', (e) => {
+      $content.on('click.lpb-confirm', '.lpb-cancel-btn', e => {
         this.cancel(cancel);
         e.preventDefault();
       });
-      this.$element.on('keyup.lpb-confirm', '.lpb-confirm', (e) => {
+      this.$element.on('keyup.lpb-confirm', '.lpb-confirm', e => {
         if (e.code === 'Escape') {
           this.cancel(cancel);
           e.preventDefault();
@@ -764,7 +816,9 @@
       if (callback) {
         callback.apply(this);
       }
-      $('.lpb-confirm', this.$element).off('.lpb-confirm').remove();
+      $('.lpb-confirm', this.$element)
+        .off('.lpb-confirm')
+        .remove();
       return this;
     }
 
@@ -899,10 +953,10 @@
       const targets = $('.lpb-component, .lpb-shim', this.$element)
         .toArray()
         // Remove child components from possible targets.
-        .filter((i) => !$.contains(this.$activeItem[0], i))
+        .filter(i => !$.contains(this.$activeItem[0], i))
         // Remove layout elements that are not self from possible targets.
         .filter(
-          (i) =>
+          i =>
             i.className.indexOf('lpb-layout') === -1 ||
             i === this.$activeItem[0],
         );
@@ -956,7 +1010,7 @@
 
         // Dragula is already initialized, add any new containers that may have been added.
         if (this.$element.data('drake')) {
-          Object.values(items).forEach((item) => {
+          Object.values(items).forEach(item => {
             if (this.$element.data('drake').containers.indexOf(item) === -1) {
               this.$element.data('drake').containers.push(item);
             }
@@ -985,7 +1039,7 @@
           instance.saveComponentOrder();
           instance.edited();
         });
-        this.drake.on('drag', (el) => {
+        this.drake.on('drag', el => {
           instance.$activeItem = false;
           instance.$element.addClass('is-dragging');
           if (el.className.indexOf('lpb-layout') > -1) {
@@ -1016,7 +1070,7 @@
      */
     addDragContainers(containers) {
       if (this.drake === undefined) return;
-      containers.forEach((value) => {
+      containers.forEach(value => {
         if (this.drake.containers.indexOf(value) === -1) {
           this.drake.containers.push(value);
         }
@@ -1060,7 +1114,7 @@
       if (this.options.requireLayouts) {
         this.insertSectionMenu($toggleContainer, 'insert', 'append');
       } else {
-        this.insertToggle($toggleContainer, 'insert', 'append');
+        this.showToggle($toggleContainer, 'insert', 'append');
       }
     }
 
@@ -1081,8 +1135,8 @@
      */
     moveErrors(el, target) {
       return this._validMoves
-        .map((validator) => validator.apply(this, [el, target]))
-        .filter((errors) => errors !== false && errors !== undefined);
+        .map(validator => validator.apply(this, [el, target]))
+        .filter(errors => errors !== false && errors !== undefined);
     }
 
     /**
@@ -1161,21 +1215,21 @@
     }
   } // End LPBuilder class.
 
-  Drupal.lpBuilder = (settings) => {
+  Drupal.lpBuilder = settings => {
     const instance = new LPBuilder(settings);
     Drupal.lpBuilder.instances.push(instance);
     instance.emit('layout:loaded');
     return instance;
   };
   Drupal.lpBuilder.instances = [];
-  Drupal.lpBuilder.get = (id) => {
+  Drupal.lpBuilder.get = id => {
     return Drupal.lpBuilder.instances
-      .filter((lpBuilder) => lpBuilder.id === id)
+      .filter(lpBuilder => lpBuilder.id === id)
       .pop();
   };
-  Drupal.lpBuilder.destroy = (id) => {
+  Drupal.lpBuilder.destroy = id => {
     const index = Drupal.lpBuilder.instances.findIndex(
-      (lpBuilder) => lpBuilder.id === id,
+      lpBuilder => lpBuilder.id === id,
     );
     if (index > 0) {
       Drupal.instances[index].detachEventListeners();
@@ -1187,7 +1241,7 @@
     attach: function attach(context, settings) {
       if (settings.layoutParagraphsBuilder !== undefined) {
         Object.values(settings.layoutParagraphsBuilder).forEach(
-          (builderSettings) => {
+          builderSettings => {
             $(builderSettings.selector)
               .once('lp-builder')
               .each((_index, element) => {

@@ -64,6 +64,16 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     );
   }
 
+  public function chooseComponent(
+    LayoutParagraphsLayout $layout_paragraphs_layout,
+    $sibling_uuid = '',
+    $proximity = '',
+    $region = '',
+    $parent_uuid = ''
+  ) {
+
+  }
+
   /**
    * Returns a paragraph edit form as a dialog.
    *

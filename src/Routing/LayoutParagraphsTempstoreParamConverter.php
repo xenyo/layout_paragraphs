@@ -45,24 +45,11 @@ class LayoutParagraphsTempstoreParamConverter implements ParamConverterInterface
    * {@inheritdoc}
    */
   public function convert($value, $definition, $name, array $defaults) {
-    if (empty($defaults['entity_type']) || empty($defaults['field_name']) || !isset($defaults['entity_id']) || empty($defaults['bundle'])) {
+    if (empty($defaults['layout_paragraphs_layout'])) {
       return NULL;
     }
-
-    $entity_id = $defaults['entity_id'];
-    $field_name = $defaults['field_name'];
-    $entity_type = $defaults['entity_type'];
-    $bundle = $defaults['bundle'];
-    $definition = $this->entityTypeManager->getDefinition($entity_type);
-
-    if ($entity_id) {
-      $entity = $this->entityTypeManager->getStorage($entity_type)->load($entity_id);
-    }
-    else {
-      $entity = $this->entityTypeManager->getStorage($entity_type)->create([$definition->getKey('bundle') => $bundle]);
-    }
-    $layout = new LayoutParagraphsLayout($entity->$field_name);
-    return $this->layoutParagraphsLayoutTempstore->get($layout);
+    $key = $defaults['layout_paragraphs_layout'];
+    return $this->layoutParagraphsLayoutTempstore->getWithStorageKey($key);
   }
 
   /**

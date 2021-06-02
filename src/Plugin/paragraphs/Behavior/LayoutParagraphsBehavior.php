@@ -12,7 +12,7 @@ use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
-use Drupal\layout_paragraphs\LayoutParagraphsService;
+use Drupal\layout_paragraphs\LayoutParagraphsRendererService;
 use Drupal\Core\Layout\LayoutInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
@@ -49,9 +49,9 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
   /**
    * The layout paragraphs service.
    *
-   * @var \Drupal\layout_paragraphs\LayoutParagraphsService
+   * @var \Drupal\layout_paragraphs\LayoutParagraphsRendererService
    */
-  protected $layoutParagraphsService;
+  protected $layoutParagraphsRendererService;
 
   /**
    * A reference to the paragraph instance.
@@ -75,7 +75,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    *   The grid discovery service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The grid discovery service.
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsService $layout_paragraphs_service
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsRendererService $layout_paragraphs_service
    *   The layout paragraphs service.
    */
   public function __construct(
@@ -85,11 +85,11 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       EntityFieldManager $entity_field_manager,
       LayoutPluginManagerInterface $layout_plugin_manager,
       EntityTypeManagerInterface $entity_type_manager,
-      LayoutParagraphsService $layout_paragraphs_service) {
+      LayoutParagraphsRendererService $layout_paragraphs_renderer_service) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_field_manager);
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->entityTypeManager = $entity_type_manager;
-    $this->layoutParagraphsService = $layout_paragraphs_service;
+    $this->layoutParagraphsRendererService = $layout_paragraphs_renderer_service;
   }
 
   /**
@@ -103,7 +103,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       $container->get('entity_field.manager'),
       $container->get('plugin.manager.core.layout'),
       $container->get('entity_type.manager'),
-      $container->get('layout_paragraphs')
+      $container->get('layout_paragraphs.renderer')
     );
   }
 
@@ -238,7 +238,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    */
   public function view(array &$build, Paragraph $paragraph, EntityViewDisplayInterface $display, $view_mode) {
     if (empty($build['regions']) && LayoutParagraphsSection::isLayoutComponent($paragraph)) {
-      $build['regions'] = $this->layoutParagraphsService->renderLayoutSection($build, $paragraph, $view_mode);
+      $build['regions'] = $this->layoutParagraphsRendererService->renderLayoutSection($build, $paragraph, $view_mode);
     }
   }
 

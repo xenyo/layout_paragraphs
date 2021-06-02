@@ -13,6 +13,22 @@ layout_paragraphs.section_settings:
   requirements:
     _permission: 'administer site configuration'
 
+layout_paragraphs.builder.choose_component:
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{proximity}/{region}/{parent_uuid}'
+  defaults:
+    _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::build'
+    sibling_uuid: FALSE
+    proximity: FALSE
+    region: FALSE
+    parent_uuid: FALSE
+  options:
+    parameters:
+      layout_paragraphs_layout:
+        layout_paragraphs_layout_tempstore: TRUE
+    _admin_route: TRUE
+  requirements:
+    _permission: 'administer content'
+
 layout_paragraphs.builder.edit_item:
   path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/edit/{paragraph_uuid}'
   defaults:
@@ -24,8 +40,9 @@ layout_paragraphs.builder.edit_item:
     _admin_route: TRUE
   requirements:
     _permission: 'administer content'
+
 layout_paragraphs.builder.insert_sibling:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-sibling/{sibling_uuid}/{proximity}/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{proximity}/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertSibling'
   options:
@@ -37,8 +54,9 @@ layout_paragraphs.builder.insert_sibling:
     _admin_route: TRUE
   requirements:
     _permission: 'administer content'
+
 layout_paragraphs.builder.insert:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-component/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-component/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertComponent'
   options:
@@ -50,8 +68,9 @@ layout_paragraphs.builder.insert:
     _admin_route: TRUE
   requirements:
     _permission: 'administer content'
+
 layout_paragraphs.builder.insert_into_region:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertIntoRegion'
   options:
