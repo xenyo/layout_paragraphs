@@ -105,18 +105,15 @@ class LayoutParagraphsBuilderController extends ControllerBase {
         'placement' => $placement,
         'sibling_uuid' => $sibling_uuid,
       ];
-      $parent_uuid = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid)->getParentUuid();
-      $region = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid)->getRegion();
+      $component = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid);
+      $parent_uuid = $component->getParentUuid();
+      $region = $component->getRegion();
     }
     else {
       $route_name = 'layout_paragraphs.builder.insert';
     }
 
     $types = $this->layoutParagraphsBuilderService->getAllowedComponentTypes($layout_paragraphs_layout, $parent_uuid, $region);
-    foreach ($types as &$type) {
-      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']]);
-    }
-
     if (count($types) === 1) {
       $type = reset($types)['paragraphs_type'];
       switch ($route_name) {
@@ -135,6 +132,9 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       return $response;
     }
 
+    foreach ($types as &$type) {
+      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']]);
+    }
 
     $section_components = array_filter($types, function ($type) {
       return $type['is_section'] === TRUE;

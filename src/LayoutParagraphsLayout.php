@@ -410,7 +410,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       // Copy layout settings into the new component.
       $sibling_settings = $existing_component->getSettings();
       $new_component_settings = [
-        'parent_uuid' => $sibling_settings['uuid'] ?? NULL,
+        'parent_uuid' => $sibling_settings['parent_uuid'] ?? NULL,
         'region' => $sibling_settings['region'] ?? NULL,
         'parent_delta' => $sibling_settings['parent_delta'] ?? NULL,
       ];
