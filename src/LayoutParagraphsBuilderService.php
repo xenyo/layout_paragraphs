@@ -5,6 +5,10 @@ namespace Drupal\layout_paragraphs;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\dropzonejs\Events\Events;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Class definition for a Layout Paragraphs Builder service.
@@ -26,19 +30,30 @@ class LayoutParagraphsBuilderService {
   protected $entityTypeBundleInfo;
 
   /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * Constructs a Layout Paragraphs Builder service.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager service.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfo $entity_type_bundle_info
    *   The entity type bundle info service.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher service.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
-    EntityTypeBundleInfo $entity_type_bundle_info
+    EntityTypeBundleInfo $entity_type_bundle_info,
+    EventDispatcherInterface $event_dispatcher
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -58,11 +73,11 @@ class LayoutParagraphsBuilderService {
    * @return array[]
    *   Returns an array of allowed component types.
    */
-  protected function getAllowedComponentTypes(LayoutParagraphsLayout $layout, string $parent_uuid = '', string $region = '') {
+  public function getAllowedComponentTypes(LayoutParagraphsLayout $layout, $parent_uuid = NULL, $region = NULL) {
     $component_types = $this->getComponentTypes($layout);
     $event = new LayoutParagraphsAllowedTypesEvent($component_types, $layout, $parent_uuid, $region);
-    $this->eventDispatcher->dispatch($event);
-    return $event->getComponentTypes();
+    $this->eventDispatcher->dispatch(LayoutParagraphsAllowedTypesEvent::EVENT_NAME, $event);
+    return $event->getTypes();
   }
 
   /**
@@ -74,7 +89,7 @@ class LayoutParagraphsBuilderService {
    * @return array
    *   An array of available component types.
    */
-  protected function getComponentTypes(LayoutParagraphsLayout $layout) {
+  public function getComponentTypes(LayoutParagraphsLayout $layout) {
 
     $all_bundle_info = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
     $items = $layout->getParagraphsReferenceField();
@@ -97,7 +112,8 @@ class LayoutParagraphsBuilderService {
         'label' => $bundle_info['label'],
         'image' => $path,
         'description' => $bundle_info['description'],
-        'section_component' => $section_component,
+        'is_section' => $section_component,
+        'paragraphs_type' => $paragraphs_type,
       ];
     }
     return $types;

@@ -315,7 +315,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       [
         'layout_paragraphs_layout' => $layout->id(),
         'sibling_uuid' => $entity->uuid(),
-        'proximity' => 'before',
+        'placement' => 'before',
       ]
     );
     $build['toggle_after'] = $this->toggleButton(
@@ -326,7 +326,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       [
         'layout_paragraphs_layout' => $layout->id(),
         'sibling_uuid' => $entity->uuid(),
-        'proximity' => 'after',
+        'placement' => 'after',
       ]
     );
 
@@ -380,6 +380,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             'width' => 1200,
             'height' => 500,
             'modal' => TRUE,
+            'target' => 'lpb-component-menu',
           ]),
         ],
         '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),

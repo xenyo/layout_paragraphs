@@ -14,11 +14,11 @@ layout_paragraphs.section_settings:
     _permission: 'administer site configuration'
 
 layout_paragraphs.builder.choose_component:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{proximity}/{region}/{parent_uuid}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::build'
+    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::chooseComponent'
     sibling_uuid: FALSE
-    proximity: FALSE
+    placement: FALSE
     region: FALSE
     parent_uuid: FALSE
   options:
@@ -42,7 +42,7 @@ layout_paragraphs.builder.edit_item:
     _permission: 'administer content'
 
 layout_paragraphs.builder.insert_sibling:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{proximity}/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{placement}/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::insertSibling'
   options:

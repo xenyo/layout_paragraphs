@@ -10,6 +10,8 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayout;
  */
 class LayoutParagraphsAllowedTypesEvent extends Event {
 
+  const EVENT_NAME = 'layout_paragraphs_allowed_types';
+
   /**
    * An array of component (paragraph) types.
    *
@@ -55,6 +57,59 @@ class LayoutParagraphsAllowedTypesEvent extends Event {
     $this->layout = $layout;
     $this->parentUuid = $parent_uuid;
     $this->region = $region;
+  }
+
+  /**
+   * Returns the array of types.
+   *
+   * @return array[]
+   *   The types array.
+   */
+  public function getTypes() {
+    return $this->types;
+  }
+
+  /**
+   * Sets the types array.
+   *
+   * @param array $types
+   *   The types array.
+   *
+   * @return $this
+   */
+  public function setTypes(array $types) {
+    $this->types = $types;
+    return $this;
+  }
+
+  /**
+   * Get the parent uuid.
+   *
+   * @return string
+   *   The parent uuid.
+   */
+  public function getParentUuid() {
+    return $this->parentUuid;
+  }
+
+  /**
+   * Get the region.
+   *
+   * @return string
+   *   The region.
+   */
+  public function getRegion() {
+    return $this->region;
+  }
+
+  /**
+   * Get the layout.
+   *
+   * @return \Drupal\layout_paragraphs\LayoutParagraphsLayout
+   *   The layout object.
+   */
+  public function getLayout() {
+    return $this->layout;
   }
 
 }

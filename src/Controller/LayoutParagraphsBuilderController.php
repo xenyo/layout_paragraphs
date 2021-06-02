@@ -2,17 +2,20 @@
 
 namespace Drupal\layout_paragraphs\Controller;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Ajax\AjaxHelperTrait;
+use Drupal\Core\Url;
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\OpenDialogCommand;
 use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Ajax\AjaxHelperTrait;
+use Drupal\Core\Ajax\OpenDialogCommand;
+use Drupal\Component\Serialization\Json;
+use Drupal\Core\Ajax\CloseDialogCommand;
+use Drupal\Core\Controller\ControllerBase;
+use Symfony\Component\HttpFoundation\Request;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\layout_paragraphs\LayoutParagraphsBuilderService;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Symfony\Component\HttpFoundation\Request;
-use Drupal\Component\Serialization\Json;
 
 /**
  * LayoutParagraphsEditor controller class.
@@ -36,13 +39,23 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   protected $modalSettings;
 
   /**
+   * The layout paragraphs builder service.
+   *
+   * @var \Drupal\layout_paragraphs\LayoutParagraphsBuilderService
+   */
+  protected $layoutParagraphsBuilderService;
+
+  /**
    * Construct a Layout Paragraphs Editor controller.
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository $tempstore
    *   The tempstore service.
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsBuilderService $layout_paragraphs_builder_service
+   *   The layout paragraphs builder service.
    */
-  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore) {
+  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore, LayoutParagraphsBuilderService $layout_paragraphs_builder_service) {
     $this->tempstore = $tempstore;
+    $this->layoutParagraphsBuilderService = $layout_paragraphs_builder_service;
     $this->modalSettings = [
       'width' => '70%',
       'minWidth' => 500,
@@ -60,17 +73,83 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('layout_paragraphs.tempstore_repository')
+      $container->get('layout_paragraphs.tempstore_repository'),
+      $container->get('layout_paragraphs.builder')
     );
   }
 
+  /**
+   * Build the ajax response for the choose component menu.
+   */
   public function chooseComponent(
     LayoutParagraphsLayout $layout_paragraphs_layout,
     $sibling_uuid = '',
-    $proximity = '',
+    $placement = '',
     $region = '',
     $parent_uuid = ''
   ) {
+
+    $route_params = [
+      'layout_paragraphs_layout' => $layout_paragraphs_layout->id(),
+    ];
+    if ($region && $parent_uuid) {
+      $route_name = 'layout_paragraphs.builder.insert_into_region';
+      $route_params += [
+        'parent_uuid' => $parent_uuid,
+        'region' => $region,
+      ];
+    }
+    elseif ($sibling_uuid && $placement) {
+      $route_name = 'layout_paragraphs.builder.insert_sibling';
+      $route_params += [
+        'placement' => $placement,
+        'sibling_uuid' => $sibling_uuid,
+      ];
+      $parent_uuid = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid)->getParentUuid();
+      $region = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid)->getRegion();
+    }
+    else {
+      $route_name = 'layout_paragraphs.builder.insert';
+    }
+
+    $types = $this->layoutParagraphsBuilderService->getAllowedComponentTypes($layout_paragraphs_layout, $parent_uuid, $region);
+    foreach ($types as &$type) {
+      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']]);
+    }
+
+    if (count($types) === 1) {
+      $type = reset($types)['paragraphs_type'];
+      switch ($route_name) {
+        case 'layout_paragraphs.builder.insert_into_region':
+          $response = $this->insertIntoRegion($layout_paragraphs_layout, $parent_uuid, $region, $type);
+          break;
+
+        case 'layout_paragraphs.builder.insert':
+          $response = $this->insertComponent($layout_paragraphs_layout, $type);
+          break;
+
+        case 'layout_paragraphs.builder.insert_sibling':
+          $response = $this->insertSibling($layout_paragraphs_layout, $sibling_uuid, $type, $placement);
+          break;
+      }
+      return $response;
+    }
+
+
+    $section_components = array_filter($types, function ($type) {
+      return $type['is_section'] === TRUE;
+    });
+    $content_components = array_filter($types, function ($type) {
+      return $type['is_section'] === FALSE;
+    });
+    $component_menu = [
+      '#theme' => 'layout_paragraphs_builder_component_menu',
+      '#types' => [
+        'layout' => $section_components,
+        'content' => $content_components,
+      ],
+    ];
+    return $component_menu;
 
   }
 
@@ -149,7 +228,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The uuid of the existing sibling component.
    * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type for the new content being added.
-   * @param string $proximity
+   * @param string $placement
    *   Whether to insert the new component "before" or "after" the sibling.
    *
    * @return \Drupal\Core\Ajax\AjaxResponse
@@ -159,7 +238,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     LayoutParagraphsLayout $layout_paragraphs_layout,
     string $sibling_uuid,
     ParagraphsTypeInterface $paragraph_type = NULL,
-    string $proximity = 'after') {
+    string $placement = 'after') {
 
     $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
     $bundle_key = $entity_type->getKey('bundle');
@@ -169,7 +248,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $paragraph = $this->entityTypeManager()->getStorage('paragraph')
       ->create([$bundle_key => $paragraph_type->id()]);
 
-    switch ($proximity) {
+    switch ($placement) {
       case "before":
         $layout_paragraphs_layout->insertBeforeComponent($sibling_uuid, $paragraph);
         break;
@@ -185,7 +264,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       $layout_paragraphs_layout,
       $paragraph,
       '[data-uuid="' . $sibling_uuid . '"]',
-      $proximity
+      $placement
     );
     $this->addFormResponse($response, $label, $form);
     return $response;
@@ -283,6 +362,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The form array.
    */
   protected function addFormResponse(AjaxResponse &$response, string $title, array $form) {
+    $response->addCommand(new CloseDialogCommand('#lpb-component-menu'));
     $selector = '#' . $form['#dialog_id'];
     $response->addCommand(new OpenDialogCommand($selector, $title, $form, $this->modalSettings));
   }
