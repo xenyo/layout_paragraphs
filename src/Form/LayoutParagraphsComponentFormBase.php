@@ -123,12 +123,11 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
     array $form,
     FormStateInterface $form_state,
     $layout_paragraphs_layout = NULL,
-    $paragraph = NULL,
-    $preview_view_mode = '') {
+    $paragraph = NULL) {
 
     $this->layoutParagraphsLayout = $layout_paragraphs_layout;
     $this->paragraph = $paragraph;
-    $this->previewViewMode = $preview_view_mode;
+    $this->previewViewMode = $this->layoutParagraphsLayout->getSetting('preview_view_mode');
 
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);

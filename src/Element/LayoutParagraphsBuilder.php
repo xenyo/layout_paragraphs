@@ -307,28 +307,33 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['class'][] = 'lpb-component';
     $build['#attributes']['tabindex'] = 0;
 
-    $build['toggle_before'] = $this->toggleButton(
-      [
-        '#attributes' => ['class' => ['before']],
-        '#weight' => -1000,
-      ],
-      [
+    $url_params = [
+      'layout_paragraphs_layout' => $layout->id(),
+      'sibling_uuid' => $entity->uuid(),
+    ];
+
+    $build['actions'] = [
+      '#theme' => 'layout_paragraphs_builder_controls',
+      '#label' => $entity->getParagraphType()->label,
+      '#edit_url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
         'layout_paragraphs_layout' => $layout->id(),
-        'sibling_uuid' => $entity->uuid(),
-        'placement' => 'before',
-      ]
-    );
-    $build['toggle_after'] = $this->toggleButton(
-      [
-        '#attributes' => ['class' => ['after']],
-        '#weight' => 10000,
-      ],
-      [
+        'paragraph_uuid' => $entity->uuid(),
+      ]),
+      '#delete_url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
         'layout_paragraphs_layout' => $layout->id(),
-        'sibling_uuid' => $entity->uuid(),
-        'placement' => 'after',
-      ]
-    );
+        'paragraph_uuid' => $entity->uuid(),
+      ]),
+      '#weight' => -10001,
+    ];
+
+    if (!$component->getParentUuid() && $layout->getSetting('require_layouts')) {
+      $build['insert_before'] = $this->insertSectionButton($url_params + ['placement' => 'before'], -10000, ['before']);
+      $build['insert_after'] = $this->insertSectionButton($url_params + ['placement' => 'after'], 10000, ['after']);
+    }
+    else {
+      $build['insert_before'] = $this->insertComponentButton($url_params + ['placement' => 'before'], -10000, ['before']);
+      $build['insert_after'] = $this->insertComponentButton($url_params + ['placement' => 'after'], 10000, ['after']);
+    }
 
     if ($component->isLayout()) {
       $section = $layout->getLayoutSection($entity);
@@ -340,6 +345,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $build['#layout_plugin_instance'] = $layout_instance;
       $build['regions'] = [];
       foreach ($region_names as $region_name) {
+        $url_params = [
+          'layout_paragraphs_layout' => $layout->id(),
+          'parent_uuid' => $entity->uuid(),
+          'region' => $region_name,
+        ];
         $build['regions'][$region_name] = [
           '#attributes' => [
             'class' => ['lpb-region'],
@@ -347,6 +357,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
             'tabindex' => 0,
           ],
+          'insert_button' => $this->insertComponentButton($url_params, 10000, ['center']),
         ];
       }
     }
@@ -354,38 +365,66 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   }
 
   /**
-   * Returns the render array for a toggle button.
+   * Returns the render array for a insert component button.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
-   *   The layout object.
-   * @param array $properties
-   *   An array of properties to merge.
+   * @param array[] $route_params
+   *   The route parameters for the link.
+   * @param int $weight
+   *   The weight of the button element.
+   * @param array[] $classes
+   *   A list of classes to append to the container.
    *
    * @return array
    *   The render array.
    */
-  protected function toggleButton(array $properties = [], $route_params = []) {
-    return NestedArray::mergeDeep([
-      '#type' => 'container',
+  protected function insertComponentButton(array $route_params = [], int $weight = 0, array $classes = []) {
+    return [
+      '#type' => 'link',
+      '#title' => Markup::create('<span class="visually-hidden">' . $this->t('Choose component') . '</span>'),
+      '#weight' => $weight,
       '#attributes' => [
-        'class' => ['lpb-toggle__wrapper'],
+        'class' => array_merge(['lpb-btn--add', 'use-ajax'], $classes),
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'width' => 1200,
+          'height' => 500,
+          'modal' => TRUE,
+          'target' => 'lpb-component-menu',
+        ]),
       ],
-      'link' => [
-        '#type' => 'link',
-        '#title' => Markup::create('<span class="visually-hidden">' . $this->t('Choose component') . '</span>'),
-        '#attributes' => [
-          'class' => ['lpb-toggle', 'use-ajax'],
-          'data-dialog-type' => 'dialog',
-          'data-dialog-options' => Json::encode([
-            'width' => 1200,
-            'height' => 500,
-            'modal' => TRUE,
-            'target' => 'lpb-component-menu',
-          ]),
-        ],
-        '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+    ];
+  }
+
+  /**
+   * Returns the render array for a create section button.
+   *
+   * @param array[] $route_params
+   *   The route parameters for the link.
+   * @param int $weight
+   *   The weight of the button element.
+   * @param array[] $classes
+   *   A list of classes to append to the container.
+   *
+   * @return array
+   *   The render array.
+   */
+  protected function insertSectionButton(array $route_params = [], int $weight = 0, array $classes = []) {
+    return [
+      '#type' => 'link',
+      '#title' => Markup::create($this->t('Add section')),
+      '#attributes' => [
+        'class' => array_merge(['lpb-btn', 'use-ajax'], $classes),
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'width' => 1200,
+          'height' => 500,
+          'modal' => TRUE,
+          'target' => 'lpb-component-menu',
+        ]),
       ],
-    ], $properties);
+      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+    ];
   }
 
   /**

@@ -45,7 +45,11 @@ function layout_paragraphs_theme() {
       ],
     ],
     'layout_paragraphs_builder_controls' => [
-      'variables' => [],
+      'variables' => [
+        'label' => NULL,
+        'edit_url' => NULL,
+        'delete_url' => NULL,
+      ],
     ],
     'layout_paragraphs_builder_component_menu' => [
       'variables' => [

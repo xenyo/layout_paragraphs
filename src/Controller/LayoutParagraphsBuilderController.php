@@ -160,13 +160,11 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The editor instance.
    * @param string $paragraph_uuid
    *   The uuid of the paragraph we are editing.
-   * @param string $preview_view_mode
-   *   The view mode to use for rendering paragraphs.
    *
    * @return \Drupal\Core\Ajax\AjaxResponse
    *   The dialog command with edit form.
    */
-  public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid, string $preview_view_mode) {
+  public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
     $response = new AjaxResponse();
     $paragraph = $layout_paragraphs_layout
       ->getComponentByUuid($paragraph_uuid)
@@ -176,8 +174,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $form = $this->formBuilder()->getForm(
       '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentEditForm',
       $layout_paragraphs_layout,
-      $paragraph,
-      $preview_view_mode
+      $paragraph
     );
 
     $this->addFormResponse($response, $label, $form);
@@ -205,17 +202,17 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The Layout Paragraphs Layout object.
-   * @param string $uuid
+   * @param string $paragraph_uuid
    *   The uuid of the paragraph to delete.
    *
    * @return \Drupal\Core\Ajax\AjaxResponse
    *   The Ajax reponse with command to remove deleted item.
    */
-  public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $uuid) {
-    $layout_paragraphs_layout->deleteComponent($uuid, TRUE);
+  public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
+    $layout_paragraphs_layout->deleteComponent($paragraph_uuid, TRUE);
     $this->tempstore->set($layout_paragraphs_layout);
     $response = new AjaxResponse();
-    $response->addCommand(new RemoveCommand('[data-uuid="' . $uuid . '"]'));
+    $response->addCommand(new RemoveCommand('[data-uuid="' . $paragraph_uuid . '"]'));
     return $response;
   }
 
@@ -308,7 +305,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       $layout_paragraphs_layout,
       $paragraph,
       '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]',
-      'append'
+      'prepend'
     );
     $this->addFormResponse($response, $label, $form);
     return $response;

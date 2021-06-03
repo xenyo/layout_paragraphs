@@ -6,6 +6,7 @@ use Drupal\Core\Ajax\AfterCommand;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Ajax\AppendCommand;
+use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Ajax\CloseDialogCommand;
@@ -70,6 +71,10 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
 
       case 'append':
         $response->addCommand(new AppendCommand($this->domSelector, $rendered_item));
+        break;
+
+      case 'prepend':
+        $response->addCommand(new PrependCommand($this->domSelector, $rendered_item));
         break;
     }
 

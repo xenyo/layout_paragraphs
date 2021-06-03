@@ -17,10 +17,10 @@ layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::chooseComponent'
-    sibling_uuid: FALSE
-    placement: FALSE
-    region: FALSE
-    parent_uuid: FALSE
+    region: 0
+    parent_uuid: 0
+    sibling_uuid: 0
+    placement: 0
   options:
     parameters:
       layout_paragraphs_layout:
@@ -30,7 +30,7 @@ layout_paragraphs.builder.choose_component:
     _permission: 'administer content'
 
 layout_paragraphs.builder.edit_item:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/edit/{paragraph_uuid}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/edit/{paragraph_uuid}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::editForm'
   options:
@@ -82,16 +82,15 @@ layout_paragraphs.builder.insert_into_region:
     _admin_route: TRUE
   requirements:
     _permission: 'administer content'
-layout_paragraphs.builder.delete:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/delete/{uuid}'
+
+layout_paragraphs.builder.delete_item:
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{paragraph_uuid}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::deleteComponent'
   options:
     parameters:
       layout_paragraphs_layout:
         layout_paragraphs_layout_tempstore: TRUE
-      paragraph_type:
-        type: entity:paragraphs_type
     _admin_route: TRUE
   requirements:
     _permission: 'administer content'
