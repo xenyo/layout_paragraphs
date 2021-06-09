@@ -179,6 +179,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       'data-lp-builder-id' => $layout->id(),
     ];
     $element['#attached']['library'] = ['layout_paragraphs/layout_paragraphs_builder'];
+    $element['#attached']['drupalSettings']['lpBuilder'][$layout->id()] = $layout->getSettings();
     $element['#is_empty'] = $layout->isEmpty();
     $element['#empty_message'] = $layout->getSetting('empty_message', $this->t('Start adding content.'));
     if ($layout->getSetting('require_layouts', FALSE)) {
