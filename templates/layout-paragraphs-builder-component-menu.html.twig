@@ -13,7 +13,7 @@
         {% if type.image %}
         <img src="{{ type.image }}" alt ="" />
         {% endif %}
-        <a href="{{ base_url }}{{ type.id }}" class="use-ajax">{{ type.label }}</a>
+        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{{ type.label }}</a>
         </a>
       </div>
     {% endfor %}
@@ -29,7 +29,7 @@
         {% if type.image %}
         <img src="{{ type.image }}" alt ="" />
         {% endif %}
-        <a href="{{ type.url }}" class="use-ajax">{{ type.label }}</a>
+        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{{ type.label }}</a>
         </a>
       </div>
     {% endfor %}

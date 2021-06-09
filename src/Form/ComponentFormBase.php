@@ -2,28 +2,28 @@
 
 namespace Drupal\layout_paragraphs\Form;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CloseDialogCommand;
-use Drupal\Core\Ajax\AjaxFormHelperTrait;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\field_group\FormatterHelper;
-use Drupal\Core\Form\SubformState;
-use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Form\SubformState;
 use Drupal\Core\Access\AccessResult;
+use Drupal\field_group\FormatterHelper;
+use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Extension\ModuleHandler;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Layout\LayoutPluginManager;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 
 /**
  * Class LayoutParagraphsComponentFormBase.
  *
  * Base form for layout paragraphs paragraph forms.
  */
-abstract class LayoutParagraphsComponentFormBase extends FormBase {
+abstract class ComponentFormBase extends FormBase {
 
   use AjaxFormHelperTrait;
 
@@ -117,17 +117,16 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
   }
 
   /**
-   * {@inheritDoc}
+   * Builds a component (paragraph) edit form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
    */
-  public function buildForm(
+  protected function buildComponentForm(
     array $form,
-    FormStateInterface $form_state,
-    $layout_paragraphs_layout = NULL,
-    $paragraph = NULL) {
-
-    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
-    $this->paragraph = $paragraph;
-    $this->previewViewMode = $this->layoutParagraphsLayout->getSetting('preview_view_mode');
+    FormStateInterface $form_state) {
 
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);
@@ -314,7 +313,7 @@ abstract class LayoutParagraphsComponentFormBase extends FormBase {
       '#type' => 'layout_paragraphs_builder',
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#uuid' => $uuid,
-      '#preview_view_mode' => $this->previewViewMode,
+      '#preview_view_mode' => $this->layoutParagraphsLayout->getSetting('preview_view_mode'),
     ];
   }
 

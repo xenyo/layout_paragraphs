@@ -2,12 +2,13 @@
 
 namespace Drupal\layout_paragraphs\Form;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CloseDialogCommand;
-use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Form\SubformState;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
@@ -15,7 +16,7 @@ use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
  *
  * Builds the edit form for an existing layout paragraphs paragraph entity.
  */
-class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBase {
+class EditComponentForm extends ComponentFormBase {
 
   /**
    * {@inheritDoc}
@@ -23,10 +24,16 @@ class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBas
   public function buildForm(
     array $form,
     FormStateInterface $form_state,
-    $layout_paragraphs_layout = NULL,
-    $paragraph = NULL) {
+    LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
+    string $paragraph_uuid = NULL) {
 
-    $form = parent::buildForm($form, $form_state, $layout_paragraphs_layout, $paragraph);
+    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
+    $this->previewViewMode = $this->layoutParagraphsLayout->getSetting('preview_view_mode');
+    $this->paragraph = $this->layoutParagraphsLayout
+      ->getComponentByUuid($paragraph_uuid)
+      ->getEntity();
+    $form = $this->buildComponentForm($form, $form_state);
+
     if ($selected_layout = $form_state->getValue(['layout_paragraphs', 'layout'])) {
       $section = $this->layoutParagraphsLayout->getLayoutSection($this->paragraph);
       if ($section && $selected_layout != $section->getLayoutId()) {
@@ -62,7 +69,7 @@ class LayoutParagraphsComponentEditForm extends LayoutParagraphsComponentFormBas
     ));
 
     $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
-    $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
+    $response->addCommand(new CloseModalDialogCommand('#' . $form['#dialog_id']));
 
     return $response;
   }

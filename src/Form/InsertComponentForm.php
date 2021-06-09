@@ -6,19 +6,22 @@ use Drupal\Core\Ajax\AfterCommand;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Ajax\AppendCommand;
-use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\InvokeCommand;
-use Drupal\Core\Ajax\CloseDialogCommand;
+use Drupal\Core\Ajax\PrependCommand;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\paragraphs\Entity\ParagraphsType;
+use Drupal\paragraphs\ParagraphsTypeInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
- * Class LayoutParagraphsComponentEditForm.
+ * Class InsertComponentForm.
  *
- * Builds the edit form for an existing layout paragraphs paragraph entity.
+ * Builds the form for inserting a new component.
  */
-class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase {
+class InsertComponentForm extends ComponentFormBase {
 
   /**
    * DOM element selector.
@@ -36,18 +39,43 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
 
   /**
    * {@inheritDoc}
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   *   The layout paragraphs layout object.
+   * @param \Drupal\paragraphs\Entity\ParagraphsType $paragraph_type
+   *   The paragraph type.
+   * @param string $parent_uuid
+   *   The parent component's uuid.
+   * @param string $region
+   *   The region to insert the new component into.
    */
   public function buildForm(
     array $form,
     FormStateInterface $form_state,
-    $layout_paragraphs_layout = NULL,
-    $paragraph = NULL,
-    $dom_selector = NULL,
-    $method = NULL) {
+    LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
+    ParagraphsType $paragraph_type = NULL,
+    string $parent_uuid = NULL,
+    string $region = NULL
+    ) {
 
-    $this->domSelector = $dom_selector;
-    $this->method = $method;
-    return parent::buildForm($form, $form_state, $layout_paragraphs_layout, $paragraph);
+    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
+    $this->paragraph = $this->newParagraph($paragraph_type);
+    $this->method = 'prepend';
+
+    if ($parent_uuid && $region) {
+      $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
+      $this->layoutParagraphsLayout->insertIntoRegion($parent_uuid, $region, $this->paragraph);
+    }
+    else {
+      $this->domSelector = '[data-layout-id="' . $this->layoutParagraphsLayout->id() . '"]';
+      $this->layoutParagraphsLayout->appendComponent($this->paragraph);
+    }
+
+    return $this->buildComponentForm($form, $form_state);
   }
 
   /**
@@ -86,7 +114,7 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
       ]
     ));
     $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
-    $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
+    $response->addCommand(new CloseModalDialogCommand());
 
     return $response;
   }
@@ -110,9 +138,26 @@ class LayoutParagraphsComponentAddForm extends LayoutParagraphsComponentFormBase
 
     $paragraph->setNeedsSave(TRUE);
     $display->extractFormValues($paragraph, $form, $form_state);
-
     $this->layoutParagraphsLayout->setComponent($paragraph);
     $this->tempstore->set($this->layoutParagraphsLayout);
+  }
+
+  /**
+   * Creates a new, empty paragraph empty of the provided type.
+   *
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
+   *   The paragraph type.
+   *
+   * @return \Drupal\paragraphs\ParagraphInterface
+   *   The new paragraph.
+   */
+  protected function newParagraph(ParagraphsTypeInterface $paragraph_type) {
+    $entity_type = $this->entityTypeManager->getDefinition('paragraph');
+    $bundle_key = $entity_type->getKey('bundle');
+    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
+    $paragraph = $this->entityTypeManager->getStorage('paragraph')
+      ->create([$bundle_key => $paragraph_type->id()]);
+    return $paragraph;
   }
 
 }

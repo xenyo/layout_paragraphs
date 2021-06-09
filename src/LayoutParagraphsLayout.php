@@ -272,6 +272,16 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   }
 
   /**
+   * Determines whether the reference field contains any non-empty items.
+   *
+   * @return bool
+   *   TRUE if the list is empty, FALSE otherwise.
+   */
+  public function isEmpty() {
+    return $this->paragraphsReferenceField->isEmpty();
+  }
+
+  /**
    * Sets a layout component.
    *
    * If a component is found with a matching paragraph,

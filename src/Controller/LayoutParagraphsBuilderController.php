@@ -6,16 +6,16 @@ use Drupal\Core\Url;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\RemoveCommand;
 use Drupal\Core\Ajax\AjaxHelperTrait;
-use Drupal\Core\Ajax\OpenDialogCommand;
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\LayoutParagraphsBuilderService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\Core\Template\Attribute;
 
 /**
  * LayoutParagraphsEditor controller class.
@@ -36,7 +36,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *
    * @var array
    */
-  protected $modalSettings;
+  protected $dialogOptions;
 
   /**
    * The layout paragraphs builder service.
@@ -46,17 +46,34 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   protected $layoutParagraphsBuilderService;
 
   /**
+   * The entity type bundle info service.
+   *
+   * @var Drupal\Core\Entity\EntityTypeBundleInfo
+   */
+  protected $entityTypeBundleInfo;
+
+  /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * Construct a Layout Paragraphs Editor controller.
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository $tempstore
    *   The tempstore service.
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsBuilderService $layout_paragraphs_builder_service
-   *   The layout paragraphs builder service.
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   *   The entity type bundle info service.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher service.
    */
-  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore, LayoutParagraphsBuilderService $layout_paragraphs_builder_service) {
+  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore, EntityTypeBundleInfoInterface $entity_type_bundle_info, EventDispatcherInterface $event_dispatcher) {
     $this->tempstore = $tempstore;
-    $this->layoutParagraphsBuilderService = $layout_paragraphs_builder_service;
-    $this->modalSettings = [
+    $this->entityTypeBundleInfo = $entity_type_bundle_info;
+    $this->eventDispatcher = $event_dispatcher;
+    $this->dialogOptions = [
       'width' => '70%',
       'minWidth' => 500,
       'maxWidth' => 1000,
@@ -64,7 +81,6 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       'classes' => [
         'ui-dialog' => 'lpe-dialog',
       ],
-      'modal' => TRUE,
     ];
   }
 
@@ -74,7 +90,8 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('layout_paragraphs.tempstore_repository'),
-      $container->get('layout_paragraphs.builder')
+      $container->get('entity_type.bundle.info'),
+      $container->get('event_dispatcher')
     );
   }
 
@@ -87,7 +104,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     $placement = '',
     $region = '',
     $parent_uuid = ''
-  ) {
+    ) {
 
     $route_params = [
       'layout_paragraphs_layout' => $layout_paragraphs_layout->id(),
@@ -113,27 +130,35 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       $route_name = 'layout_paragraphs.builder.insert';
     }
 
-    $types = $this->layoutParagraphsBuilderService->getAllowedComponentTypes($layout_paragraphs_layout, $parent_uuid, $region);
+    // If there is only one type to render,
+    // return the component form instead of a list of links.
+    $types = $this->getAllowedComponentTypes($layout_paragraphs_layout, $parent_uuid, $region);
     if (count($types) === 1) {
-      $type = reset($types)['paragraphs_type'];
+      $type_name = key($types);
+      $type = $this->entityTypeManager()->getStorage('paragraphs_type')->load($type_name);
       switch ($route_name) {
         case 'layout_paragraphs.builder.insert_into_region':
-          $response = $this->insertIntoRegion($layout_paragraphs_layout, $parent_uuid, $region, $type);
+          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentForm', $layout_paragraphs_layout, $type, $parent_uuid, $region);
           break;
 
         case 'layout_paragraphs.builder.insert':
-          $response = $this->insertComponent($layout_paragraphs_layout, $type);
+          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentForm', $layout_paragraphs_layout, $type);
           break;
 
         case 'layout_paragraphs.builder.insert_sibling':
-          $response = $this->insertSibling($layout_paragraphs_layout, $sibling_uuid, $type, $placement);
+          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentSiblingForm', $layout_paragraphs_layout, $type, $sibling_uuid, $placement);
           break;
       }
       return $response;
     }
 
     foreach ($types as &$type) {
-      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']]);
+      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']])->toString();
+      $type['link_attributes'] = new Attribute([
+        'class' => ['use-ajax'],
+        'data-dialog-type' => 'modal',
+        'data-dialog-options' => Json::encode($this->dialogOptions),
+      ]);
     }
 
     $section_components = array_filter($types, function ($type) {
@@ -151,34 +176,6 @@ class LayoutParagraphsBuilderController extends ControllerBase {
     ];
     return $component_menu;
 
-  }
-
-  /**
-   * Returns a paragraph edit form as a dialog.
-   *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
-   *   The editor instance.
-   * @param string $paragraph_uuid
-   *   The uuid of the paragraph we are editing.
-   *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   The dialog command with edit form.
-   */
-  public function editForm(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
-    $response = new AjaxResponse();
-    $paragraph = $layout_paragraphs_layout
-      ->getComponentByUuid($paragraph_uuid)
-      ->getEntity();
-    $paragraph_type = $paragraph->getParagraphType();
-    $label = $this->t('Edit @type', ['@type' => $paragraph_type->label()]);
-    $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentEditForm',
-      $layout_paragraphs_layout,
-      $paragraph
-    );
-
-    $this->addFormResponse($response, $label, $form);
-    return $response;
   }
 
   /**
@@ -217,151 +214,120 @@ class LayoutParagraphsBuilderController extends ControllerBase {
   }
 
   /**
-   * Insert a sibling paragraph into the field.
+   * Returns an array of allowed component types.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
-   *   The Layout Paragraphs Layout object.
-   * @param string $sibling_uuid
-   *   The uuid of the existing sibling component.
-   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
-   *   The paragraph type for the new content being added.
-   * @param string $placement
-   *   Whether to insert the new component "before" or "after" the sibling.
+   * Dispatches a LayoutParagraphsComponentMenuEvent object so the component
+   * list can be manipulated based on the layout, the layout settings, the
+   * parent uuid, and region.
    *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   Returns the edit form render array.
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout object.
+   * @param string $parent_uuid
+   *   The parent uuid of paragraph we are inserting a component into.
+   * @param string $region
+   *   The region we are inserting a component into.
+   *
+   * @return array[]
+   *   Returns an array of allowed component types.
    */
-  public function insertSibling(
-    LayoutParagraphsLayout $layout_paragraphs_layout,
-    string $sibling_uuid,
-    ParagraphsTypeInterface $paragraph_type = NULL,
-    string $placement = 'after') {
+  public function getAllowedComponentTypes(LayoutParagraphsLayout $layout, $parent_uuid = NULL, $region = NULL) {
+    $component_types = $this->getComponentTypes($layout);
+    $event = new LayoutParagraphsAllowedTypesEvent($component_types, $layout, $parent_uuid, $region);
+    $this->eventDispatcher->dispatch(LayoutParagraphsAllowedTypesEvent::EVENT_NAME, $event);
+    return $event->getTypes();
+  }
 
-    $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
-    $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
+  /**
+   * Returns an array of available component types.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout paragraphs layout.
+   *
+   * @return array
+   *   An array of available component types.
+   */
+  public function getComponentTypes(LayoutParagraphsLayout $layout) {
 
-    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
-    $paragraph = $this->entityTypeManager()->getStorage('paragraph')
-      ->create([$bundle_key => $paragraph_type->id()]);
+    $items = $layout->getParagraphsReferenceField();
+    $settings = $items->getSettings()['handler_settings'];
+    $sorted_bundles = $this->getSortedAllowedTypes($settings);
+    $storage = $this->entityTypeManager()->getStorage('paragraphs_type');
+    foreach (array_keys($sorted_bundles) as $bundle) {
+      /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
+      $paragraphs_type = $storage->load($bundle);
+      $plugins = $paragraphs_type->getEnabledBehaviorPlugins();
+      $section_component = isset($plugins['layout_paragraphs']);
+      $path = '';
+      // Get the icon and pass to Javascript.
+      if (method_exists($paragraphs_type, 'getIconUrl')) {
+        $path = $paragraphs_type->getIconUrl();
+      }
+      $types[$bundle] = [
+        'id' => $paragraphs_type->id(),
+        'label' => $paragraphs_type->label(),
+        'image' => $path,
+        'description' => $paragraphs_type->getDescription(),
+        'is_section' => $section_component,
+      ];
+    }
+    return $types;
+  }
 
-    switch ($placement) {
-      case "before":
-        $layout_paragraphs_layout->insertBeforeComponent($sibling_uuid, $paragraph);
-        break;
-
-      case "after":
-        $layout_paragraphs_layout->insertAfterComponent($sibling_uuid, $paragraph);
-        break;
+  /**
+   * Returns an array of sorted allowed component / paragraph types.
+   *
+   * @param array $settings
+   *   The handler settings.
+   *
+   * @return array
+   *   An array of sorted, allowed paragraph bundles.
+   */
+  protected function getSortedAllowedTypes(array $settings) {
+    $bundles = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
+    if (!empty($settings['target_bundles'])) {
+      if (isset($settings['negate']) && $settings['negate'] == '1') {
+        $bundles = array_diff_key($bundles, $settings['target_bundles']);
+      }
+      else {
+        $bundles = array_intersect_key($bundles, $settings['target_bundles']);
+      }
     }
 
-    $response = new AjaxResponse();
-    $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentAddForm',
-      $layout_paragraphs_layout,
-      $paragraph,
-      '[data-uuid="' . $sibling_uuid . '"]',
-      $placement
-    );
-    $this->addFormResponse($response, $label, $form);
-    return $response;
+    // Support for the paragraphs reference type.
+    if (!empty($settings['target_bundles_drag_drop'])) {
+      $drag_drop_settings = $settings['target_bundles_drag_drop'];
+      $max_weight = count($bundles);
 
-  }
+      foreach ($drag_drop_settings as $bundle_info) {
+        if (isset($bundle_info['weight']) && $bundle_info['weight'] && $bundle_info['weight'] > $max_weight) {
+          $max_weight = $bundle_info['weight'];
+        }
+      }
 
-  /**
-   * Insert a new component into a section.
-   *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
-   *   The Layout Paragraphs Layout object.
-   * @param string $parent_uuid
-   *   The uuid of the parent section.
-   * @param string $region
-   *   The region to insert into.
-   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
-   *   The paragraph type to add.
-   *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   Returns an ajax response object with the add form dialog.
-   */
-  public function insertIntoRegion(
-    LayoutParagraphsLayout $layout_paragraphs_layout,
-    string $parent_uuid,
-    string $region,
-    ParagraphsTypeInterface $paragraph_type) {
+      // Default weight for new items.
+      $weight = $max_weight + 1;
+      foreach ($bundles as $machine_name => $bundle) {
+        $return_bundles[$machine_name] = [
+          'label' => $bundle['label'],
+          'weight' => isset($drag_drop_settings[$machine_name]['weight']) ? $drag_drop_settings[$machine_name]['weight'] : $weight,
+        ];
+        $weight++;
+      }
+    }
+    else {
+      $weight = 0;
 
-    $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
-    $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
+      foreach ($bundles as $machine_name => $bundle) {
+        $return_bundles[$machine_name] = [
+          'label' => $bundle['label'],
+          'weight' => $weight,
+        ];
 
-    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
-    $paragraph = $this->entityTypeManager()->getStorage('paragraph')
-      ->create([$bundle_key => $paragraph_type->id()]);
-
-    $layout_paragraphs_layout->insertIntoRegion($parent_uuid, $region, $paragraph);
-    $response = new AjaxResponse();
-
-    $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentAddForm',
-      $layout_paragraphs_layout,
-      $paragraph,
-      '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]',
-      'prepend'
-    );
-    $this->addFormResponse($response, $label, $form);
-    return $response;
-  }
-
-  /**
-   * Insert a new component into the layout.
-   *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
-   *   The layout paragraphs editor from the tempstore.
-   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
-   *   The paragraph type for the new content being added.
-   *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   Returns an ajax response object with the add form dialog.
-   */
-  public function insertComponent(
-    LayoutParagraphsLayout $layout_paragraphs_layout,
-    ParagraphsTypeInterface $paragraph_type) {
-
-    $entity_type = $this->entityTypeManager()->getDefinition('paragraph');
-    $bundle_key = $entity_type->getKey('bundle');
-    $label = $this->t('New @type', ['@type' => $paragraph_type->label()]);
-
-    /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
-    $paragraph = $this->entityTypeManager()->getStorage('paragraph')
-      ->create([$bundle_key => $paragraph_type->id()]);
-    $layout_paragraphs_layout->appendComponent($paragraph);
-
-    $response = new AjaxResponse();
-    $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs\Form\LayoutParagraphsComponentAddForm',
-      $layout_paragraphs_layout,
-      $paragraph,
-      '[data-lp-builder-id="' . $layout_paragraphs_layout->id() . '"]',
-      'append'
-    );
-    $this->addFormResponse($response, $label, $form);
-    return $response;
-
-  }
-
-  /**
-   * Adds the paragraph form to an ajax response.
-   *
-   * @param \Drupal\Core\Ajax\AjaxResponse $response
-   *   The ajax response object.
-   * @param string $title
-   *   The form title.
-   * @param array $form
-   *   The form array.
-   */
-  protected function addFormResponse(AjaxResponse &$response, string $title, array $form) {
-    $response->addCommand(new CloseDialogCommand('#lpb-component-menu'));
-    $selector = '#' . $form['#dialog_id'];
-    $response->addCommand(new OpenDialogCommand($selector, $title, $form, $this->modalSettings));
+        $weight++;
+      }
+    }
+    uasort($return_bundles, 'Drupal\Component\Utility\SortArray::sortByWeightElement');
+    return $return_bundles;
   }
 
 }

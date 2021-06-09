@@ -44,11 +44,26 @@ function layout_paragraphs_theme() {
         'content' => '',
       ],
     ],
+    'layout_paragraphs_builder' => [
+      'variables' => [
+        'id' => '',
+        'root_components' => [],
+        'is_empty' => FALSE,
+        'empty_message' => '',
+        'insert_button' => '',
+      ],
+    ],
+    'layout_paragraphs_builder_empty_layout' => [
+      'variables' => [
+
+      ],
+    ],
     'layout_paragraphs_builder_controls' => [
       'variables' => [
         'label' => NULL,
         'edit_url' => NULL,
         'delete_url' => NULL,
+        'dialog_options' => NULL,
       ],
     ],
     'layout_paragraphs_builder_component_menu' => [
