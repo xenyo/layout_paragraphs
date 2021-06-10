@@ -8,14 +8,16 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Access\AccessResult;
 use Drupal\field_group\FormatterHelper;
-use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Layout\LayoutPluginManager;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 
 /**
@@ -26,6 +28,7 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 abstract class ComponentFormBase extends FormBase {
 
   use AjaxFormHelperTrait;
+  use LayoutParagraphsLayoutRefreshTrait;
 
   /**
    * The tempstore service.
@@ -49,13 +52,6 @@ abstract class ComponentFormBase extends FormBase {
   protected $layoutPluginManager;
 
   /**
-   * The layout object.
-   *
-   * @var \Drupal\layout_paragraphs\LayoutParagraphsLayout
-   */
-  protected $layoutParagraphsLayout;
-
-  /**
    * The paragraph type.
    *
    * @var \Drupal\paragraphs\Entity\ParagraphsType
@@ -68,13 +64,6 @@ abstract class ComponentFormBase extends FormBase {
    * @var \Drupal\paragraphs\Entity\Paragraph
    */
   protected $paragraph;
-
-  /**
-   * The view mode to use for rendering paragraphs.
-   *
-   * @var string
-   */
-  protected $previewViewMode;
 
   /**
    * The module handler service.
@@ -90,11 +79,14 @@ abstract class ComponentFormBase extends FormBase {
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
-    ModuleHandler $module_handler) {
+    ModuleHandler $module_handler,
+    EventDispatcherInterface $event_dispatcher
+    ) {
     $this->tempstore = $tempstore;
     $this->entityTypeManager = $entity_type_manager;
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->moduleHandler = $module_handler;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -105,7 +97,8 @@ abstract class ComponentFormBase extends FormBase {
       $container->get('layout_paragraphs.tempstore_repository'),
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
-      $container->get('module_handler')
+      $container->get('module_handler'),
+      $container->get('event_dispatcher')
     );
   }
 
@@ -283,7 +276,7 @@ abstract class ComponentFormBase extends FormBase {
    */
   public function cancel(array &$form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $response->addCommand(new CloseDialogCommand('#' . $form['#dialog_id']));
+    $response->addCommand(new CloseModalDialogCommand());
     return $response;
   }
 
@@ -305,15 +298,14 @@ abstract class ComponentFormBase extends FormBase {
    * @param string $uuid
    *   The uuid of the paragraph entity to render.
    *
-   * @return \Drupal\Core\Render\Markup
-   *   The rendered paragraph.
+   * @return array
+   *   The paragraph render array.
    */
   protected function renderParagraph(string $uuid) {
     return [
       '#type' => 'layout_paragraphs_builder',
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#uuid' => $uuid,
-      '#preview_view_mode' => $this->layoutParagraphsLayout->getSetting('preview_view_mode'),
     ];
   }
 

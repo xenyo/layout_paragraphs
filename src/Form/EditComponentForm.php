@@ -9,7 +9,6 @@ use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
  * Class LayoutParagraphsComponentEditForm.
@@ -27,8 +26,7 @@ class EditComponentForm extends ComponentFormBase {
     LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
     string $paragraph_uuid = NULL) {
 
-    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
-    $this->previewViewMode = $this->layoutParagraphsLayout->getSetting('preview_view_mode');
+    $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->paragraph = $this->layoutParagraphsLayout
       ->getComponentByUuid($paragraph_uuid)
       ->getEntity();
@@ -55,22 +53,17 @@ class EditComponentForm extends ComponentFormBase {
    */
   public function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
 
+    $response = new AjaxResponse();
+    $response->addCommand(new CloseModalDialogCommand());
+    if ($this->needsRefresh()) {
+      return $this->refreshLayout($response);
+    }
+
     $uuid = $this->paragraph->uuid();
     $rendered_item = $this->renderParagraph($uuid);
 
-    $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand("[data-uuid={$uuid}]", $rendered_item));
-    $response->addCommand(new LayoutParagraphsBuilderInvokeHookCommand(
-      'component:update',
-      [
-        'layoutId' => $this->layoutParagraphsLayout->id(),
-        'componentUuid' => $uuid,
-      ]
-    ));
-
     $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
-    $response->addCommand(new CloseModalDialogCommand('#' . $form['#dialog_id']));
-
     return $response;
   }
 

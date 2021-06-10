@@ -46,6 +46,7 @@ function layout_paragraphs_theme() {
     ],
     'layout_paragraphs_builder' => [
       'variables' => [
+        'attributes' => [],
         'id' => '',
         'root_components' => [],
         'is_empty' => FALSE,

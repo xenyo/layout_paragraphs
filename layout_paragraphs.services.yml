@@ -16,3 +16,7 @@ services:
     class: \Drupal\layout_paragraphs\EventSubscriber\LayoutParagraphsAllowedTypesSubscriber
     tags:
       - { name: 'event_subscriber' }
+  layout_paragraphs_update_layout_subscriber:
+    class: \Drupal\layout_paragraphs\EventSubscriber\LayoutParagraphsUpdateLayoutSubscriber
+    tags:
+      - { name: 'event_subscriber' }

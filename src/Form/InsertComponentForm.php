@@ -14,7 +14,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\Ajax\LayoutParagraphsBuilderInvokeHookCommand;
 
 /**
  * Class InsertComponentForm.
@@ -36,6 +35,10 @@ class InsertComponentForm extends ComponentFormBase {
    * @var string
    */
   protected $method;
+
+  protected $parentUuid;
+
+  protected $region;
 
   /**
    * {@inheritDoc}
@@ -62,19 +65,17 @@ class InsertComponentForm extends ComponentFormBase {
     string $region = NULL
     ) {
 
-    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
+    $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->paragraph = $this->newParagraph($paragraph_type);
     $this->method = 'prepend';
-
-    if ($parent_uuid && $region) {
+    $this->parentUuid = $parent_uuid;
+    $this->region = $region;
+    if ($this->parentUuid && $this->region) {
       $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
-      $this->layoutParagraphsLayout->insertIntoRegion($parent_uuid, $region, $this->paragraph);
     }
     else {
-      $this->domSelector = '[data-layout-id="' . $this->layoutParagraphsLayout->id() . '"]';
-      $this->layoutParagraphsLayout->appendComponent($this->paragraph);
+      $this->domSelector = '[data-lp-builder-id="' . $this->layoutParagraphsLayout->id() . '"]';
     }
-
     return $this->buildComponentForm($form, $form_state);
   }
 
@@ -83,10 +84,14 @@ class InsertComponentForm extends ComponentFormBase {
    */
   public function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
 
+    $response = new AjaxResponse();
+    $response->addCommand(new CloseModalDialogCommand());
+    if ($this->needsRefresh()) {
+      return $this->refreshLayout($response);
+    }
+
     $uuid = $this->paragraph->uuid();
     $rendered_item = $this->renderParagraph($uuid);
-
-    $response = new AjaxResponse();
 
     switch ($this->method) {
       case 'before':
@@ -106,15 +111,7 @@ class InsertComponentForm extends ComponentFormBase {
         break;
     }
 
-    $response->addCommand(new LayoutParagraphsBuilderInvokeHookCommand(
-      'component:insert',
-      [
-        'layoutId' => $this->layoutParagraphsLayout->id(),
-        'componentUuid' => $uuid,
-      ]
-    ));
     $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
-    $response->addCommand(new CloseModalDialogCommand());
 
     return $response;
   }
@@ -124,22 +121,35 @@ class InsertComponentForm extends ComponentFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
-    $paragraph = $form['#paragraph'];
     /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
     $display = $form['#display'];
 
-    $paragraphs_type = $paragraph->getParagraphType();
+    $paragraphs_type = $this->paragraph->getParagraphType();
     if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
       $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
       $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
-      $layout_paragraphs_plugin->submitBehaviorForm($paragraph, $form['layout_paragraphs'], $subform_state);
+      $layout_paragraphs_plugin->submitBehaviorForm($this->paragraph, $form['layout_paragraphs'], $subform_state);
     }
 
-    $paragraph->setNeedsSave(TRUE);
-    $display->extractFormValues($paragraph, $form, $form_state);
-    $this->layoutParagraphsLayout->setComponent($paragraph);
+    $this->paragraph->setNeedsSave(TRUE);
+    $display->extractFormValues($this->paragraph, $form, $form_state);
+    $this->insertComponent();
     $this->tempstore->set($this->layoutParagraphsLayout);
+  }
+
+  /**
+   * Inserts the new component into the layout, using the correct method.
+   *
+   * @return $this
+   */
+  protected function insertComponent() {
+    if ($this->parentUuid && $this->region) {
+      $this->layoutParagraphsLayout->insertIntoRegion($this->parentUuid, $this->region, $this->paragraph);
+    }
+    else {
+      $this->layoutParagraphsLayout->appendComponent($this->paragraph);
+    }
+    return $this;
   }
 
   /**

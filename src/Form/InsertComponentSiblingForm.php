@@ -14,6 +14,22 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 class InsertComponentSiblingForm extends InsertComponentForm {
 
   /**
+   * Where to place the new component in relation to sibling.
+   *
+   * @var string
+   *   "before" or "after"
+   */
+  protected $placement;
+
+  /**
+   * The sibling component's uuid.
+   *
+   * @var string
+   *   The sibling component's uuid.
+   */
+  protected $siblingUuid;
+
+  /**
    * {@inheritDoc}
    *
    * @param array $form
@@ -38,22 +54,30 @@ class InsertComponentSiblingForm extends InsertComponentForm {
     string $placement = NULL
     ) {
 
-    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
+    $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->paragraph = $this->newParagraph($paragraph_type);
     $this->method = $placement;
     $this->domSelector = '[data-uuid="' . $sibling_uuid . '"]';
+    $this->placement = $placement;
+    $this->siblingUuid = $sibling_uuid;
 
-    switch ($placement) {
+    return $this->buildComponentForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  protected function insertComponent() {
+    switch ($this->placement) {
       case 'before':
-        $this->layoutParagraphsLayout->insertBeforeComponent($sibling_uuid, $this->paragraph);
+        $this->layoutParagraphsLayout->insertBeforeComponent($this->siblingUuid, $this->paragraph);
         break;
 
       case 'after':
-        $this->layoutParagraphsLayout->insertAfterComponent($sibling_uuid, $this->paragraph);
+        $this->layoutParagraphsLayout->insertAfterComponent($this->siblingUuid, $this->paragraph);
         break;
     }
-
-    return $this->buildComponentForm($form, $form_state);
+    return $this;
   }
 
 }

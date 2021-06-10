@@ -5,17 +5,18 @@ namespace Drupal\layout_paragraphs\Controller;
 use Drupal\Core\Url;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Template\Attribute;
 use Drupal\Core\Ajax\AjaxHelperTrait;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Drupal\Core\Template\Attribute;
 
 /**
  * LayoutParagraphsEditor controller class.
@@ -23,6 +24,7 @@ use Drupal\Core\Template\Attribute;
 class LayoutParagraphsBuilderController extends ControllerBase {
 
   use AjaxHelperTrait;
+  use LayoutParagraphsLayoutRefreshTrait;
 
   /**
    * The tempstore service.
@@ -206,9 +208,16 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *   The Ajax reponse with command to remove deleted item.
    */
   public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
-    $layout_paragraphs_layout->deleteComponent($paragraph_uuid, TRUE);
-    $this->tempstore->set($layout_paragraphs_layout);
+
+    $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
+    $this->layoutParagraphsLayout->deleteComponent($paragraph_uuid, TRUE);
+    $this->tempstore->set($this->layoutParagraphsLayout);
+
     $response = new AjaxResponse();
+    if ($this->needsRefresh()) {
+      return $this->refreshLayout($response);
+    }
+
     $response->addCommand(new RemoveCommand('[data-uuid="' . $paragraph_uuid . '"]'));
     return $response;
   }
