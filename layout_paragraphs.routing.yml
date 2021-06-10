@@ -96,7 +96,7 @@ layout_paragraphs.builder.delete_item:
     _permission: 'administer content'
 
 layout_paragraphs.builder.reorder:
-  path: '/layout-paragraphs-builder/{entity_type}/{bundle}/{entity_id}/{field_name}/{layout_paragraphs_layout}/{preview_view_mode}/reorder'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/reorder'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::reorderComponents'
   options:

@@ -228,7 +228,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       if ($item->entity) {
         $entity = $item->entity;
         $entity->setNeedsSave(TRUE);
-        $values[$delta] = [
+        $values[] = [
           'entity' => $entity,
           'target_id' => $entity->id(),
           'target_revision_id' => $entity->getRevisionId(),

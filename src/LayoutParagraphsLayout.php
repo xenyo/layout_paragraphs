@@ -378,7 +378,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    * @return $this
    */
   public function insertBeforeComponent(string $sibling_uuid, Paragraph $paragraph) {
-    return $this->insertSiblingComponent($sibling_uuid, $paragraph, -1);
+    return $this->insertSiblingComponent($sibling_uuid, $paragraph);
   }
 
   /**
