@@ -170,6 +170,7 @@ class LayoutParagraphsBuilderController extends ControllerBase {
       return $type['is_section'] === FALSE;
     });
     $component_menu = [
+      '#title' => $this->t('Choose a component'),
       '#theme' => 'layout_paragraphs_builder_component_menu',
       '#types' => [
         'layout' => $section_components,

@@ -42,17 +42,21 @@
   padding: 5px;
   position: relative;
 }
-.dragula-enabled .lpb-component {
+.lpb-component:hover,
+.lpb-component:focus-within {
+  outline: 1px solid blue;
+}
+.lpb-component {
   cursor: grab;
 }
-.lpb-component:hover .lpb-region {
+.lpb-component:hover .lpb-region,
+.lpb-component:focus-within .lpb-region {
   outline: 1px dotted rgba(0, 0, 255, 0.5);
 }
-.lpb-component:hover .lpb-region:hover {
+.lpb-component:hover .lpb-region:hover,
+.lpb-component:focus-within .lpb-region:focus-within {
   outline: 1px solid rgba(0, 0, 255, 0.5);
 }
-.lpb-active-item,
-.lpb-active-item.lpb-region
 .lpb-component:hover .js-lpb-active-item {
   outline: 1px solid blue !important;
 }
@@ -91,7 +95,8 @@
   top: 5px;
   opacity: 0;
 }
-.lpb-component:hover > .lpb-controls {
+.lpb-component:hover > .lpb-controls,
+.lpb-component:focus-within > .lpb-controls {
   opacity: 1;
 }
 .lpb-controls a span {
@@ -114,7 +119,7 @@
   width: 28px;
   margin: 0;
   padding: 0;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 50%;
   opacity: 1;
 }
@@ -126,6 +131,12 @@
   background-color: #eee;
   box-shadow: 0 0 1px rgba(0, 0, 0, 1);
 }
+.lpb-up:focus,
+.lpb-down:focus,
+.lpb-edit:focus,
+.lpb-delete:focus {
+  border-color: blue;
+}
 .lpb-up {
   background: url(../img/icon-up.png) 0 0 no-repeat;
   background-size: cover;
@@ -134,13 +145,13 @@
   background: url(../img/icon-down.png) 0 0 no-repeat;
   background-size: cover;
 }
-.lpb-down[disabled]:hover,
-.lpb-up[disabled]:hover {
+.lpb-down[tabindex="-1"]:hover,
+.lpb-up[tabindex="-1"]:hover {
   background-color: transparent;
   box-shadow: none;
 }
-.lpb-down[disabled],
-.lpb-up[disabled] {
+.lpb-down[tabindex="-1"],
+.lpb-up[tabindex="-1"] {
   opacity: .3;
   cursor: default;
 }
@@ -151,12 +162,6 @@
 .lpb-delete {
   background: url(../img/icon-delete.png) 0 0 no-repeat;
   background-size: cover;
-}
-.lpb-region:hover {
-  outline: 1px solid blue;
-}
-.lpb-component:hover {
-  outline: 1px solid blue;
 }
 .lpb-btn {
   position: absolute;
@@ -180,13 +185,14 @@
 .lpb-component > .lpb-btn {
   opacity: 0;
 }
-.lpb-component:hover > .lpb-btn {
+.lpb-component:hover > .lpb-btn,
+.lpb-component:focus-within > .lpb-btn {
   opacity: 1;
 }
 .lpb-btn--add {
   position: absolute;
   display: inline-block;
-  border: none;
+  border: 1px solid transparent;
   color: #333;
   font-weight: normal;
   line-height: 1;
@@ -205,6 +211,9 @@
   z-index: 1000;
   opacity: 0;
 }
+.lpb-btn--add:focus {
+  border-color: blue;
+}
 .lpb-btn--add.center {
   top: 50%;
   transform: translate(-50%, -50%);
@@ -216,11 +225,13 @@
 .lpb-btn--add.after {
   bottom: -18px;
 }
-.lpb-component:hover > .lpb-btn--add {
+.lpb-component:hover > .lpb-btn--add,
+.lpb-component:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }
-.lpb-region:hover > .lpb-btn--add {
+.lpb-region:hover > .lpb-btn--add,
+.lpb-region:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }

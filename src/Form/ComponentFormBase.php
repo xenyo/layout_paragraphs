@@ -126,6 +126,7 @@ abstract class ComponentFormBase extends FormBase {
     $this->paragraphType = $this->paragraph->getParagraphType();
 
     $form += [
+      '#title' => $this->formTitle(),
       '#paragraph' => $this->paragraph,
       '#display' => $display,
       '#tree' => TRUE,
@@ -189,6 +190,16 @@ abstract class ComponentFormBase extends FormBase {
       }
     }
     return $form;
+  }
+
+  /**
+   * Create the form title.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The form title.
+   */
+  protected function formTitle() {
+    return $this->t('Component form');
   }
 
   /**

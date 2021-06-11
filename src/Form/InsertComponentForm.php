@@ -80,6 +80,16 @@ class InsertComponentForm extends ComponentFormBase {
   }
 
   /**
+   * Create the form title.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The form title.
+   */
+  protected function formTitle() {
+    return $this->t('Create new @type', ['@type' => $this->paragraph->getParagraphType()->label()]);
+  }
+
+  /**
    * {@inheritDoc}
    */
   public function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {

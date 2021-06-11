@@ -52,7 +52,7 @@ class LayoutParagraphsAllowedTypesEvent extends Event {
    * @param string $region
    *   The region.
    */
-  public function __construct(array $types, LayoutParagraphsLayout $layout, string $parent_uuid, string $region) {
+  public function __construct(array $types, LayoutParagraphsLayout $layout, $parent_uuid = '', $region = '') {
     $this->types = $types;
     $this->layout = $layout;
     $this->parentUuid = $parent_uuid;

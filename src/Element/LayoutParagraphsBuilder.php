@@ -219,7 +219,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'lpb-component';
-    $build['#attributes']['tabindex'] = 0;
+    $build['#attributes']['tabindex'] = '0';
 
     $url_params = [
       'layout_paragraphs_layout' => $layout->id(),
@@ -270,7 +270,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             'class' => ['lpb-region'],
             'data-region' => $region_name,
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
-            'tabindex' => 0,
           ],
           'insert_button' => $this->insertComponentButton($url_params, 10000, ['center']),
         ];

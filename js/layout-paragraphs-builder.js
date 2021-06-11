@@ -27,18 +27,156 @@
       },
     }).execute();
   });
-
   /**
    * Returns a list of errors for the attempted move, or an empty array if there are no errors.
-   * @param {Element} el The element being moved.
-   * @param {Element} target The distination
    * @param {Element} settings The builder settings.
+   * @param {Element} el The element being moved.
+   * @param {Element} target The destination
+   * @param {Element} source The source
+   * @param {Element} sibling The next sibling element
    * @return {Array} An array of errors.
    */
-  function lpbMoveErrors(el, target, settings) {
+  function moveErrors(settings, el, target, source, sibling) {
     return Drupal._lpbMoveErrors
-      .map(validator => validator.apply(null, [el, target, settings]))
+      .map(validator =>
+        validator.apply(null, [settings, el, target, source, sibling]),
+      )
       .filter(errors => errors !== false && errors !== undefined);
+  }
+  function updateMoveButtons($element) {
+    $element.find('.lpb-up, .lpb-down').attr('tabindex', '0');
+    $element
+      .find(
+        '.lpb-component:first-of-type .lpb-up, .lpb-component:last-of-type .lpb-down',
+      )
+      .attr('tabindex', '-1');
+  }
+  function updateUi($element) {
+    reorderComponents($element);
+    updateMoveButtons($element);
+  }
+  /**
+   * Moves a component up or down within a simple list of components.
+   * @param {jQuery} $moveItem The item to move.
+   * @param {int} direction 1 (down) or -1 (up).
+   * @return {void}
+   */
+  function move($moveItem, direction) {
+    const $sibling =
+      direction === 1
+        ? $moveItem.nextAll('.lpb-component').first()
+        : $moveItem.prevAll('.lpb-component').first();
+    const method = direction === 1 ? 'after' : 'before';
+    const { scrollY } = window;
+    const destScroll = scrollY + $sibling.outerHeight() * direction;
+    const distance = Math.abs(destScroll - scrollY);
+
+    if ($sibling.length === 0) {
+      return false;
+    }
+
+    $({ translateY: 0 }).animate(
+      { translateY: 100 * direction },
+      {
+        duration: Math.max(100, Math.min(distance, 500)),
+        easing: 'swing',
+        step() {
+          const a = $sibling.outerHeight() * (this.translateY / 100);
+          const b = -$moveItem.outerHeight() * (this.translateY / 100);
+          $moveItem.css({ transform: `translateY(${a}px)` });
+          $sibling.css({ transform: `translateY(${b}px)` });
+        },
+        complete() {
+          $moveItem.css({ transform: 'none' });
+          $sibling.css({ transform: 'none' });
+          $sibling[method]($moveItem);
+          updateUi($moveItem.closest(`[${idAttr}]`));
+        },
+      },
+    );
+    if (distance > 50) {
+      $('html, body').animate({ scrollTop: destScroll });
+    }
+  }
+  /**
+   * Moves the focused component up or down the DOM to the next valid position
+   * when an arrow key is pressed. Unlike move(), nav()can fully navigate
+   * components to any valid position in an entire layout.
+   * @param {jQuery} $item The jQuery item to move.
+   * @param {int} dir The direction to move (1 == down, -1 == up).
+   * @param {Object} settings The builder ui settings.
+   */
+  function nav($item, dir, settings) {
+    const $element = $item.closest(`[${idAttr}]`);
+    $item.addClass('lpb-active-item');
+    // Add shims as target elements.
+    if (dir === -1) {
+      $(
+        '.lpb-region .lpb-btn--add, .lpb-layout:not(.lpb-active-item)',
+        $element,
+      ).before('<div class="lpb-shim"></div>');
+    } else if (dir === 1) {
+      $('.lpb-region', $element).prepend('<div class="lpb-shim"></div>');
+      $('.lpb-layout:not(.lpb-active-item)', $element).after(
+        '<div class="lpb-shim"></div>',
+      );
+    }
+    // Build a list of possible targets, or move destinatons.
+    const targets = $('.lpb-component, .lpb-shim', $element)
+      .toArray()
+      // Remove child components from possible targets.
+      .filter(i => !$.contains($item[0], i))
+      // Remove layout elements that are not self from possible targets.
+      .filter(i => i.className.indexOf('lpb-layout') === -1 || i === $item[0]);
+    const currentElement = $item[0];
+    let pos = targets.indexOf(currentElement);
+    // Check to see if the next position is allowed by calling the 'accepts' callback.
+    while (
+      targets[pos + dir] !== undefined &&
+      moveErrors(
+        settings,
+        $item[0],
+        targets[pos + dir].parentNode,
+        null,
+        $item.next().length ? $item.next()[0] : null,
+      ).length > 0
+    ) {
+      pos += dir;
+    }
+    if (targets[pos + dir] !== undefined) {
+      // Move after or before the target based on direction.
+      $(targets[pos + dir])[dir === 1 ? 'after' : 'before']($item);
+    }
+    // Remove the shims and save the order.
+    $('.lpb-shim', $element).remove();
+    updateUi($element);
+    $item.removeClass('lpb-active-item');
+  }
+
+  function attachEventListeners($element, settings) {
+    $element.on('click.lp-builder', '.lpb-up', e => {
+      move($(e.target).closest('.lpb-component'), -1);
+      return false;
+    });
+    $element.on('click.lp-builder', '.lpb-down', e => {
+      move($(e.target).closest('.lpb-component'), 1);
+      return false;
+    });
+    $element.on('click.lp-builder', '.lpb-component', e => {
+      $(e.currentTarget).focus();
+      return false;
+    });
+    document.addEventListener('keydown', e => {
+      const $item = $('.lpb-component:focus');
+      if ($item.length) {
+        if (e.code === 'ArrowDown' && $item) {
+          nav($item, 1, settings);
+        }
+        if (e.code === 'ArrowUp' && $item) {
+          nav($item, -1, settings);
+        }
+      }
+    });
   }
   Drupal._lpbMoveErrors = [];
   /**
@@ -49,13 +187,13 @@
     Drupal._lpbMoveErrors.push(f);
   };
   // Checks nesting depth.
-  Drupal.registerLpbMoveError((el, target, settings) => {
+  Drupal.registerLpbMoveError((settings, el, target) => {
     if (el.className.indexOf('lpb-layout') > -1) {
       return $(target).parents('.lpb-layout').length > settings.nesting_depth;
     }
   });
   // If layout is required, prevents component from being placed outside a layout.
-  Drupal.registerLpbMoveError((el, target, settings) => {
+  Drupal.registerLpbMoveError((settings, el, target) => {
     if (settings.require_layouts) {
       if (
         el.className.indexOf('lpb-component') > -1 &&
@@ -65,9 +203,9 @@
       }
     }
   });
-
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
+      // Run only once - initialize the editor ui.
       $('[data-lp-builder-id]', context)
         .once('lp-builder')
         .each((index, element) => {
@@ -78,10 +216,13 @@
             .find('.lpb-components, .lpb-region')
             .get();
           const drake = dragula(dragContainers, {
-            accepts(el, target) {
+            accepts(el, target, source, sibling) {
               // Returns false if any registered validator returns a value.
               // @see addMoveValidator()
-              return lpbMoveErrors(el, target, lpbSettings).length === 0;
+              return (
+                moveErrors(lpbSettings, el, target, source, sibling).length ===
+                0
+              );
             },
             moves(el, source, handle) {
               const $handle = $(handle);
@@ -95,8 +236,12 @@
               return true;
             },
           });
-          drake.on('drop', () => {
-            reorderComponents($element);
+          drake.on('drop', el => {
+            const $el = $(el);
+            if ($el.prev().is('a')) {
+              $el.insertBefore($el.prev());
+            }
+            updateUi($element);
           });
           drake.on('drag', el => {
             $element.addClass('is-dragging');
@@ -119,7 +264,17 @@
             $(container).removeClass('drag-target');
           });
           $element.data('drake', drake);
+          updateMoveButtons($element);
+          attachEventListeners($element, lpbSettings);
         });
+      // Run every time the behavior is attached.
+      if (context.classList && context.classList.contains('lpb-component')) {
+        $(context)
+          .closest('[data-lp-builder-id]')
+          .each((index, element) => {
+            updateMoveButtons($(element));
+          });
+      }
     },
   };
 })(jQuery, Drupal, Drupal.debounce, drupalSettings, dragula);
