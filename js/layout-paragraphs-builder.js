@@ -150,7 +150,7 @@
     // Remove the shims and save the order.
     $('.lpb-shim', $element).remove();
     updateUi($element);
-    $item.removeClass('lpb-active-item');
+    $item.removeClass('lpb-active-item').focus();
   }
 
   function attachEventListeners($element, settings) {
