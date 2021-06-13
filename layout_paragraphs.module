@@ -54,9 +54,13 @@ function layout_paragraphs_theme() {
         'insert_button' => '',
       ],
     ],
-    'layout_paragraphs_builder_empty_layout' => [
+    'layout_paragraphs_builder_formatter' => [
       'variables' => [
-
+        'link_url' => NULL,
+        'link_text' => NULL,
+        'field_label' => NULL,
+        'is_empty' => FALSE,
+        'root_components' => [],
       ],
     ],
     'layout_paragraphs_builder_controls' => [
@@ -68,11 +72,6 @@ function layout_paragraphs_theme() {
       ],
     ],
     'layout_paragraphs_builder_component_menu' => [
-      'variables' => [
-        'types' => NULL,
-      ],
-    ],
-    'layout_paragraphs_builder_section_menu' => [
       'variables' => [
         'types' => NULL,
       ],

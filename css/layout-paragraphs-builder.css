@@ -209,6 +209,9 @@
   transform: translateX(-50%);
   transition: all .15s linear;
   z-index: 1000;
+}
+.lpb-component .lpb-btn--add,
+.lpb-region .lpb-btn--add {
   opacity: 0;
 }
 .lpb-btn--add:focus {
