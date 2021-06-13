@@ -176,7 +176,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         'lp-builder',
         'lp-builder-' . $layout->id(),
       ],
-      'data-lp-builder-id' => $layout->id(),
+      'data-lpb-id' => $layout->id(),
     ];
     $element['#attached']['library'] = ['layout_paragraphs/layout_paragraphs_builder'];
     $element['#attached']['drupalSettings']['lpBuilder'][$layout->id()] = $layout->getSettings();
@@ -193,6 +193,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
       $uuid = $component->getEntity()->uuid();
       $element['#root_components'][$uuid] =& $element['#components'][$uuid];
+    }
+    if (count($element['#root_components'])) {
+      $element['#attributes']['class'][] = 'has-components';
     }
     return $element;
   }

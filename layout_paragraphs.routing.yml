@@ -13,6 +13,18 @@ layout_paragraphs.section_settings:
   requirements:
     _permission: 'administer site configuration'
 
+layout_paragraphs.builder.formatter:
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/formatter'
+  defaults:
+    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderFormatterController::build'
+  options:
+    parameters:
+      layout_paragraphs_layout:
+        layout_paragraphs_layout_tempstore: TRUE
+    _admin_route: TRUE
+  requirements:
+    _permission: 'administer content'
+
 layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
   defaults:

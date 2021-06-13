@@ -74,7 +74,7 @@ class InsertComponentForm extends ComponentFormBase {
       $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
     }
     else {
-      $this->domSelector = '[data-lp-builder-id="' . $this->layoutParagraphsLayout->id() . '"]';
+      $this->domSelector = '[data-lpb-id="' . $this->layoutParagraphsLayout->id() . '"]';
     }
     return $this->buildComponentForm($form, $form_state);
   }

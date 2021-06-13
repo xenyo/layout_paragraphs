@@ -63,7 +63,7 @@ trait LayoutParagraphsLayoutRefreshTrait {
    */
   protected function refreshLayout(AjaxResponse $response) {
     $layout = $this->renderLayout();
-    $dom_selector = '[data-lp-builder-id="' . $this->layoutParagraphsLayout->id() . '"]';
+    $dom_selector = '[data-lpb-id="' . $this->layoutParagraphsLayout->id() . '"]';
     $response->addCommand(new ReplaceCommand($dom_selector, $layout));
     return $response;
   }

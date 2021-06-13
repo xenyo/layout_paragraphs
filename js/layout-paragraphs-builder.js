@@ -1,5 +1,5 @@
 (($, Drupal, debounce, drupalSettings, dragula) => {
-  const idAttr = 'data-lp-builder-id';
+  const idAttr = 'data-lpb-id';
   const reorderComponents = debounce($element => {
     const id = $element.attr(idAttr);
     const order = $('.lpb-component', $element)
@@ -206,16 +206,19 @@
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Run only once - initialize the editor ui.
-      $('[data-lp-builder-id]', context)
-        .once('lp-builder')
+      $(`.has-components[${idAttr}]`)
+        .once('lpb-enabled')
         .each((index, element) => {
           const $element = $(element);
           const id = $element.attr(idAttr);
           const lpbSettings = settings.lpBuilder[id];
-          const dragContainers = $element
-            .find('.lpb-components, .lpb-region')
-            .get();
-          const drake = dragula(dragContainers, {
+          const drake = dragula({
+            isContainer: el => {
+              console.log(el, $element);
+              return el.classList.contains('lpb-component-list') ||
+              el.classList.contains('lpb-region');
+            },
+
             accepts(el, target, source, sibling) {
               // Returns false if any registered validator returns a value.
               // @see addMoveValidator()
@@ -270,7 +273,7 @@
       // Run every time the behavior is attached.
       if (context.classList && context.classList.contains('lpb-component')) {
         $(context)
-          .closest('[data-lp-builder-id]')
+          .closest('[data-lpb-id]')
           .each((index, element) => {
             updateMoveButtons($(element));
           });
