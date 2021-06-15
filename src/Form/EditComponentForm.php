@@ -24,11 +24,11 @@ class EditComponentForm extends ComponentFormBase {
     array $form,
     FormStateInterface $form_state,
     LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
-    string $paragraph_uuid = NULL) {
+    string $component_uuid = NULL) {
 
     $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->paragraph = $this->layoutParagraphsLayout
-      ->getComponentByUuid($paragraph_uuid)
+      ->getComponentByUuid($component_uuid)
       ->getEntity();
     $form = $this->buildComponentForm($form, $form_state);
 

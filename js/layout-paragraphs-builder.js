@@ -166,6 +166,13 @@
       $(e.currentTarget).focus();
       return false;
     });
+    $element.on('click.lp-builder', '[data-confirm]', e => {
+      console.log(e);
+      return false;
+      return confirm($(e.currentTarget).attr('data-confirm'));
+    }
+
+    );
     document.addEventListener('keydown', e => {
       const $item = $('.lpb-component:focus');
       if ($item.length) {
@@ -213,12 +220,9 @@
           const id = $element.attr(idAttr);
           const lpbSettings = settings.lpBuilder[id];
           const drake = dragula({
-            isContainer: el => {
-              console.log(el, $element);
-              return el.classList.contains('lpb-component-list') ||
-              el.classList.contains('lpb-region');
-            },
-
+            isContainer: el =>
+              el.classList.contains('lpb-component-list') ||
+              el.classList.contains('lpb-region'),
             accepts(el, target, source, sibling) {
               // Returns false if any registered validator returns a value.
               // @see addMoveValidator()

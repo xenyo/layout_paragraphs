@@ -234,11 +234,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#label' => $entity->getParagraphType()->label,
       '#edit_url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
         'layout_paragraphs_layout' => $layout->id(),
-        'paragraph_uuid' => $entity->uuid(),
+        'component_uuid' => $entity->uuid(),
       ]),
       '#delete_url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
         'layout_paragraphs_layout' => $layout->id(),
-        'paragraph_uuid' => $entity->uuid(),
+        'component_uuid' => $entity->uuid(),
       ]),
       '#dialog_options' => Json::encode($this->dialogOptions),
       '#weight' => -10001,

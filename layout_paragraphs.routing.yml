@@ -42,7 +42,7 @@ layout_paragraphs.builder.choose_component:
     _permission: 'administer content'
 
 layout_paragraphs.builder.edit_item:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/edit/{paragraph_uuid}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/edit/{component_uuid}'
   defaults:
     _form: '\Drupal\layout_paragraphs\Form\EditComponentForm'
   options:
@@ -96,9 +96,9 @@ layout_paragraphs.builder.insert_into_region:
     _permission: 'administer content'
 
 layout_paragraphs.builder.delete_item:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{paragraph_uuid}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{component_uuid}'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::deleteComponent'
+    _form: '\Drupal\layout_paragraphs\Form\DeleteComponentForm'
   options:
     parameters:
       layout_paragraphs_layout:

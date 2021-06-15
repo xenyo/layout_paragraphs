@@ -4,7 +4,7 @@ namespace Drupal\layout_paragraphs;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsUpdateLayoutEvent;
 
 /**
@@ -25,6 +25,14 @@ trait LayoutParagraphsLayoutRefreshTrait {
    * @var \Drupal\layout_paragraphs\LayoutParagraphsLayout
    */
   protected $layoutParagraphsLayout;
+
+
+  /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
 
   /**
    * The original paragraphs layout object.
@@ -89,8 +97,21 @@ trait LayoutParagraphsLayoutRefreshTrait {
    */
   protected function needsRefresh() {
     $event = new LayoutParagraphsUpdateLayoutEvent($this->originalLayoutParagraphsLayout, $this->layoutParagraphsLayout);
-    $this->eventDispatcher->dispatch(LayoutParagraphsUpdateLayoutEvent::EVENT_NAME, $event);
+    $this->eventDispatcher()->dispatch(LayoutParagraphsUpdateLayoutEvent::EVENT_NAME, $event);
     return $event->needsRefresh;
+  }
+
+  /**
+   * Returns the event dispatcher service.
+   *
+   * @return \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   *   The event dispatcher service.
+   */
+  protected function eventDispatcher() {
+    if (!($this->eventDispatcher && $this->eventDispatcher instanceof EventDispatcherInterface)) {
+      $this->eventDispatcher = \Drupal::service('event_dispatcher');
+    }
+    return $this->eventDispatcher;
   }
 
 }

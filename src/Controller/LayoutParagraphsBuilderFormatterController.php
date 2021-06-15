@@ -26,7 +26,7 @@ class LayoutParagraphsBuilderFormatterController extends ControllerBase {
    */
   public function build(LayoutParagraphsLayout $layout_paragraphs_layout) {
     $form = $this->formBuilder()->getForm(
-      '\Drupal\layout_paragraphs\Form\FrontendBuilderForm',
+      '\Drupal\layout_paragraphs\Form\LayoutParagraphsBuilderForm',
       $layout_paragraphs_layout
     );
     if ($this->isAjax()) {

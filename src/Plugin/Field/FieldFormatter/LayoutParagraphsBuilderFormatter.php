@@ -77,14 +77,11 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
 
     /** @var \Drupal\Core\Entity\EntityDefintion $definition */
     $definition = $items->getFieldDefinition();
-    $field_name = $definition->get('field_name');
-
-    $layout = new LayoutParagraphsLayout($items, $this->getSettings());
+    $layout = new LayoutParagraphsLayout($items, $this->getSettings() + ['view_mode' => $this->viewMode]);
     $this->tempstore->set($layout);
     $layout = $this->tempstore->get($layout);
 
-    $root_components = $layout->getRootComponents();
-    $elements['#link_text'] = $this->t('Edit @field_name', ['@field_name' => $field_name]);
+    $elements['#link_text'] = $this->t('Edit @label', ['@label' => $definition->label()]);
     $elements['#link_url'] = Url::fromRoute('layout_paragraphs.builder.formatter', [
       'layout_paragraphs_layout' => $layout->id(),
     ]);

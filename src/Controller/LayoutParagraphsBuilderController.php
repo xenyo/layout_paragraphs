@@ -202,13 +202,13 @@ class LayoutParagraphsBuilderController extends ControllerBase {
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The Layout Paragraphs Layout object.
-   * @param string $paragraph_uuid
+   * @param string $component_uuid
    *   The uuid of the paragraph to delete.
    *
    * @return \Drupal\Core\Ajax\AjaxResponse
    *   The Ajax reponse with command to remove deleted item.
    */
-  public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $paragraph_uuid) {
+  public function deleteComponent(LayoutParagraphsLayout $layout_paragraphs_layout, string $component_uuid) {
 
     $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->layoutParagraphsLayout->deleteComponent($paragraph_uuid, TRUE);
