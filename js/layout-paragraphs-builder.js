@@ -166,13 +166,6 @@
       $(e.currentTarget).focus();
       return false;
     });
-    $element.on('click.lp-builder', '[data-confirm]', e => {
-      console.log(e);
-      return false;
-      return confirm($(e.currentTarget).attr('data-confirm'));
-    }
-
-    );
     document.addEventListener('keydown', e => {
       const $item = $('.lpb-component:focus');
       if ($item.length) {
