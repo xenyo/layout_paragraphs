@@ -1,36 +1,26 @@
-<div class="lpb-component-menu">
+<div class="lpb-component-list">
   <h4 class="visually-hidden">{{ 'Add Item'|t }}</h4>
-  <div class="lpb-component-menu__search">
-    <input class="lpb-component-menu-search-input" type="text" placeholder="Filter items..." />
+  <div class="lpb-component-list__search">
+    <input class="lpb-component-list-search-input" type="text" placeholder="Filter items..." />
   </div>
-  <div class="lpb-component-menu__group">
+  <div class="lpb-component-list__group">
     {% if types.layout %}
-    <div class="lpb-component-menu__group--layout">
+    <div class="lpb-component-list__group--layout">
     {% endif %}
     {% for type in types.layout %}
-      <div class="lpb-component-menu__item type-{{type.id}} is-layout">
-        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.label }}">
-        {% if type.image %}
-        <img src="{{ type.image }}" alt ="" />
-        {% endif %}
-        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{{ type.label }}</a>
-        </a>
+      <div class="lpb-component-list__item type-{{type.id}} is-layout">
+        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{% if type.image %}<img src="{{ type.image }}" alt ="" />{% endif %}{{ type.label }}</a>
       </div>
     {% endfor %}
     {% if types.layout %}
     </div>
     {% endif %}
     {% if types.content %}
-    <div class="lpb-component-menu__group--content">
+    <div class="lpb-component-list__group--content">
     {% endif %}
     {% for type in types.content %}
-      <div class="lpb-component-menu__item type-{{type.id}}">
-        <a class="lpb-component-menu__action" data-type="{{ type.id }}" href="#{{ type.id }}" title="{{ type.label }}">
-        {% if type.image %}
-        <img src="{{ type.image }}" alt ="" />
-        {% endif %}
-        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{{ type.label }}</a>
-        </a>
+      <div class="lpb-component-list__item type-{{type.id}}">
+                <a{{ type.link_attributes.setAttribute('href', type.url) }}>{% if type.image %}<img src="{{ type.image }}" alt ="" />{% endif %}{{ type.label }}</a>
       </div>
     {% endfor %}
     {% if types.content %}

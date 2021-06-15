@@ -15,7 +15,8 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 /**
  * Class LayoutParagraphsBuilderForm.
  *
- * Base form for layout paragraphs paragraph forms.
+ * Builds a Layout Paragraphs Builder form with save / cancel buttons
+ * for saving the host entity.
  */
 class LayoutParagraphsBuilderForm extends FormBase {
 
@@ -133,9 +134,11 @@ class LayoutParagraphsBuilderForm extends FormBase {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $entity = $this->layoutParagraphsLayout->getEntity();
-    $label = $entity->label();
+
     $response = new AjaxResponse();
-    $response->addCommand(new MessageCommand($this->t('@label saved.', ['@label' => $label])));
+    $t_args = ['@type' => $entity->getEntityType()->getLabel(), '%title' => $entity->toLink()->toString()];
+    $response->addCommand(new MessageCommand($this->t('@type %title has been updated.', $t_args)));
+    $response->addCommand(new ReplaceCommand('[data-lpb-form-id="' . $form['#attributes']['data-lpb-form-id'] . '"]', $form));
     return $response;
   }
 

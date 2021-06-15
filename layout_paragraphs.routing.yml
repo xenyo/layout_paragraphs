@@ -16,7 +16,7 @@ layout_paragraphs.section_settings:
 layout_paragraphs.builder.formatter:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/formatter'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderFormatterController::build'
+    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::build'
   options:
     parameters:
       layout_paragraphs_layout:
@@ -28,7 +28,7 @@ layout_paragraphs.builder.formatter:
 layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::chooseComponent'
+    _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::build'
     region: 0
     parent_uuid: 0
     sibling_uuid: 0
@@ -110,7 +110,7 @@ layout_paragraphs.builder.delete_item:
 layout_paragraphs.builder.reorder:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/reorder'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::reorderComponents'
+    _controller: '\Drupal\layout_paragraphs\Controller\ReorderController::build'
   options:
     parameters:
       layout_paragraphs_layout:

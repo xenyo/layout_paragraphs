@@ -1,4 +1,4 @@
-(($, Drupal, debounce, drupalSettings, dragula) => {
+(($, Drupal, debounce, dragula) => {
   const idAttr = 'data-lpb-id';
   const reorderComponents = debounce($element => {
     const id = $element.attr(idAttr);
@@ -23,7 +23,7 @@
     Drupal.ajax({
       url: `/layout-paragraphs-builder/${id}/reorder`,
       submit: {
-        layoutParagraphsState: JSON.stringify(order),
+        components: JSON.stringify(order),
       },
     }).execute();
   });
@@ -94,6 +94,7 @@
         },
       },
     );
+    $moveItem.closest(`[${idAttr}]`).trigger('lpb-component:move', [$moveItem]);
     if (distance > 50) {
       $('html, body').animate({ scrollTop: destScroll });
     }
@@ -151,9 +152,46 @@
     $('.lpb-shim', $element).remove();
     updateUi($element);
     $item.removeClass('lpb-active-item').focus();
+    $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item]);
   }
 
+  /**
+   * Prevents user from navigating away and accidentally loosing changes.
+   * @param {jQuery} $element The jQuery layout paragraphs builder object.
+   */
+  function preventLostChanges($element) {
+    // Add class "is_changed" when the builder is edited.
+    const events = [
+      'lpb-component:insert.lpb',
+      'lpb-component:update.lpb',
+      'lpb-component:move.lpb',
+      'lpb-component:drop.lpb',
+    ].join(' ');
+    $element.on(events, e => {
+      $(e.currentTarget).addClass('is_changed');
+    });
+    window.addEventListener('beforeunload', e => {
+      if ($(`.is_changed[${idAttr}]`).length) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+    $element
+      .closest('form')
+      .find('.form-actions')
+      .find('input[type="submit"], a')
+      .click(() => {
+        $element.removeClass('is_changed');
+      });
+  }
+
+  /**
+   * Attaches event listeners/handlers for builder ui.
+   * @param {jQuery} $element The layout paragraphs builder object.
+   * @param {Object} settings The builder settings.
+   */
   function attachEventListeners($element, settings) {
+    preventLostChanges($element);
     $element.on('click.lp-builder', '.lpb-up', e => {
       move($(e.target).closest('.lpb-component'), -1);
       return false;
@@ -178,6 +216,7 @@
       }
     });
   }
+  // An array of move error callback functions.
   Drupal._lpbMoveErrors = [];
   /**
    * Registers a move validation function.
@@ -205,7 +244,7 @@
   });
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      // Run only once - initialize the editor ui.
+      // Initialize the editor ui.
       $(`.has-components[${idAttr}]`)
         .once('lpb-enabled')
         .each((index, element) => {
@@ -241,6 +280,7 @@
             if ($el.prev().is('a')) {
               $el.insertBefore($el.prev());
             }
+            $element.trigger('lpb-component:drop', [$el]);
             updateUi($element);
           });
           drake.on('drag', el => {
@@ -250,6 +290,7 @@
             } else {
               $element.addClass('is-dragging-item');
             }
+            $element.trigger('lpb-component:drag', [$(el)]);
           });
           drake.on('dragend', () => {
             $element
@@ -267,14 +308,18 @@
           updateMoveButtons($element);
           attachEventListeners($element, lpbSettings);
         });
-      // Run every time the behavior is attached.
+      // Respond to a component being updated/inserted.
       if (context.classList && context.classList.contains('lpb-component')) {
         $(context)
           .closest('[data-lpb-id]')
           .each((index, element) => {
-            updateMoveButtons($(element));
+            const $element = $(element);
+            const $component = $(context);
+            const type = $component.hasClass('is_new') ? 'insert' : 'update';
+            $element.trigger(`lpb-component:${type}`, [$component]);
+            updateMoveButtons($element);
           });
       }
     },
   };
-})(jQuery, Drupal, Drupal.debounce, drupalSettings, dragula);
+})(jQuery, Drupal, Drupal.debounce, dragula);

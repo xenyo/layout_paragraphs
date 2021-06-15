@@ -178,7 +178,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       ],
       'data-lpb-id' => $layout->id(),
     ];
-    $element['#attached']['library'] = ['layout_paragraphs/layout_paragraphs_builder'];
+    $element['#attached']['library'] = ['layout_paragraphs/builder'];
     $element['#attached']['drupalSettings']['lpBuilder'][$layout->id()] = $layout->getSettings();
     $element['#is_empty'] = $layout->isEmpty();
     $element['#empty_message'] = $layout->getSetting('empty_message', $this->t('Start adding content.'));
@@ -222,6 +222,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'lpb-component';
+    if ($entity->isNew()) {
+      $build['#attributes']['class'][] = 'is_new';
+    }
     $build['#attributes']['tabindex'] = '0';
 
     $url_params = [

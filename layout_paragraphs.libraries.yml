@@ -11,12 +11,19 @@ dragula:
   js:
     https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js: {type: external, minified: true}
 
-layout_paragraphs_builder:
+component_list:
   css:
     layout:
-      css/layout-paragraphs-builder.css: {}
+      css/component-list.css: {}
   js:
-    js/layout-paragraphs-builder.js: {}
+    js/component-list.js: {}
+
+builder:
+  css:
+    layout:
+      css/builder.css: {}
+  js:
+    js/builder.js: {}
   dependencies:
     - layout_paragraphs/dragula
     - core/jquery
@@ -25,6 +32,13 @@ layout_paragraphs_builder:
     - core/drupal.dialog.ajax
     - core/drupal.ajax
     - core/drupal.debounce
+
+builder_form:
+  css:
+    layout:
+      css/builder-form.css: {}
+  js:
+    js/builder-form.js: {}
 
 layout_select:
   css:

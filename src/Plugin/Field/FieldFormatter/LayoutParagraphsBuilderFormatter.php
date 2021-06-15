@@ -94,7 +94,8 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
       ],
       'data-lpb-id' => $layout->id(),
     ];
-    $elements['#attached']['library'][] = 'layout_paragraphs/layout_paragraphs_builder';
+    $elements['#attached']['library'][] = 'layout_paragraphs/builder';
+    $elements['#attached']['library'][] = 'layout_paragraphs/builder_form';
     return $elements;
   }
 

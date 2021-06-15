@@ -23,7 +23,7 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 /**
  * Class LayoutParagraphsComponentFormBase.
  *
- * Base form for layout paragraphs paragraph forms.
+ * Base form for Layout Paragraphs component forms.
  */
 abstract class ComponentFormBase extends FormBase {
 
@@ -121,13 +121,13 @@ abstract class ComponentFormBase extends FormBase {
     array $form,
     FormStateInterface $form_state) {
 
+    if (!$form_state->has('langcode')) {
+      $langcode = $this->paragraph->language()->getId();
+      $form_state->set('langcode', $langcode);
+    }
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);
     $this->paragraphType = $this->paragraph->getParagraphType();
-
-    if (!$form_state->has('langcode')) {
-      $form_state->set('langcode', $this->paragraph->language()->getId());
-    }
 
     $form += [
       '#title' => $this->formTitle(),

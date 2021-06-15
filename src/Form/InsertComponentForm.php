@@ -7,7 +7,6 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Ajax\AppendCommand;
 use Drupal\Core\Ajax\BeforeCommand;
-use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
@@ -36,8 +35,18 @@ class InsertComponentForm extends ComponentFormBase {
    */
   protected $method;
 
+  /**
+   * The uuid of the parent component / paragraph.
+   *
+   * @var string
+   */
   protected $parentUuid;
 
+  /**
+   * The region this component will be inserted into.
+   *
+   * @var string
+   */
   protected $region;
 
   /**
@@ -120,8 +129,6 @@ class InsertComponentForm extends ComponentFormBase {
         $response->addCommand(new PrependCommand($this->domSelector, $rendered_item));
         break;
     }
-
-    $response->addCommand(new InvokeCommand("[data-uuid={$uuid}]", "focus"));
 
     return $response;
   }

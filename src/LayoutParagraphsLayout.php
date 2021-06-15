@@ -5,7 +5,6 @@ namespace Drupal\layout_paragraphs;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Config\Entity\ThirdPartySettingsInterface;
