@@ -125,6 +125,10 @@ abstract class ComponentFormBase extends FormBase {
     $display->buildForm($this->paragraph, $form, $form_state);
     $this->paragraphType = $this->paragraph->getParagraphType();
 
+    if (!$form_state->has('langcode')) {
+      $form_state->set('langcode', $this->paragraph->language()->getId());
+    }
+
     $form += [
       '#title' => $this->formTitle(),
       '#paragraph' => $this->paragraph,
