@@ -14,6 +14,7 @@ use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -80,13 +81,15 @@ abstract class ComponentFormBase extends FormBase {
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
     ModuleHandler $module_handler,
-    EventDispatcherInterface $event_dispatcher
+    EventDispatcherInterface $event_dispatcher,
+    EntityRepositoryInterface $entity_repository
     ) {
     $this->tempstore = $tempstore;
     $this->entityTypeManager = $entity_type_manager;
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->moduleHandler = $module_handler;
     $this->eventDispatcher = $event_dispatcher;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -98,7 +101,8 @@ abstract class ComponentFormBase extends FormBase {
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
       $container->get('module_handler'),
-      $container->get('event_dispatcher')
+      $container->get('event_dispatcher'),
+      $container->get('entity.repository')
     );
   }
 
@@ -121,10 +125,7 @@ abstract class ComponentFormBase extends FormBase {
     array $form,
     FormStateInterface $form_state) {
 
-    if (!$form_state->has('langcode')) {
-      $langcode = $this->paragraph->language()->getId();
-      $form_state->set('langcode', $langcode);
-    }
+    $this->initFormLangcodes($form_state);
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);
     $this->paragraphType = $this->paragraph->getParagraphType();
@@ -355,6 +356,43 @@ abstract class ComponentFormBase extends FormBase {
     $instance = $this->layoutPluginManager->createInstance($layout_id);
     $definition = $instance->getPluginDefinition();
     return $definition->getRegions();
+  }
+
+  /**
+   * Initializes form language code values.
+   *
+   * See Drupal\Core\Entity\ContentEntityForm.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   */
+  protected function initFormLangcodes(FormStateInterface $form_state) {
+    // Store the entity default language to allow checking whether the form is
+    // dealing with the original entity or a translation.
+    if (!$form_state
+      ->has('entity_default_langcode')) {
+      $form_state
+        ->set('entity_default_langcode', $this->paragraph
+          ->getUntranslated()
+          ->language()
+          ->getId());
+    }
+
+    // This value might have been explicitly populated to work with a particular
+    // entity translation. If not we fall back to the most proper language based
+    // on contextual information.
+    if (!$form_state
+      ->has('langcode')) {
+
+      // Imply a 'view' operation to ensure users edit entities in the same
+      // language they are displayed. This allows to keep contextual editing
+      // working also for multilingual entities.
+      $form_state
+        ->set('langcode', $this->entityRepository
+          ->getTranslationFromContext($this->paragraph)
+          ->language()
+          ->getId());
+    }
   }
 
 }

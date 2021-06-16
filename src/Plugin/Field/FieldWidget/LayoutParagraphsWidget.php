@@ -151,7 +151,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->initIsTranslating($form_state, $items->getEntity());
     $this->initTranslations($items, $form_state);
 
-    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
+    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings() + ['is_translating' => $this->isTranslating]);
     if (!$form_state->getUserInput()) {
       $this->tempstore->set($this->layoutParagraphsLayout);
     }
@@ -164,55 +164,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
-        '#preview_view_mode' => $this->getSetting('preview_view_mode'),
-        // @todo derive options from the widget configuration settings.
-        // See \Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget
-        '#options' => [
-          'emptyMessage' => $this->getSetting('empty_message'),
-          'showTypeLabels' => $this->config->get('show_paragraph_labels'),
-          'showLayoutLabels' => $this->config->get('show_layout_labels'),
-          'nestingDepth' => $this->getSetting('nesting_depth'),
-          'requireLayouts' => $this->getSetting('require_layouts'),
-          'isTranslating' => $this->isTranslating,
-          'movable' => $this->isMovable(),
-          'draggable' => $this->isDraggable(),
-          'createContent' => $this->canCreateContent(),
-          'createLayouts' => $this->canCreateLayouts(),
-          'deleteContent' => $this->canDeleteContent(),
-          'deleteLayouts' => $this->canDeleteLayouts(),
-          'saveButtonIds' => [
-            'edit-submit',
-            'edit-preview',
-            'edit-delete',
-          ],
-        ],
+        '#langcode' => $form_state->get('langcode'),
       ],
     ];
-    if ($this->isTranslating && !$this->supportsAsymmetricTranslations()) {
-      $element['translation_warning'] = [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['messages', 'messages--warning'],
-        ],
-        '#weight' => -10,
-        'message' => [
-          '#markup' => $this->t('You are in translation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
-        ],
-      ];
-    }
-    if ($this->isTranslating && $this->supportsAsymmetricTranslations()) {
-      $element['translation_warning'] = [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['alert'],
-          'class' => ['messages', 'messages--warning'],
-        ],
-        '#weight' => -10,
-        'message' => [
-          '#markup' => $this->t('You are in translation mode. Changes will only affect the current language.'),
-        ],
-      ];
-    }
     return $element;
   }
 
@@ -409,92 +363,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         $items[$delta]->entity = $item->entity;
       }
     }
-  }
-
-  /**
-   * If layout components are moveable.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If movable.
-   */
-  protected function isMovable() {
-    return TRUE;
-  }
-
-  /**
-   * If layout components are draggable.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If draggable.
-   */
-  protected function isDraggable() {
-    return TRUE;
-  }
-
-  /**
-   * If user can create content components for a layout.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If can create content.
-   */
-  protected function canCreateContent() {
-    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
-  }
-
-  /**
-   * If user can delete content components for a layout.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If can create content.
-   */
-  protected function canDeleteContent() {
-    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
-  }
-
-  /**
-   * If user can create layout components for a layout.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If can create layouts.
-   */
-  protected function canCreateLayouts() {
-    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
-  }
-
-  /**
-   * If user can delete layout components for a layout.
-   *
-   * @todo Add permission and permissions check.
-   *
-   * @return bool
-   *   If can create layouts.
-   */
-  protected function canDeleteLayouts() {
-    return !$this->isTranslating || $this->supportsAsymmetricTranslations();
-  }
-
-  /**
-   * Whether or not to support asymmetric translations.
-   *
-   * @see https://www.drupal.org/project/paragraphs/issues/2461695
-   * @see https://www.drupal.org/project/paragraphs/issues/2904705
-   * @see https://www.drupal.org/project/paragraphs_asymmetric_translation_widgets
-   *
-   * @return bool
-   *   True if asymmetric tranlation is supported.
-   */
-  protected function supportsAsymmetricTranslations() {
-    return $this->layoutParagraphsLayout->getParagraphsReferenceField()->getFieldDefinition()->isTranslatable();
   }
 
 }

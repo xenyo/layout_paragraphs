@@ -6,8 +6,12 @@ use Drupal\core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Access\AccessResultAllowed;
+use Drupal\paragraphs\ParagraphInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
+use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
@@ -61,6 +65,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @var \Drupal\Core\Entity\EntityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
+
+
+  /**
+   * Indicates whether the element is in translation mode.
+   *
+   * @var bool
+   */
+  protected $isTranslating;
 
   /**
    * The dialog options.
@@ -129,13 +141,15 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * Pre-render callback: Renders the UI.
    */
   public function preRender($element) {
-
     /** @var \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout */
     $layout = $this->tempstore->get($element['#layout_paragraphs_layout']);
     $element_uuid = $element['#uuid'];
     $preview_view_mode = $layout->getSetting('preview_view_mode', 'default');
-    $element['#components'] = [];
 
+    $element['#components'] = [];
+    if ($layout->getSetting('is_translating', FALSE)) {
+      $element['translation_warning'] = $this->translationWarning();
+    }
     // Build a flat list of component build arrays.
     foreach ($layout->getComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
@@ -232,28 +246,44 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       'sibling_uuid' => $entity->uuid(),
     ];
 
+    if ($this->editAccess($layout, $entity)) {
+      $edit_url = Url::fromRoute('layout_paragraphs.builder.edit_item', [
+        'layout_paragraphs_layout' => $layout->id(),
+        'component_uuid' => $entity->uuid(),
+      ]);
+    }
+    else {
+      $edit_url = '';
+    }
+
+    if ($this->deleteAccess($layout, $entity)) {
+      $delete_url = Url::fromRoute('layout_paragraphs.builder.delete_item', [
+        'layout_paragraphs_layout' => $layout->id(),
+        'component_uuid' => $entity->uuid(),
+      ]);
+    }
+    else {
+      $delete_url = '';
+    }
+
     $build['actions'] = [
       '#theme' => 'layout_paragraphs_builder_controls',
       '#label' => $entity->getParagraphType()->label,
-      '#edit_url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
-        'layout_paragraphs_layout' => $layout->id(),
-        'component_uuid' => $entity->uuid(),
-      ]),
-      '#delete_url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
-        'layout_paragraphs_layout' => $layout->id(),
-        'component_uuid' => $entity->uuid(),
-      ]),
+      '#edit_url' => $edit_url,
+      '#delete_url' => $delete_url,
       '#dialog_options' => Json::encode($this->dialogOptions),
       '#weight' => -10001,
     ];
 
-    if (!$component->getParentUuid() && $layout->getSetting('require_layouts')) {
-      $build['insert_before'] = $this->insertSectionButton($url_params + ['placement' => 'before'], -10000, ['before']);
-      $build['insert_after'] = $this->insertSectionButton($url_params + ['placement' => 'after'], 10000, ['after']);
-    }
-    else {
-      $build['insert_before'] = $this->insertComponentButton($url_params + ['placement' => 'before'], -10000, ['before']);
-      $build['insert_after'] = $this->insertComponentButton($url_params + ['placement' => 'after'], 10000, ['after']);
+    if ($this->createAccess($layout)) {
+      if (!$component->getParentUuid() && $layout->getSetting('require_layouts')) {
+        $build['insert_before'] = $this->insertSectionButton($url_params + ['placement' => 'before'], -10000, ['before']);
+        $build['insert_after'] = $this->insertSectionButton($url_params + ['placement' => 'after'], 10000, ['after']);
+      }
+      else {
+        $build['insert_before'] = $this->insertComponentButton($url_params + ['placement' => 'before'], -10000, ['before']);
+        $build['insert_after'] = $this->insertComponentButton($url_params + ['placement' => 'after'], 10000, ['after']);
+      }
     }
 
     if ($component->isLayout()) {
@@ -277,8 +307,10 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             'data-region' => $region_name,
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
           ],
-          'insert_button' => $this->insertComponentButton($url_params, 10000, ['center']),
         ];
+        if ($this->createAccess($layout)) {
+          $build['regions'][$region_name]['insert_button'] = $this->insertComponentButton($url_params, 10000, ['center']);
+        }
       }
     }
     return $build;
@@ -338,6 +370,40 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   }
 
   /**
+   * Builds a translation warning message.
+   *
+   * @return array
+   *   The build array.
+   */
+  protected function translationWarning(){
+    if ($this->supportsAsymmetricTranslations()) {
+      return [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['alert'],
+          'class' => ['messages', 'messages--warning'],
+        ],
+        '#weight' => -10,
+        'message' => [
+          '#markup' => $this->t('You are in translation mode. Changes will only affect the current language.'),
+        ],
+      ];
+    }
+    else {
+      return [
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['messages', 'messages--warning'],
+        ],
+        '#weight' => -10,
+        'message' => [
+          '#markup' => $this->t('You are in translation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
+        ],
+      ];
+    }
+  }
+
+  /**
    * Loads a layout plugin instance for a layout paragraph section.
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsSection $section
@@ -348,6 +414,72 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $layout_config = $section->getLayoutConfiguration();
     $layout_instance = $this->layoutPluginManager->createInstance($layout_id, $layout_config);
     return $layout_instance;
+  }
+
+  /**
+   * Returns an AccessResult object.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout object.
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   *
+   * @return bool
+   *   True if user can edit.
+   */
+  protected function editAccess(LayoutParagraphsLayout $layout, ParagraphInterface $paragraph) {
+    return $paragraph->access('edit');
+  }
+
+  /**
+   * Returns an AccessResult object.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout object.
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
+   *   The paragraph entity.
+   *
+   * @return bool
+   *   True if user can edit.
+   */
+  protected function deleteAccess(LayoutParagraphsLayout $layout, ParagraphInterface $paragraph) {
+    if ($layout->getSetting('is_translating', FALSE) && !($this->supportsAsymmetricTranslations())) {
+      $access = new AccessResultForbidden('Cannot delete paragraphs while in translation mode.');
+      return $access->isAllowed();
+    }
+    return $paragraph->access('delete');
+  }
+
+  /**
+   * Returns an AccessResult object.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
+   *   The layout object.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   True if user can edit.
+   */
+  protected function createAccess(LayoutParagraphsLayout $layout) {
+    $access = new AccessResultForbidden('Cannot add paragraphs while in translation mode.');
+    if ($layout->getSetting('is_translating', FALSE) && !($this->supportsAsymmetricTranslations())) {
+      $access = new AccessResultForbidden('Cannot add paragraphs while in translation mode.');
+    }
+    $access = new AccessResultAllowed();
+    return $access->isAllowed();
+  }
+
+  /**
+   * Whether or not to support asymmetric translations.
+   *
+   * @see https://www.drupal.org/project/paragraphs/issues/2461695
+   * @see https://www.drupal.org/project/paragraphs/issues/2904705
+   * @see https://www.drupal.org/project/paragraphs_asymmetric_translation_widgets
+   *
+   * @return bool
+   *   True if asymmetric tranlation is supported.
+   */
+  protected function supportsAsymmetricTranslations() {
+    return $this->layoutParagraphsLayout->getParagraphsReferenceField()->getFieldDefinition()->isTranslatable();
   }
 
 }
