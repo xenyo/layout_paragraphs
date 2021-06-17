@@ -164,7 +164,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
-        '#langcode' => $form_state->get('langcode'),
       ],
     ];
     return $element;

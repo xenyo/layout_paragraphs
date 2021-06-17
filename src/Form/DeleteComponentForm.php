@@ -93,7 +93,7 @@ class DeleteComponentForm extends FormBase {
    * Deletes the component and saves the layout.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->layoutParagraphsLayout->deleteComponent($this->componentUuid);
+    $this->layoutParagraphsLayout->deleteComponent($this->componentUuid, TRUE);
     $this->tempstore->set($this->layoutParagraphsLayout);
   }
 

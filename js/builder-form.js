@@ -8,9 +8,10 @@
         'lpb-component:move.lpb',
         'lpb-component:drop.lpb',
       ].join(' ');
-      $('[data-lpb-form-id]', context)
+      $('[data-lpb-id]', context)
         .once('lpb-builder-form')
-        .on(events, '[data-lpb-id]', e => {
+        .on(events, e => {
+          console.log('test');
           $(e.currentTarget)
             .closest('[data-lpb-form-id]')
             .find('[data-drupal-selector="edit-close"]')

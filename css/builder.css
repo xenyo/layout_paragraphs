@@ -39,7 +39,6 @@
   outline: 1px solid blue;
   outline-color: transparent;
   transition: all .15s linear;
-  padding: 5px;
   position: relative;
 }
 .lpb-component:hover,

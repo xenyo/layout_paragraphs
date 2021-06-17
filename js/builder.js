@@ -154,7 +154,6 @@
     $item.removeClass('lpb-active-item').focus();
     $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item]);
   }
-
   /**
    * Prevents user from navigating away and accidentally loosing changes.
    * @param {jQuery} $element The jQuery layout paragraphs builder object.
@@ -184,7 +183,6 @@
         $element.removeClass('is_changed');
       });
   }
-
   /**
    * Attaches event listeners/handlers for builder ui.
    * @param {jQuery} $element The layout paragraphs builder object.
@@ -216,6 +214,59 @@
       }
     });
   }
+  function initDragAndDrop($element, settings) {
+    const drake = dragula(
+      $element
+        .find('.lpb-component-list, .lpb-region')
+        .not('.is-dragula-enabled')
+        .get(),
+      {
+        accepts: (el, target, source, sibling) =>
+          moveErrors(settings, el, target, source, sibling).length === 0,
+        moves(el, source, handle) {
+          const $handle = $(handle);
+          if (
+            $handle.closest(
+              '.lpb-controls,.js-lpb-toggle,.lpb-status,.js-lpb-section-menu',
+            ).length
+          ) {
+            return false;
+          }
+          return true;
+        },
+      },
+    );
+    drake.on('drop', el => {
+      const $el = $(el);
+      if ($el.prev().is('a')) {
+        $el.insertBefore($el.prev());
+      }
+      $element.trigger('lpb-component:drop', [$el]);
+      updateUi($element);
+    });
+    drake.on('drag', el => {
+      $element.addClass('is-dragging');
+      if (el.className.indexOf('lpb-layout') > -1) {
+        $element.addClass('is-dragging-layout');
+      } else {
+        $element.addClass('is-dragging-item');
+      }
+      $element.trigger('lpb-component:drag', [$(el)]);
+    });
+    drake.on('dragend', () => {
+      $element
+        .removeClass('is-dragging')
+        .removeClass('is-dragging-layout')
+        .removeClass('is-dragging-item');
+    });
+    drake.on('over', (el, container) => {
+      $(container).addClass('drag-target');
+    });
+    drake.on('out', (el, container) => {
+      $(container).removeClass('drag-target');
+    });
+    return drake;
+  }
   // An array of move error callback functions.
   Drupal._lpbMoveErrors = [];
   /**
@@ -227,87 +278,51 @@
   };
   // Checks nesting depth.
   Drupal.registerLpbMoveError((settings, el, target) => {
-    if (el.className.indexOf('lpb-layout') > -1) {
-      return $(target).parents('.lpb-layout').length > settings.nesting_depth;
+    if (
+      el.classList.contains('lpb-layout') &&
+      $(target).parents('.lpb-layout').length > settings.nesting_depth
+    ) {
+      return Drupal.t('Exceeds nesting depth of @depth.', {
+        '@depth': settings.nesting_depth,
+      });
     }
   });
   // If layout is required, prevents component from being placed outside a layout.
   Drupal.registerLpbMoveError((settings, el, target) => {
     if (settings.require_layouts) {
       if (
-        el.className.indexOf('lpb-component') > -1 &&
-        el.className.indexOf('lpb-layout') === -1
+        el.classList.contains('lpb-component') &&
+        !el.classList.contains('lpb-layout') &&
+        !target.classList.contains('lpb-region')
       ) {
-        return target.className.indexOf('lpb-region') === -1;
+        return Drupal.t('Components must be added inside sections.');
       }
     }
   });
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Initialize the editor ui.
-      $(`.has-components[${idAttr}]`)
-        .once('lpb-enabled')
-        .each((index, element) => {
-          const $element = $(element);
-          const id = $element.attr(idAttr);
-          const lpbSettings = settings.lpBuilder[id];
-          const drake = dragula({
-            isContainer: el =>
-              el.classList.contains('lpb-component-list') ||
-              el.classList.contains('lpb-region'),
-            accepts(el, target, source, sibling) {
-              // Returns false if any registered validator returns a value.
-              // @see addMoveValidator()
-              return (
-                moveErrors(lpbSettings, el, target, source, sibling).length ===
-                0
-              );
-            },
-            moves(el, source, handle) {
-              const $handle = $(handle);
-              if (
-                $handle.closest(
-                  '.lpb-controls,.js-lpb-toggle,.lpb-status,.js-lpb-section-menu',
-                ).length
-              ) {
-                return false;
-              }
-              return true;
-            },
-          });
-          drake.on('drop', el => {
-            const $el = $(el);
-            if ($el.prev().is('a')) {
-              $el.insertBefore($el.prev());
-            }
-            $element.trigger('lpb-component:drop', [$el]);
-            updateUi($element);
-          });
-          drake.on('drag', el => {
-            $element.addClass('is-dragging');
-            if (el.className.indexOf('lpb-layout') > -1) {
-              $element.addClass('is-dragging-layout');
-            } else {
-              $element.addClass('is-dragging-item');
-            }
-            $element.trigger('lpb-component:drag', [$(el)]);
-          });
-          drake.on('dragend', () => {
-            $element
-              .removeClass('is-dragging')
-              .removeClass('is-dragging-layout')
-              .removeClass('is-dragging-item');
-          });
-          drake.on('over', (el, container) => {
-            $(container).addClass('drag-target');
-          });
-          drake.on('out', (el, container) => {
-            $(container).removeClass('drag-target');
-          });
-          $element.data('drake', drake);
-          updateMoveButtons($element);
+      $(`.has-components[${idAttr}]`).each((index, element) => {
+        const $element = $(element);
+        const id = $element.attr(idAttr);
+        const lpbSettings = settings.lpBuilder[id];
+        // Attach event listeners and init dragula just once.
+        $element.once('lpb-enabled').each(() => {
+          $element.data('drake', initDragAndDrop($element, lpbSettings));
           attachEventListeners($element, lpbSettings);
         });
+        const drake = $element.data('drake');
+        // Add new containers to the dragula instance.
+        $element
+          .find('.lpb-region')
+          .not('.is-dragula-enabled')
+          .addClass('.is-dragula-enabled')
+          .get()
+          .forEach(c => {
+            drake.containers.push(c);
+          });
+        updateMoveButtons($element);
+      });
       // Respond to a component being updated/inserted.
       if (context.classList && context.classList.contains('lpb-component')) {
         $(context)

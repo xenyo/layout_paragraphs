@@ -55,8 +55,10 @@ class ReorderController extends ControllerBase {
       $layout_paragraphs_layout->reorderComponents($ordered_components);
       $this->tempstore->set($layout_paragraphs_layout);
     }
-    $view_mode = $layout_paragraphs_layout->getSetting('view_mode', 'default');
-    return $layout_paragraphs_layout->getParagraphsReferenceField()->view($view_mode);
+    return [
+      '#type' => 'layout_paragraphs_builder',
+      '#layout_paragraphs_layout' => $layout_paragraphs_layout,
+    ];
   }
 
 }
