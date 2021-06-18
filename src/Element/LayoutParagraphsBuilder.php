@@ -235,7 +235,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-uuid'] = $entity->uuid();
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
-    $build['#attributes']['class'][] = 'lpb-component';
+    $build['#attributes']['class'][] = 'js-lpb-component';
     if ($entity->isNew()) {
       $build['#attributes']['class'][] = 'is_new';
     }
@@ -303,7 +303,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         ];
         $build['regions'][$region_name] = [
           '#attributes' => [
-            'class' => ['lpb-region'],
+            'class' => [
+              'js-lpb-region',
+            ],
             'data-region' => $region_name,
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
           ],

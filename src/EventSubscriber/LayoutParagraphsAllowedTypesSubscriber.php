@@ -19,7 +19,7 @@ class LayoutParagraphsAllowedTypesSubscriber implements EventSubscriberInterface
    * @param \Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent $event
    *   The allowed types event.
    *
-   * @return void
+   * @return bool
    */
   public function typeRestrictions(LayoutParagraphsAllowedTypesEvent $event) {
 

@@ -7,7 +7,7 @@
   position: relative;
   padding: 10px 0;
 }
-.lpb-region {
+.js-lpb-region {
   min-height: 40px;
   cursor: default;
   box-sizing: border-box;
@@ -29,34 +29,34 @@
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
   bottom: 20px;
 }
-.is-dragging .lpb-region {
+.is-dragging .js-lpb-region {
   outline: 1px dotted blue;
 }
-.is-dragging .t-reversed .lpb-region {
+.is-dragging .t-reversed .js-lpb-region {
   outline: 1px dotted white;
 }
-.lpb-component {
+.js-lpb-component {
   outline: 1px solid blue;
   outline-color: transparent;
   transition: all .15s linear;
   position: relative;
 }
-.lpb-component:hover,
-.lpb-component:focus-within {
+.js-lpb-component:hover,
+.js-lpb-component:focus-within {
   outline: 1px solid blue;
 }
-.lpb-component {
+.js-lpb-component {
   cursor: grab;
 }
-.lpb-component:hover .lpb-region,
-.lpb-component:focus-within .lpb-region {
+.js-lpb-component:hover .js-lpb-region,
+.js-lpb-component:focus-within .js-lpb-region {
   outline: 1px dotted rgba(0, 0, 255, 0.5);
 }
-.lpb-component:hover .lpb-region:hover,
-.lpb-component:focus-within .lpb-region:focus-within {
+.js-lpb-component:hover .js-lpb-region:hover,
+.js-lpb-component:focus-within .js-lpb-region:focus-within {
   outline: 1px solid rgba(0, 0, 255, 0.5);
 }
-.lpb-component:hover .js-lpb-active-item {
+.js-lpb-component:hover .js-lpb-active-item {
   outline: 1px solid blue !important;
 }
 .lpb-layout {
@@ -94,8 +94,8 @@
   top: 5px;
   opacity: 0;
 }
-.lpb-component:hover > .lpb-controls,
-.lpb-component:focus-within > .lpb-controls {
+.js-lpb-component:hover > .lpb-controls,
+.js-lpb-component:focus-within > .lpb-controls {
   opacity: 1;
 }
 .lpb-controls a span {
@@ -181,11 +181,11 @@
 .lpb-btn.after {
   bottom: -15px;
 }
-.lpb-component > .lpb-btn {
+.js-lpb-component > .lpb-btn {
   opacity: 0;
 }
-.lpb-component:hover > .lpb-btn,
-.lpb-component:focus-within > .lpb-btn {
+.js-lpb-component:hover > .lpb-btn,
+.js-lpb-component:focus-within > .lpb-btn {
   opacity: 1;
 }
 .lpb-btn--add {
@@ -209,8 +209,8 @@
   transition: all .15s linear;
   z-index: 1000;
 }
-.lpb-component .lpb-btn--add,
-.lpb-region .lpb-btn--add {
+.js-lpb-component .lpb-btn--add,
+.js-lpb-region .lpb-btn--add {
   opacity: 0;
 }
 .lpb-btn--add:focus {
@@ -227,17 +227,17 @@
 .lpb-btn--add.after {
   bottom: -18px;
 }
-.lpb-component:hover > .lpb-btn--add,
-.lpb-component:focus-within > .lpb-btn--add {
+.js-lpb-component:hover > .lpb-btn--add,
+.js-lpb-component:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }
-.lpb-region:hover > .lpb-btn--add,
-.lpb-region:focus-within > .lpb-btn--add {
+.js-lpb-region:hover > .lpb-btn--add,
+.js-lpb-region:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }
-.lpb-component + .lpb-btn--add {
+.js-lpb-component + .lpb-btn--add {
   display: none;
 }
 .lpb-btn--add::before{

@@ -11,7 +11,6 @@
       $('[data-lpb-id]', context)
         .once('lpb-builder-form')
         .on(events, e => {
-          console.log('test');
           $(e.currentTarget)
             .closest('[data-lpb-form-id]')
             .find('[data-drupal-selector="edit-close"]')

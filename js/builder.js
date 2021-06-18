@@ -2,7 +2,7 @@
   const idAttr = 'data-lpb-id';
   const reorderComponents = debounce($element => {
     const id = $element.attr(idAttr);
-    const order = $('.lpb-component', $element)
+    const order = $('.js-lpb-component', $element)
       .get()
       .map(item => {
         const $item = $(item);
@@ -10,12 +10,12 @@
           uuid: $item.attr('data-uuid'),
           parentUuid:
             $item
-              .parents('.lpb-component')
+              .parents('.js-lpb-component')
               .first()
               .attr('data-uuid') || null,
           region:
             $item
-              .parents('.lpb-region')
+              .parents('.js-lpb-region')
               .first()
               .attr('data-region') || null,
         };
@@ -47,7 +47,7 @@
     $element.find('.lpb-up, .lpb-down').attr('tabindex', '0');
     $element
       .find(
-        '.lpb-component:first-of-type .lpb-up, .lpb-component:last-of-type .lpb-down',
+        '.js-lpb-component:first-of-type .lpb-up, .js-lpb-component:last-of-type .lpb-down',
       )
       .attr('tabindex', '-1');
   }
@@ -64,8 +64,8 @@
   function move($moveItem, direction) {
     const $sibling =
       direction === 1
-        ? $moveItem.nextAll('.lpb-component').first()
-        : $moveItem.prevAll('.lpb-component').first();
+        ? $moveItem.nextAll('.js-lpb-component').first()
+        : $moveItem.prevAll('.js-lpb-component').first();
     const method = direction === 1 ? 'after' : 'before';
     const { scrollY } = window;
     const destScroll = scrollY + $sibling.outerHeight() * direction;
@@ -113,17 +113,17 @@
     // Add shims as target elements.
     if (dir === -1) {
       $(
-        '.lpb-region .lpb-btn--add, .lpb-layout:not(.lpb-active-item)',
+        '.js-lpb-region .lpb-btn--add, .lpb-layout:not(.lpb-active-item)',
         $element,
       ).before('<div class="lpb-shim"></div>');
     } else if (dir === 1) {
-      $('.lpb-region', $element).prepend('<div class="lpb-shim"></div>');
+      $('.js-lpb-region', $element).prepend('<div class="lpb-shim"></div>');
       $('.lpb-layout:not(.lpb-active-item)', $element).after(
         '<div class="lpb-shim"></div>',
       );
     }
     // Build a list of possible targets, or move destinatons.
-    const targets = $('.lpb-component, .lpb-shim', $element)
+    const targets = $('.js-lpb-component, .lpb-shim', $element)
       .toArray()
       // Remove child components from possible targets.
       .filter(i => !$.contains($item[0], i))
@@ -191,19 +191,19 @@
   function attachEventListeners($element, settings) {
     preventLostChanges($element);
     $element.on('click.lp-builder', '.lpb-up', e => {
-      move($(e.target).closest('.lpb-component'), -1);
+      move($(e.target).closest('.js-lpb-component'), -1);
       return false;
     });
     $element.on('click.lp-builder', '.lpb-down', e => {
-      move($(e.target).closest('.lpb-component'), 1);
+      move($(e.target).closest('.js-lpb-component'), 1);
       return false;
     });
-    $element.on('click.lp-builder', '.lpb-component', e => {
+    $element.on('click.lp-builder', '.js-lpb-component', e => {
       $(e.currentTarget).focus();
       return false;
     });
     document.addEventListener('keydown', e => {
-      const $item = $('.lpb-component:focus');
+      const $item = $('.js-lpb-component:focus');
       if ($item.length) {
         if (e.code === 'ArrowDown' && $item) {
           nav($item, 1, settings);
@@ -217,7 +217,7 @@
   function initDragAndDrop($element, settings) {
     const drake = dragula(
       $element
-        .find('.lpb-component-list, .lpb-region')
+        .find('.js-lpb-component-list, .js-lpb-region')
         .not('.is-dragula-enabled')
         .get(),
       {
@@ -291,9 +291,9 @@
   Drupal.registerLpbMoveError((settings, el, target) => {
     if (settings.require_layouts) {
       if (
-        el.classList.contains('lpb-component') &&
+        el.classList.contains('js-lpb-component') &&
         !el.classList.contains('lpb-layout') &&
-        !target.classList.contains('lpb-region')
+        !target.classList.contains('js-lpb-region')
       ) {
         return Drupal.t('Components must be added inside sections.');
       }
@@ -314,7 +314,7 @@
         const drake = $element.data('drake');
         // Add new containers to the dragula instance.
         $element
-          .find('.lpb-region')
+          .find('.js-lpb-region')
           .not('.is-dragula-enabled')
           .addClass('.is-dragula-enabled')
           .get()
@@ -324,7 +324,7 @@
         updateMoveButtons($element);
       });
       // Respond to a component being updated/inserted.
-      if (context.classList && context.classList.contains('lpb-component')) {
+      if (context.classList && context.classList.contains('js-lpb-component')) {
         $(context)
           .closest('[data-lpb-id]')
           .each((index, element) => {
