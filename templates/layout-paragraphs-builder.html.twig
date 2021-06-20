@@ -8,6 +8,11 @@
       </div>
     </div>
   {% else %}
+    {% if translation_warning %}
+    <div class="messages messages--status">
+      {{ translation_warning }}
+    </div>
+    {% endif %}
     <div class="lpb-component-list">
       {{ root_components }}
     </div>

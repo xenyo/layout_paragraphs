@@ -14,8 +14,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Form\FormBuilder;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
@@ -83,13 +81,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $entityDisplayRepository;
 
   /**
-   * Indicates whether the current widget instance is in translation.
-   *
-   * @var bool
-   */
-  protected $isTranslating;
-
-  /**
    * The module configuration.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
@@ -147,11 +138,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
 
-    // Detect if we are translating.
-    $this->initIsTranslating($form_state, $items->getEntity());
-    $this->initTranslations($items, $form_state);
-
-    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings() + ['is_translating' => $this->isTranslating]);
+    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
     if (!$form_state->getUserInput()) {
       $this->tempstore->set($this->layoutParagraphsLayout);
     }
@@ -166,6 +153,9 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       ],
     ];
+    if ($source = $form_state->get(['content_translation', 'source'])) {
+      $element['layout_paragraphs_builder']['#source_langcode'] = $source->getId();
+    }
     return $element;
   }
 
@@ -177,7 +167,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $path = array_merge($form['#parents'], [$field_name]);
     $layout_paragraphs_layout = $this->tempstore->get(new LayoutParagraphsLayout($items));
     $values = [];
-    foreach ($layout_paragraphs_layout->getParagraphsReferenceField() as $delta => $item) {
+    foreach ($layout_paragraphs_layout->getParagraphsReferenceField() as $item) {
       if ($item->entity) {
         $entity = $item->entity;
         $entity->setNeedsSave(TRUE);
@@ -256,112 +246,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'nesting_depth' => 0,
       'require_layouts' => 0,
     ];
-
     return $defaults;
-  }
-
-  /**
-   * Determine if widget is in translation.
-   *
-   * Initializes $this->isTranslating.
-   *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The current state of the form.
-   * @param \Drupal\Core\Entity\ContentEntityInterface $host
-   *   The host entity.
-   */
-  protected function initIsTranslating(FormStateInterface $form_state, ContentEntityInterface $host) {
-    if ($this->isTranslating != NULL) {
-      return;
-    }
-    $this->isTranslating = FALSE;
-    if (!$host->isTranslatable()) {
-      return;
-    }
-    if (!$host->getEntityType()->hasKey('default_langcode')) {
-      return;
-    }
-    $default_langcode_key = $host->getEntityType()->getKey('default_langcode');
-    if (!$host->hasField($default_langcode_key)) {
-      return;
-    }
-
-    if (!empty($form_state->get('content_translation'))) {
-      // Adding a language through the ContentTranslationController.
-      $this->isTranslating = TRUE;
-    }
-    $langcode = $form_state->get('langcode');
-    if ($host->hasTranslation($langcode) && $host->getTranslation($langcode)->get($default_langcode_key)->value == 0) {
-      // Editing a translation.
-      $this->isTranslating = TRUE;
-    }
-  }
-
-  /**
-   * Initialize translations for item list.
-   *
-   * Makes sure all components have a translation for the current
-   * language and creates them if necessary.
-   *
-   * @param \Drupal\Core\Field\FieldItemListInterface $items
-   *   The paragraphs reference field.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state.
-   */
-  protected function initTranslations(FieldItemListInterface &$items, FormStateInterface $form_state) {
-    $langcode = $form_state->get('langcode');
-    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
-    foreach ($items as $delta => $item) {
-      if (!empty($item->entity) && $item->entity instanceof ParagraphInterface) {
-        if (!$this->isTranslating) {
-          // Set the langcode if we are not translating.
-          $langcode_key = $item->entity->getEntityType()->getKey('langcode');
-          if ($item->entity->get($langcode_key)->value != $langcode) {
-            // If a translation in the given language already exists,
-            // switch to that. If there is none yet, update the language.
-            if ($item->entity->hasTranslation($langcode)) {
-              $item->entity = $item->entity->getTranslation($langcode);
-            }
-            else {
-              $item->entity->set($langcode_key, $langcode);
-            }
-          }
-        }
-        else {
-          // Add translation if missing for the target language.
-          if (!$item->entity->hasTranslation($langcode)) {
-            // Get the selected translation of the paragraph entity.
-            $entity_langcode = $item->entity->language()->getId();
-            $source = $form_state->get(['content_translation', 'source']);
-            $source_langcode = $source ? $source->getId() : $entity_langcode;
-            // Make sure the source language version is used if available.
-            // Fetching the translation without this check could lead valid
-            // scenario to have no paragraphs items in the source version of
-            // to an exception.
-            if ($item->entity->hasTranslation($source_langcode)) {
-              $entity = $item->entity->getTranslation($source_langcode);
-            }
-            // The paragraphs entity has no content translation source field
-            // if no paragraph entity field is translatable,
-            // even if the host is.
-            if ($item->entity->hasField('content_translation_source')) {
-              // Initialise the translation with source language values.
-              $item->entity->addTranslation($langcode, $entity->toArray());
-              $translation = $item->entity->getTranslation($langcode);
-              $manager = \Drupal::service('content_translation.manager');
-              $manager->getTranslationMetadata($translation)
-                ->setSource($item->entity->language()->getId());
-            }
-          }
-          // If any paragraphs type is translatable do not switch.
-          if ($item->entity->hasField('content_translation_source')) {
-            // Switch the paragraph to the translation.
-            $item->entity = $item->entity->getTranslation($langcode);
-          }
-        }
-        $items[$delta]->entity = $item->entity;
-      }
-    }
   }
 
 }

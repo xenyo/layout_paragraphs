@@ -74,6 +74,13 @@ abstract class ComponentFormBase extends FormBase {
   protected $moduleHandler;
 
   /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * {@inheritDoc}
    */
   public function __construct(

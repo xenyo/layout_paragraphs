@@ -52,6 +52,7 @@ function layout_paragraphs_theme() {
         'is_empty' => FALSE,
         'empty_message' => '',
         'insert_button' => '',
+        'translation_warning' => '',
       ],
     ],
     'layout_paragraphs_builder_formatter' => [

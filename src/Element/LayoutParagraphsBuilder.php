@@ -8,13 +8,12 @@ use Drupal\Core\Render\Renderer;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\paragraphs\ParagraphInterface;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Access\AccessResultForbidden;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Render\Element\RenderElement;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsComponent;
@@ -66,13 +65,40 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   protected $entityTypeBundleInfo;
 
-
   /**
    * Indicates whether the element is in translation mode.
    *
    * @var bool
    */
   protected $isTranslating;
+
+  /**
+   * The source translation language id.
+   *
+   * @var string
+   */
+  protected $sourceLangcode;
+
+  /**
+   * The layout paragraphs layout object.
+   *
+   * @var \Drupal\layout_paragraphs\LayoutParagraphsLayout
+   */
+  protected $layoutParagraphsLayout;
+
+  /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
+   * The language code.
+   *
+   * @var string
+   */
+  protected $langcode;
 
   /**
    * The dialog options.
@@ -97,7 +123,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
     Renderer $renderer,
-    EntityTypeBundleInfo $entity_type_bundle_info) {
+    EntityTypeBundleInfo $entity_type_bundle_info,
+    EntityRepositoryInterface $entity_repository) {
 
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->tempstore = $tempstore_repository;
@@ -105,6 +132,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->renderer = $renderer;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -119,17 +147,24 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
       $container->get('renderer'),
-      $container->get('entity_type.bundle.info')
+      $container->get('entity_type.bundle.info'),
+      $container->get('entity.repository')
     );
   }
 
   /**
    * {@inheritdoc}
+   *
+   * Properties:
+   * - #layout_paragraphs_layout: a LayoutParagraphsLayout instance.
+   * - #uuid: if provided, the uuid of the single paragraph to render.
+   * - #sounce_langcode: if provided, the source entity language.
    */
   public function getInfo() {
     return [
       '#layout_paragraphs_layout' => NULL,
       '#uuid' => NULL,
+      '#source_langcode' => NULL,
       '#theme' => 'layout_paragraphs_builder',
       '#pre_render' => [
         [$this, 'preRender'],
@@ -141,27 +176,33 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * Pre-render callback: Renders the UI.
    */
   public function preRender($element) {
-    /** @var \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout */
-    $layout = $this->tempstore->get($element['#layout_paragraphs_layout']);
+    $this->layoutParagraphsLayout = $this->tempstore->get($element['#layout_paragraphs_layout']);
+    $this->langcode = $this->entityRepository
+      ->getTranslationFromContext($this->layoutParagraphsLayout->getEntity())
+      ->language()
+      ->getId();
+
+    $this->sourceLangcode = $element['#source_langcode'];
     $element_uuid = $element['#uuid'];
-    $preview_view_mode = $layout->getSetting('preview_view_mode', 'default');
+    $preview_view_mode = $this->layoutParagraphsLayout->getSetting('preview_view_mode', 'default');
 
     $element['#components'] = [];
-    if ($layout->getSetting('is_translating', FALSE)) {
-      $element['translation_warning'] = $this->translationWarning();
+    if ($this->isTranslating()) {
+      $this->initTranslations();
+      $element['#translation_warning'] = $this->translationWarning();
     }
     // Build a flat list of component build arrays.
-    foreach ($layout->getComponents() as $component) {
+    foreach ($this->layoutParagraphsLayout->getComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
-      $element['#components'][$component->getEntity()->uuid()] = $this->buildComponent($layout, $component, $preview_view_mode);
+      $element['#components'][$component->getEntity()->uuid()] = $this->buildComponent($component, $preview_view_mode);
     }
 
     // Nest child components inside their respective sections and regions.
-    foreach ($layout->getComponents() as $component) {
+    foreach ($this->layoutParagraphsLayout->getComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
       $uuid = $component->getEntity()->uuid();
       if ($component->isLayout()) {
-        $section = $layout->getLayoutSection($component->getEntity());
+        $section = $this->layoutParagraphsLayout->getLayoutSection($component->getEntity());
         $layout_plugin_instance = $this->layoutPluginInstance($section);
         foreach (array_keys($element['#components'][$uuid]['regions']) as $region_name) {
           foreach ($section->getComponentsForRegion($region_name) as $child_component) {
@@ -188,22 +229,22 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $element['#attributes'] = [
       'class' => [
         'lp-builder',
-        'lp-builder-' . $layout->id(),
+        'lp-builder-' . $this->layoutParagraphsLayout->id(),
       ],
-      'data-lpb-id' => $layout->id(),
+      'data-lpb-id' => $this->layoutParagraphsLayout->id(),
     ];
     $element['#attached']['library'] = ['layout_paragraphs/builder'];
-    $element['#attached']['drupalSettings']['lpBuilder'][$layout->id()] = $layout->getSettings();
-    $element['#is_empty'] = $layout->isEmpty();
-    $element['#empty_message'] = $layout->getSetting('empty_message', $this->t('Start adding content.'));
-    if ($layout->getSetting('require_layouts', FALSE)) {
-      $element['#insert_button'] = $this->insertSectionButton(['layout_paragraphs_layout' => $layout->id()]);
+    $element['#attached']['drupalSettings']['lpBuilder'][$this->layoutParagraphsLayout->id()] = $this->layoutParagraphsLayout->getSettings();
+    $element['#is_empty'] = $this->layoutParagraphsLayout->isEmpty();
+    $element['#empty_message'] = $this->layoutParagraphsLayout->getSetting('empty_message', $this->t('Start adding content.'));
+    if ($this->layoutParagraphsLayout->getSetting('require_layouts', FALSE)) {
+      $element['#insert_button'] = $this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]);
     }
     else {
-      $element['#insert_button'] = $this->insertComponentButton(['layout_paragraphs_layout' => $layout->id()]);
+      $element['#insert_button'] = $this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]);
     }
     $element['#root_components'] = [];
-    foreach ($layout->getRootComponents() as $component) {
+    foreach ($this->layoutParagraphsLayout->getRootComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
       $uuid = $component->getEntity()->uuid();
       $element['#root_components'][$uuid] =& $element['#components'][$uuid];
@@ -217,8 +258,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * Returns the build array for a single layout component.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
-   *   THe Layout Paragraphs Layout object.
    * @param \Drupal\layout_paragraphs\LayoutParagraphsComponent $component
    *   The component to render.
    * @param string $preview_view_mode
@@ -227,7 +266,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @return array
    *   The build array.
    */
-  protected function buildComponent(LayoutParagraphsLayout $layout, LayoutParagraphsComponent $component, $preview_view_mode = 'default') {
+  protected function buildComponent(LayoutParagraphsComponent $component, $preview_view_mode = 'default') {
     $entity = $component->getEntity();
     $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
     $build = $view_builder->view($entity, $preview_view_mode, $entity->language()->getId());
@@ -242,13 +281,13 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['tabindex'] = '0';
 
     $url_params = [
-      'layout_paragraphs_layout' => $layout->id(),
+      'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
       'sibling_uuid' => $entity->uuid(),
     ];
 
-    if ($this->editAccess($layout, $entity)) {
+    if ($this->editAccess($entity)) {
       $edit_url = Url::fromRoute('layout_paragraphs.builder.edit_item', [
-        'layout_paragraphs_layout' => $layout->id(),
+        'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
         'component_uuid' => $entity->uuid(),
       ]);
     }
@@ -256,9 +295,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $edit_url = '';
     }
 
-    if ($this->deleteAccess($layout, $entity)) {
+    if ($this->deleteAccess($entity)) {
       $delete_url = Url::fromRoute('layout_paragraphs.builder.delete_item', [
-        'layout_paragraphs_layout' => $layout->id(),
+        'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
         'component_uuid' => $entity->uuid(),
       ]);
     }
@@ -275,8 +314,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#weight' => -10001,
     ];
 
-    if ($this->createAccess($layout)) {
-      if (!$component->getParentUuid() && $layout->getSetting('require_layouts')) {
+    if ($this->createAccess()) {
+      if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {
         $build['insert_before'] = $this->insertSectionButton($url_params + ['placement' => 'before'], -10000, ['before']);
         $build['insert_after'] = $this->insertSectionButton($url_params + ['placement' => 'after'], 10000, ['after']);
       }
@@ -287,7 +326,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     }
 
     if ($component->isLayout()) {
-      $section = $layout->getLayoutSection($entity);
+      $section = $this->layoutParagraphsLayout->getLayoutSection($entity);
       $layout_instance = $this->layoutPluginInstance($section);
       $region_names = $layout_instance->getPluginDefinition()->getRegionNames();
 
@@ -297,7 +336,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $build['regions'] = [];
       foreach ($region_names as $region_name) {
         $url_params = [
-          'layout_paragraphs_layout' => $layout->id(),
+          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
           'parent_uuid' => $entity->uuid(),
           'region' => $region_name,
         ];
@@ -310,7 +349,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
           ],
         ];
-        if ($this->createAccess($layout)) {
+        if ($this->createAccess()) {
           $build['regions'][$region_name]['insert_button'] = $this->insertComponentButton($url_params, 10000, ['center']);
         }
       }
@@ -374,34 +413,17 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * Builds a translation warning message.
    *
-   * @return array
-   *   The build array.
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The translation warning.
    */
-  protected function translationWarning(){
-    if ($this->supportsAsymmetricTranslations()) {
-      return [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['alert'],
-          'class' => ['messages', 'messages--warning'],
-        ],
-        '#weight' => -10,
-        'message' => [
-          '#markup' => $this->t('You are in translation mode. Changes will only affect the current language.'),
-        ],
-      ];
-    }
-    else {
-      return [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['messages', 'messages--warning'],
-        ],
-        '#weight' => -10,
-        'message' => [
-          '#markup' => $this->t('You are in translation mode. You cannot add or remove items while translating. Reordering items will affect all languages.'),
-        ],
-      ];
+  protected function translationWarning() {
+    if ($this->isTranslating()) {
+      if ($this->supportsAsymmetricTranslations()) {
+        return $this->t('You are in translation mode. Changes will only affect the current language.');
+      }
+      else {
+        return $this->t('You are in translation mode. You cannot add or remove items while translating. Reordering items will affect all languages.');
+      }
     }
   }
 
@@ -421,31 +443,27 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * Returns an AccessResult object.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
-   *   The layout object.
    * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph entity.
    *
    * @return bool
    *   True if user can edit.
    */
-  protected function editAccess(LayoutParagraphsLayout $layout, ParagraphInterface $paragraph) {
+  protected function editAccess(ParagraphInterface $paragraph) {
     return $paragraph->access('edit');
   }
 
   /**
    * Returns an AccessResult object.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
-   *   The layout object.
    * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph entity.
    *
    * @return bool
    *   True if user can edit.
    */
-  protected function deleteAccess(LayoutParagraphsLayout $layout, ParagraphInterface $paragraph) {
-    if ($layout->getSetting('is_translating', FALSE) && !($this->supportsAsymmetricTranslations())) {
+  protected function deleteAccess(ParagraphInterface $paragraph) {
+    if ($this->isTranslating() && !($this->supportsAsymmetricTranslations())) {
       $access = new AccessResultForbidden('Cannot delete paragraphs while in translation mode.');
       return $access->isAllowed();
     }
@@ -455,19 +473,37 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * Returns an AccessResult object.
    *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout
-   *   The layout object.
-   *
    * @return \Drupal\Core\Access\AccessResultInterface
    *   True if user can edit.
    */
-  protected function createAccess(LayoutParagraphsLayout $layout) {
-    $access = new AccessResultForbidden('Cannot add paragraphs while in translation mode.');
-    if ($layout->getSetting('is_translating', FALSE) && !($this->supportsAsymmetricTranslations())) {
+  protected function createAccess() {
+    $access = new AccessResultAllowed();
+    if ($this->isTranslating() && !($this->supportsAsymmetricTranslations())) {
       $access = new AccessResultForbidden('Cannot add paragraphs while in translation mode.');
     }
-    $access = new AccessResultAllowed();
     return $access->isAllowed();
+  }
+
+  /**
+   * Returns TRUE if in translation context.
+   *
+   * @return bool
+   *   TRUE if translating.
+   */
+  protected function isTranslating() {
+    if (is_null($this->isTranslating)) {
+      $this->isTranslating = FALSE;
+      /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
+      $host = $this->layoutParagraphsLayout->getEntity();
+      $default_langcode_key = $host->getEntityType()->getKey('default_langcode');
+      if (
+        $host->hasTranslation($this->langcode)
+        && $host->getTranslation($this->langcode)->get($default_langcode_key)->value == 0
+      ) {
+        $this->isTranslating = TRUE;
+      }
+    }
+    return $this->isTranslating;
   }
 
   /**
@@ -482,6 +518,68 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   protected function supportsAsymmetricTranslations() {
     return $this->layoutParagraphsLayout->getParagraphsReferenceField()->getFieldDefinition()->isTranslatable();
+  }
+
+  /**
+   * Initialize translations for item list.
+   *
+   * Makes sure all components have a translation for the current
+   * language and creates them if necessary.
+   */
+  protected function initTranslations() {
+    $items = $this->layoutParagraphsLayout->getParagraphsReferenceField();
+    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
+    foreach ($items as $delta => $item) {
+      if (!empty($item->entity) && $item->entity instanceof ParagraphInterface) {
+        if (!$this->isTranslating()) {
+          // Set the langcode if we are not translating.
+          $langcode_key = $item->entity->getEntityType()->getKey('langcode');
+          if ($item->entity->get($langcode_key)->value != $this->langcode) {
+            // If a translation in the given language already exists,
+            // switch to that. If there is none yet, update the language.
+            if ($item->entity->hasTranslation($this->langcode)) {
+              $item->entity = $item->entity->getTranslation($this->langcode);
+            }
+            else {
+              $item->entity->set($langcode_key, $this->langcode);
+            }
+          }
+        }
+        else {
+          // Add translation if missing for the target language.
+          if (!$item->entity->hasTranslation($this->langcode)) {
+            // Get the selected translation of the paragraph entity.
+            $entity_langcode = $item->entity->language()->getId();
+            $source_langcode = $this->sourceLangcode ?? $entity_langcode;
+            // Make sure the source language version is used if available.
+            // Fetching the translation without this check could lead valid
+            // scenario to have no paragraphs items in the source version of
+            // to an exception.
+            if ($item->entity->hasTranslation($source_langcode)) {
+              $entity = $item->entity->getTranslation($source_langcode);
+            }
+            // The paragraphs entity has no content translation source field
+            // if no paragraph entity field is translatable,
+            // even if the host is.
+            if ($item->entity->hasField('content_translation_source')) {
+              // Initialise the translation with source language values.
+              $item->entity->addTranslation($this->langcode, $entity->toArray());
+              $translation = $item->entity->getTranslation($this->langcode);
+              $manager = \Drupal::service('content_translation.manager');
+              $manager->getTranslationMetadata($translation)
+                ->setSource($item->entity->language()->getId());
+            }
+          }
+          // If any paragraphs type is translatable do not switch.
+          if ($item->entity->hasField('content_translation_source')) {
+            // Switch the paragraph to the translation.
+            $item->entity = $item->entity->getTranslation($this->langcode);
+          }
+        }
+        $items[$delta]->entity = $item->entity;
+      }
+    }
+    $this->tempstore->set($this->layoutParagraphsLayout);
   }
 
 }
