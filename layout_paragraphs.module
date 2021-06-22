@@ -66,6 +66,7 @@ function layout_paragraphs_theme() {
     ],
     'layout_paragraphs_builder_controls' => [
       'variables' => [
+        'attributes' => [],
         'label' => NULL,
         'edit_url' => NULL,
         'delete_url' => NULL,

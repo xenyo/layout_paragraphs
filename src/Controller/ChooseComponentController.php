@@ -79,7 +79,21 @@ class ChooseComponentController extends ControllerBase {
   }
 
   /**
-   * Build the component menu.
+   * Builds the component menu.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   *   The layout paragraphs layout object.
+   * @param string $sibling_uuid
+   *   The uuid of the paragraph to insert content adjacent to.
+   * @param string $placement
+   *   Whether to insert the new component "before" or "after" the sibling.
+   * @param string $region
+   *   The region the new component should be inserted into.
+   * @param string $parent_uuid
+   *   The uuid of the parent component we are inserting into.
+   *
+   * @return array
+   *   The build array.
    */
   public function build(
     LayoutParagraphsLayout $layout_paragraphs_layout,

@@ -305,14 +305,22 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $delete_url = '';
     }
 
-    $build['actions'] = [
+    $build['controls'] = [
       '#theme' => 'layout_paragraphs_builder_controls',
+      '#attributes' => [
+        'class' => [
+          'lpb-controls',
+        ],
+      ],
       '#label' => $entity->getParagraphType()->label,
       '#edit_url' => $edit_url,
       '#delete_url' => $delete_url,
       '#dialog_options' => Json::encode($this->dialogOptions),
       '#weight' => -10001,
     ];
+    if ($component->isLayout()) {
+      $build['controls']['#attributes']['class'][] = 'is-layout';
+    }
 
     if ($this->createAccess()) {
       if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {

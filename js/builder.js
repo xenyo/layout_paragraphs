@@ -225,6 +225,9 @@
           moveErrors(settings, el, target, source, sibling).length === 0,
         moves(el, source, handle) {
           const $handle = $(handle);
+          if ($handle.closest('.lpb-drag').length) {
+            return true;
+          }
           if (
             $handle.closest(
               '.lpb-controls,.js-lpb-toggle,.lpb-status,.js-lpb-section-menu',

@@ -77,7 +77,7 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
 
     /** @var \Drupal\Core\Entity\EntityDefintion $definition */
     $definition = $items->getFieldDefinition();
-    $layout = new LayoutParagraphsLayout($items, $this->getSettings() + ['view_mode' => $this->viewMode]);
+    $layout = new LayoutParagraphsLayout($items, $this->getSettings() + ['reference_field_view_mode' => $this->viewMode]);
     $this->tempstore->set($layout);
     $layout = $this->tempstore->get($layout);
 

@@ -112,7 +112,7 @@ class LayoutParagraphsBuilderForm extends FormBase {
    */
   public function close(array $form, FormStateInterface $form_state) {
     $this->tempstore->delete($this->layoutParagraphsLayout);
-    $view_mode = $this->layoutParagraphsLayout->getSetting('view_mode', 'default');
+    $view_mode = $this->layoutParagraphsLayout->getSetting('reference_field_view_mode', 'default');
     $rendered_layout = $this->layoutParagraphsLayout->getParagraphsReferenceField()->view($view_mode);
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('[data-lpb-form-id="' . $form['#attributes']['data-lpb-form-id'] . '"]', $rendered_layout));
