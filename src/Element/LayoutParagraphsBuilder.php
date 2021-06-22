@@ -278,7 +278,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     if ($entity->isNew()) {
       $build['#attributes']['class'][] = 'is_new';
     }
-    $build['#attributes']['tabindex'] = '0';
 
     $url_params = [
       'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
