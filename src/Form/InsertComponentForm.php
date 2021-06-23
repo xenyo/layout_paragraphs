@@ -137,19 +137,7 @@ class InsertComponentForm extends ComponentFormBase {
    * {@inheritDoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-    /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
-    $display = $form['#display'];
-
-    $paragraphs_type = $this->paragraph->getParagraphType();
-    if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
-      $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
-      $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
-      $layout_paragraphs_plugin->submitBehaviorForm($this->paragraph, $form['layout_paragraphs'], $subform_state);
-    }
-
-    $this->paragraph->setNeedsSave(TRUE);
-    $display->extractFormValues($this->paragraph, $form, $form_state);
+    parent::submitForm($form, $form_state);
     $this->insertComponent();
     $this->tempstore->set($this->layoutParagraphsLayout);
   }

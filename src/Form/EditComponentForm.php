@@ -124,23 +124,8 @@ class EditComponentForm extends ComponentFormBase {
    * {@inheritDoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-    /** @var \Drupal\paragraphs\Entity\Paragraph $paragraph */
-    $paragraph = $form['#paragraph'];
-    /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
-    $display = $form['#display'];
-
-    $paragraphs_type = $paragraph->getParagraphType();
-    if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
-      $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
-      $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
-      $layout_paragraphs_plugin->submitBehaviorForm($paragraph, $form['layout_paragraphs'], $subform_state);
-    }
-
-    $paragraph->setNeedsSave(TRUE);
-    $display->extractFormValues($paragraph, $form, $form_state);
-
-    $this->layoutParagraphsLayout->setComponent($paragraph);
+    parent::submitForm($form, $form_state);
+    $this->layoutParagraphsLayout->setComponent($this->paragraph);
     $this->tempstore->set($this->layoutParagraphsLayout);
   }
 

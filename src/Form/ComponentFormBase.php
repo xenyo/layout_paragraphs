@@ -16,6 +16,7 @@ use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Render\Element\Form;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
@@ -202,6 +203,64 @@ abstract class ComponentFormBase extends FormBase {
       }
     }
     return $form;
+  }
+
+  /**
+   * Validate the component form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $this->buildComponent($form, $form_state);
+    $violations = $this->paragraph->validate();
+    // Remove violations of inaccessible fields.
+    $violations->filterByFieldAccess($this->currentUser());
+    // The paragraph component was validated.
+    $this->paragraph->setValidationRequired(FALSE);
+    // Flag entity level violations.
+    foreach ($violations->getEntityViolations() as $violation) {
+      /** @var \Symfony\Component\Validator\ConstraintViolationInterface $violation */
+      $form_state->setErrorByName('', $violation->getMessage());
+    }
+    $form['#display']->flagWidgetsErrorsFromViolations($violations, $form, $form_state);
+  }
+
+  /**
+   * Saves the paragraph component.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $this->buildComponent($form, $form_state);
+  }
+
+  /**
+   * Builds the paragraph component using submitted form values.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   */
+  protected function buildComponent(array $form, FormStateInterface $form_state) {
+    /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
+    $display = $form['#display'];
+
+    $paragraphs_type = $this->paragraph->getParagraphType();
+    if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
+      $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
+      $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
+      $layout_paragraphs_plugin->submitBehaviorForm($this->paragraph, $form['layout_paragraphs'], $subform_state);
+    }
+
+    $this->paragraph->setNeedsSave(TRUE);
+    $display->extractFormValues($this->paragraph, $form, $form_state);
   }
 
   /**
