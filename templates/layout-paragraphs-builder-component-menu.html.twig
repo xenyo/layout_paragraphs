@@ -20,7 +20,7 @@
     {% endif %}
     {% for type in types.content %}
       <div class="lpb-component-list__item type-{{type.id}}">
-                <a{{ type.link_attributes.setAttribute('href', type.url) }}>{% if type.image %}<img src="{{ type.image }}" alt ="" />{% endif %}{{ type.label }}</a>
+        <a{{ type.link_attributes.setAttribute('href', type.url) }}>{% if type.image %}<img src="{{ type.image }}" alt ="" />{% endif %}{{ type.label }}</a>
       </div>
     {% endfor %}
     {% if types.content %}
