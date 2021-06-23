@@ -270,7 +270,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $entity = $component->getEntity();
     $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
     $build = $view_builder->view($entity, $preview_view_mode, $entity->language()->getId());
-
+    $build['#post_render'] = [
+      [$this, 'postRenderComponent'],
+    ];
     $build['#attributes']['data-uuid'] = $entity->uuid();
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
@@ -362,6 +364,42 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       }
     }
     return $build;
+  }
+
+  /**
+   * Filters problematic markup from rendered component.
+   *
+   * @param mixed $content
+   *   The rendered content.
+   * @param array $element
+   *   The render element array.
+   *
+   * @return mixed
+   *   The filtered content.
+   */
+  public function postRenderComponent($content, array $element) {
+    if (strpos($content, '<form') !== FALSE) {
+      // Rendering forms within the paragraph preview will break the parent
+      // form, so we need to strip form tags, "required" attributes,
+      // "form_token", and "form_id" to prevent the previewed form from
+      // being processed.
+      $search = [
+        '<form',
+        '</form>',
+        'required="required"',
+        'name="form_token"',
+        'name="form_id"',
+      ];
+      $replace = [
+        '<div',
+        '</div>',
+        '',
+        '',
+        '',
+      ];
+      $content = str_replace($search, $replace, $content);
+    }
+    return $content;
   }
 
   /**
