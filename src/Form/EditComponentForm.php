@@ -115,7 +115,6 @@ class EditComponentForm extends ComponentFormBase {
         '#title' => $this->t('Move Orphaned Items'),
         '#description' => $this->t('Choose where to move items for missing regions.'),
       ];
-      $form['#submit'][] = [$this, 'moveItemsSubmit'];
     }
     return $element;
   }
@@ -126,12 +125,13 @@ class EditComponentForm extends ComponentFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
     $this->layoutParagraphsLayout->setComponent($this->paragraph);
+    if ($form_state->getValue(['layout_paragraphs', 'move_items'])) {
+      $this->moveItemsSubmit($form, $form_state);
+    }
     $this->tempstore->set($this->layoutParagraphsLayout);
   }
 
   /**
-   * Form #submit callback.
-   *
    * Moves items from removed regions into designated new ones.
    *
    * @param array $form
@@ -149,7 +149,6 @@ class EditComponentForm extends ComponentFormBase {
           $this->layoutParagraphsLayout->setComponent($component->getEntity());
         }
       }
-      $this->tempstore->set($this->layoutParagraphsLayout);
     }
   }
 

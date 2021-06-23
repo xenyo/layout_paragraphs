@@ -214,12 +214,12 @@ abstract class ComponentFormBase extends FormBase {
    *   The form state object.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $this->buildComponent($form, $form_state);
-    $violations = $this->paragraph->validate();
+    $paragraph = $this->buildParagraphComponent($form, $form_state);
+    $violations = $paragraph->validate();
     // Remove violations of inaccessible fields.
     $violations->filterByFieldAccess($this->currentUser());
     // The paragraph component was validated.
-    $this->paragraph->setValidationRequired(FALSE);
+    $paragraph->setValidationRequired(FALSE);
     // Flag entity level violations.
     foreach ($violations->getEntityViolations() as $violation) {
       /** @var \Symfony\Component\Validator\ConstraintViolationInterface $violation */
@@ -237,7 +237,7 @@ abstract class ComponentFormBase extends FormBase {
    *   The form state object.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->buildComponent($form, $form_state);
+    $this->paragraph = $this->buildParagraphComponent($form, $form_state);
   }
 
   /**
@@ -247,20 +247,26 @@ abstract class ComponentFormBase extends FormBase {
    *   The form array.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state object.
+   *
+   * @return \Drupal\paragraphs\Entity\Paragraph
+   *   The paragraph entity.
    */
-  protected function buildComponent(array $form, FormStateInterface $form_state) {
+  protected function buildParagraphComponent(array $form, FormStateInterface $form_state) {
     /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
     $display = $form['#display'];
 
-    $paragraphs_type = $this->paragraph->getParagraphType();
+    $paragraph = clone $this->paragraph;
+
+    $paragraphs_type = $paragraph->getParagraphType();
     if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
       $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
       $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
-      $layout_paragraphs_plugin->submitBehaviorForm($this->paragraph, $form['layout_paragraphs'], $subform_state);
+      $layout_paragraphs_plugin->submitBehaviorForm($paragraph, $form['layout_paragraphs'], $subform_state);
     }
 
-    $this->paragraph->setNeedsSave(TRUE);
-    $display->extractFormValues($this->paragraph, $form, $form_state);
+    $paragraph->setNeedsSave(TRUE);
+    $display->extractFormValues($paragraph, $form, $form_state);
+    return $paragraph;
   }
 
   /**

@@ -85,6 +85,9 @@ class LayoutParagraphsBuilderForm extends FormBase {
         '#ajax' => [
           'callback' => '::save',
         ],
+        '#attributes' => [
+          'class' => ['button--primary'],
+        ],
       ],
       'close' => [
         '#type' => 'button',
