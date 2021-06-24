@@ -24,15 +24,6 @@ function layout_paragraphs_help($route_name, RouteMatchInterface $route_match) {
   return $output;
 }
 
-function layout_paragraphs_paragraph_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
-
-  // Only do the extra work if the component is configured to be displayed.
-  // This assumes a 'mymodule_addition' extra field has been defined for the
-  // entity bundle in hook_entity_extra_field_info().
-
-
-}
-
 /**
  * Implements hook_theme().
  */
@@ -81,13 +72,6 @@ function layout_paragraphs_theme() {
   ];
 }
 
-function template_preprocess_layout_select_item(&$variables) {
-  $element = $variables['element'];
-  $variables['radio'] = $element['#children'];
-  $variables['icon'] = $element['#icon'];
-  //$variables['label'] = $element['label'];
-}
-
 /**
  * Implements hook_theme_suggestions().
  */
@@ -98,17 +82,6 @@ function layout_paragraphs_theme_suggestions_layout_paragraphs(array $variables)
   $suggestions[] = 'layout_paragraphs__' . $variables['elements']['field_name'];
   $suggestions[] = 'layout_paragraphs__' . $variables['elements']['field_name'] . '__' . $sanitized_view_mode;
   return $suggestions;
-}
-
-/**
- * Implements hook_prepreprocess_radios().
- *
- * Add wrapper class for layout selection.
- */
-function layout_paragraphs_preprocess_radios(&$variables) {
-  if (isset($variables['element']['#wrapper_attributes'])) {
-    $variables['attributes'] += $variables['element']['#wrapper_attributes'];
-  }
 }
 
 /**
@@ -130,6 +103,7 @@ function layout_paragraphs_module_implements_alter(&$implementations, $hook) {
     $implementations['layout_paragraphs'] = $hook_init;
   }
 }
+
 /**
  * Implements hook_ENTITY_presave().
  *
