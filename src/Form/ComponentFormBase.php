@@ -16,7 +16,6 @@ use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Render\Element\Form;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
