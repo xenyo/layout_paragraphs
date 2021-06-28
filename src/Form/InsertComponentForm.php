@@ -4,7 +4,6 @@ namespace Drupal\layout_paragraphs\Form;
 
 use Drupal\Core\Ajax\AfterCommand;
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Form\SubformState;
 use Drupal\Core\Ajax\AppendCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\PrependCommand;
