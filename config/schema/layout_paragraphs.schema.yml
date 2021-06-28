@@ -32,6 +32,9 @@ field.widget.settings.layout_paragraphs:
     require_layouts:
       type: integer
       label: 'Require paragraphs to be added inside a layout'
+    empty_message:
+      type: string
+      label: 'Placeholder message to display when field is empty'
 
 paragraphs.behavior.settings.layout_paragraphs:
   type: paragraphs.behavior.settings_base
