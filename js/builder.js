@@ -175,9 +175,7 @@
         e.returnValue = '';
       }
     });
-    $element
-      .closest('form')
-      .find('.form-actions')
+    $('.form-actions')
       .find('input[type="submit"], a')
       .click(() => {
         $element.removeClass('is_changed');
