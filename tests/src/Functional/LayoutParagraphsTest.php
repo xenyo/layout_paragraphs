@@ -5,6 +5,7 @@ namespace Drupal\Tests\layout_paragraphs\Functional;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Tests\paragraphs\Functional\Classic\ParagraphsTestBase;
 use Drupal\Tests\paragraphs\FunctionalJavascript\ParagraphsTestBaseTrait;
 
 /**
@@ -12,17 +13,19 @@ use Drupal\Tests\paragraphs\FunctionalJavascript\ParagraphsTestBaseTrait;
  *
  * @group layout_paragraphs
  */
-class LayoutParagraphsTest extends BrowserTestBase {
-
-  use ParagraphsTestBaseTrait;
+class LayoutParagraphsTest extends ParagraphsTestBase {
 
   /**
    * {@inheritdoc}
    */
-  protected static $modules = [
+  public static $modules = [
     'layout_paragraphs',
     'paragraphs',
     'node',
+    'field',
+    'field_ui',
+    'block',
+    'paragraphs_test',
   ];
 
   /**
@@ -45,6 +48,16 @@ class LayoutParagraphsTest extends BrowserTestBase {
    */
   public function testLayoutParagraphsConfiguration() {
 
+    $this->loginAsAdmin([
+      'administer site configuration',
+      'create article content',
+      'create paragraphs content',
+      'administer node display',
+      'administer paragraph display',
+      'edit any page content',
+      'delete any page content',
+      'access files overview',
+    ]);
     $this->drupalGet('admin/structure/types/manage/page/node.page.field_content');
     $this->assertSession()->pageTextContains('Content settings for page.');
 
