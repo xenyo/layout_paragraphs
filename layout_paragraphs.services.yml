@@ -20,3 +20,7 @@ services:
     class: \Drupal\layout_paragraphs\EventSubscriber\LayoutParagraphsUpdateLayoutSubscriber
     tags:
       - { name: 'event_subscriber' }
+  layout_paragraphs.builder_access:
+    class: Drupal\layout_paragraphs\Access\LayoutParagraphsBuilderAccess
+    tags:
+      - { name: access_check, applies_to: _layout_paragraphs_builder_access }

@@ -21,9 +21,8 @@ layout_paragraphs.builder.formatter:
     parameters:
       layout_paragraphs_layout:
         layout_paragraphs_layout_tempstore: TRUE
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
@@ -37,9 +36,8 @@ layout_paragraphs.builder.choose_component:
     parameters:
       layout_paragraphs_layout:
         layout_paragraphs_layout_tempstore: TRUE
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.edit_item:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/edit/{component_uuid}'
@@ -49,9 +47,8 @@ layout_paragraphs.builder.edit_item:
     parameters:
       layout_paragraphs_layout:
         layout_paragraphs_layout_tempstore: TRUE
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.insert_sibling:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{placement}/{paragraph_type}'
@@ -63,9 +60,8 @@ layout_paragraphs.builder.insert_sibling:
         layout_paragraphs_layout_tempstore: TRUE
       paragraph_type:
         type: entity:paragraphs_type
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.insert:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-component/{paragraph_type}'
@@ -77,9 +73,8 @@ layout_paragraphs.builder.insert:
         layout_paragraphs_layout_tempstore: TRUE
       paragraph_type:
         type: entity:paragraphs_type
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.insert_into_region:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
@@ -91,9 +86,8 @@ layout_paragraphs.builder.insert_into_region:
         layout_paragraphs_layout_tempstore: TRUE
       paragraph_type:
         type: entity:paragraphs_type
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.delete_item:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{component_uuid}'
@@ -103,9 +97,8 @@ layout_paragraphs.builder.delete_item:
     parameters:
       layout_paragraphs_layout:
         layout_paragraphs_layout_tempstore: TRUE
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.reorder:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/reorder'
@@ -117,6 +110,5 @@ layout_paragraphs.builder.reorder:
         layout_paragraphs_layout_tempstore: TRUE
       paragraph_type:
         type: entity:paragraphs_type
-    _admin_route: TRUE
   requirements:
-    _permission: 'administer content'
+    _layout_paragraphs_builder_access: 'TRUE'

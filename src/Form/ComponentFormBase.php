@@ -155,6 +155,9 @@ abstract class ComponentFormBase extends FormBase {
             'callback' => '::ajaxSubmit',
             'progress' => 'none',
           ],
+          '#attributes' => [
+            'class' => ['lpb-btn--save'],
+          ],
         ],
         'cancel' => [
           '#type' => 'button',
@@ -164,7 +167,10 @@ abstract class ComponentFormBase extends FormBase {
             'progress' => 'none',
           ],
           '#attributes' => [
-            'class' => ['dialog-cancel'],
+            'class' => [
+              'dialog-cancel',
+              'lpb-btn--cancel',
+            ],
           ],
         ],
       ],

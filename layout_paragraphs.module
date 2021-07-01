@@ -105,6 +105,17 @@ function layout_paragraphs_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
+ * Implements hook_prepreprocess_radios().
+ *
+ * Add wrapper class for layout selection.
+ */
+function layout_paragraphs_preprocess_radios(&$variables) {
+  if (isset($variables['element']['#wrapper_attributes'])) {
+    $variables['attributes'] += $variables['element']['#wrapper_attributes'];
+  }
+}
+
+/**
  * Implements hook_ENTITY_presave().
  *
  * Updates references to parent layout section uuids in cases
