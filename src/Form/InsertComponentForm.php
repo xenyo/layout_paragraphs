@@ -7,7 +7,6 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\AppendCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\PrependCommand;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphsTypeInterface;
@@ -28,11 +27,13 @@ class InsertComponentForm extends ComponentFormBase {
   protected $domSelector;
 
   /**
-   * Whether to use "before", "after", or "append.".
+   * The jQuery insertion method to use for adding the new component.
+   *
+   * Must be "before", "after", "prepend", or "append.".
    *
    * @var string
    */
-  protected $method;
+  protected $method = 'prepend';
 
   /**
    * The uuid of the parent component / paragraph.
@@ -49,6 +50,22 @@ class InsertComponentForm extends ComponentFormBase {
   protected $region;
 
   /**
+   * Where to place the new component in relation to sibling.
+   *
+   * @var string
+   *   "before" or "after"
+   */
+  protected $placement;
+
+  /**
+   * The sibling component's uuid.
+   *
+   * @var string
+   *   The sibling component's uuid.
+   */
+  protected $siblingUuid;
+
+  /**
    * {@inheritDoc}
    *
    * @param array $form
@@ -63,6 +80,10 @@ class InsertComponentForm extends ComponentFormBase {
    *   The parent component's uuid.
    * @param string $region
    *   The region to insert the new component into.
+   * @param string $sibling_uuid
+   *   The uuid of the sibling component.
+   * @param string $placement
+   *   Where to place the new component - either "before" or "after".
    */
   public function buildForm(
     array $form,
@@ -70,16 +91,25 @@ class InsertComponentForm extends ComponentFormBase {
     LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
     ParagraphsType $paragraph_type = NULL,
     string $parent_uuid = NULL,
-    string $region = NULL
+    string $region = NULL,
+    string $sibling_uuid = NULL,
+    string $placement = NULL
     ) {
 
     $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
     $this->paragraph = $this->newParagraph($paragraph_type);
-    $this->method = 'prepend';
+
     $this->parentUuid = $parent_uuid;
     $this->region = $region;
+    $this->siblingUuid = $sibling_uuid;
+    $this->placement = $placement;
+
     if ($this->parentUuid && $this->region) {
       $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
+    }
+    elseif ($this->siblingUuid && $this->placement) {
+      $this->domSelector = '[data-uuid="' . $sibling_uuid . '"]';
+      $this->method = $placement;
     }
     else {
       $this->domSelector = '[data-lpb-id="' . $this->layoutParagraphsLayout->id() . '"]';
@@ -103,7 +133,7 @@ class InsertComponentForm extends ComponentFormBase {
   public function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
 
     $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
+    $this->ajaxCloseForm($response);
     if ($this->needsRefresh()) {
       return $this->refreshLayout($response);
     }
@@ -142,13 +172,33 @@ class InsertComponentForm extends ComponentFormBase {
   }
 
   /**
-   * Inserts the new component into the layout, using the correct method.
+   * Inserts the new component into the layout.
+   *
+   * Determines the correct method based on provided values.
+   *
+   * - If parent uuid and region are provided, new component
+   *   is added to the specified region within the specified parent.
+   * - If sibling uuid and placement are provided, the new component
+   *   is added before or after the existing sibling.
+   * - If no parameters are added, the new component is simply added
+   *   to the layout at the root level.
    *
    * @return $this
    */
   protected function insertComponent() {
     if ($this->parentUuid && $this->region) {
       $this->layoutParagraphsLayout->insertIntoRegion($this->parentUuid, $this->region, $this->paragraph);
+    }
+    elseif ($this->siblingUuid && $this->placement) {
+      switch ($this->placement) {
+        case 'before':
+          $this->layoutParagraphsLayout->insertBeforeComponent($this->siblingUuid, $this->paragraph);
+          break;
+
+        case 'after':
+          $this->layoutParagraphsLayout->insertAfterComponent($this->siblingUuid, $this->paragraph);
+          break;
+      }
     }
     else {
       $this->layoutParagraphsLayout->appendComponent($this->paragraph);

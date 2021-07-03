@@ -2,23 +2,25 @@
 
 namespace Drupal\layout_paragraphs\Element;
 
-use Drupal\core\Url;
+use Drupal\Component\Serialization\Json;
+use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Access\AccessResultAllowed;
-use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Render\Element\RenderElement;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsSection;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Template\Attribute;
+use Drupal\paragraphs\ParagraphInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsSection;
 use Drupal\layout_paragraphs\LayoutParagraphsComponent;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
+use Drupal\layout_paragraphs\DialogHelperTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines a render element for building the Layout Builder UI.
@@ -29,6 +31,8 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
  *   Plugin classes are internal.
  */
 class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryPluginInterface {
+
+  use DialogHelperTrait;
 
   /**
    * The layout paragraphs tempstore service.
@@ -99,18 +103,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @var string
    */
   protected $langcode;
-
-  /**
-   * The dialog options.
-   *
-   * @var array
-   */
-  protected $dialogOptions = [
-    'width' => 1200,
-    'height' => 500,
-    'modal' => TRUE,
-    'target' => 'lpb-component-menu',
-  ];
 
   /**
    * {@inheritDoc}
@@ -283,27 +275,52 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
 
     $url_params = [
       'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+    ];
+    $query_params = [
       'sibling_uuid' => $entity->uuid(),
     ];
 
     if ($this->editAccess($entity)) {
-      $edit_url = Url::fromRoute('layout_paragraphs.builder.edit_item', [
-        'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-        'component_uuid' => $entity->uuid(),
+      $edit_attributes = new Attribute([
+        'href' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
+          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+          'component_uuid' => $entity->uuid(),
+        ])->toString(),
+        'class' => [
+          'lpb-edit',
+          'use-ajax',
+        ],
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'width' => '70%',
+          'modal' => TRUE,
+          'target' => $this->dialogId($this->layoutParagraphsLayout),
+        ]),
       ]);
     }
     else {
-      $edit_url = '';
+      $edit_attributes = [];
     }
 
     if ($this->deleteAccess($entity)) {
-      $delete_url = Url::fromRoute('layout_paragraphs.builder.delete_item', [
-        'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-        'component_uuid' => $entity->uuid(),
+      $delete_attributes = new Attribute([
+        'href' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
+          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+          'component_uuid' => $entity->uuid(),
+        ])->toString(),
+        'class' => [
+          'lpb-delete',
+          'use-ajax',
+        ],
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'modal' => TRUE,
+          'target' => $this->dialogId($this->layoutParagraphsLayout),
+        ]),
       ]);
     }
     else {
-      $delete_url = '';
+      $delete_attributes = [];
     }
 
     $build['controls'] = [
@@ -314,9 +331,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         ],
       ],
       '#label' => $entity->getParagraphType()->label,
-      '#edit_url' => $edit_url,
-      '#delete_url' => $delete_url,
-      '#dialog_options' => Json::encode($this->dialogOptions),
+      '#edit_attributes' => $edit_attributes,
+      '#delete_attributes' => $delete_attributes,
       '#weight' => -10001,
     ];
     if ($component->isLayout()) {
@@ -325,12 +341,12 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
 
     if ($this->createAccess()) {
       if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {
-        $build['insert_before'] = $this->insertSectionButton($url_params + ['placement' => 'before'], -10000, ['before']);
-        $build['insert_after'] = $this->insertSectionButton($url_params + ['placement' => 'after'], 10000, ['after']);
+        $build['insert_before'] = $this->insertSectionButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before']);
+        $build['insert_after'] = $this->insertSectionButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after']);
       }
       else {
-        $build['insert_before'] = $this->insertComponentButton($url_params + ['placement' => 'before'], -10000, ['before']);
-        $build['insert_after'] = $this->insertComponentButton($url_params + ['placement' => 'after'], 10000, ['after']);
+        $build['insert_before'] = $this->insertComponentButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before']);
+        $build['insert_after'] = $this->insertComponentButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after']);
       }
     }
 
@@ -346,6 +362,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       foreach ($region_names as $region_name) {
         $url_params = [
           'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+        ];
+        $query_params = [
           'parent_uuid' => $entity->uuid(),
           'region' => $region_name,
         ];
@@ -359,7 +377,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           ],
         ];
         if ($this->createAccess()) {
-          $build['regions'][$region_name]['insert_button'] = $this->insertComponentButton($url_params, 10000, ['center']);
+          $build['regions'][$region_name]['insert_button'] = $this->insertComponentButton($url_params, $query_params, 10000, ['center']);
         }
       }
     }
@@ -407,6 +425,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *
    * @param array[] $route_params
    *   The route parameters for the link.
+   * @param array[] $query_params
+   *   The query paramaters for the link.
    * @param int $weight
    *   The weight of the button element.
    * @param array[] $classes
@@ -415,17 +435,20 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @return array
    *   The render array.
    */
-  protected function insertComponentButton(array $route_params = [], int $weight = 0, array $classes = []) {
+  protected function insertComponentButton(array $route_params = [], array $query_params = [], int $weight = 0, array $classes = []) {
     return [
       '#type' => 'link',
       '#title' => Markup::create('<span class="visually-hidden">' . $this->t('Choose component') . '</span>'),
       '#weight' => $weight,
       '#attributes' => [
         'class' => array_merge(['lpb-btn--add', 'use-ajax'], $classes),
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode($this->dialogOptions),
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'target' => $this->dialogId($this->layoutParagraphsLayout),
+          'modal' => TRUE,
+        ]),
       ],
-      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
     ];
   }
 
@@ -434,6 +457,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *
    * @param array[] $route_params
    *   The route parameters for the link.
+   * @param array[] $query_params
+   *   The query parameters for the link.
    * @param int $weight
    *   The weight of the button element.
    * @param array[] $classes
@@ -442,16 +467,29 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @return array
    *   The render array.
    */
-  protected function insertSectionButton(array $route_params = [], int $weight = 0, array $classes = []) {
+  protected function insertSectionButton(array $route_params = [], array $query_params = [], int $weight = 0, array $classes = []) {
     return [
       '#type' => 'link',
       '#title' => Markup::create($this->t('Add section')),
       '#attributes' => [
         'class' => array_merge(['lpb-btn', 'use-ajax'], $classes),
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode($this->dialogOptions),
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'modal' => TRUE,
+          'target' => $this->dialogId($this->layoutParagraphsLayout),
+        ]),
       ],
-      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params),
+      '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
+    ];
+  }
+
+  /**
+   * Returns an array of dialog options.
+   */
+  protected function dialogOptions() {
+    return [
+      'modal' => TRUE,
+      'target' => $this->dialogId($this->layoutParagraphsLayout),
     ];
   }
 

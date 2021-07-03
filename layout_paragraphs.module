@@ -59,13 +59,13 @@ function layout_paragraphs_theme() {
       'variables' => [
         'attributes' => [],
         'label' => NULL,
-        'edit_url' => NULL,
-        'delete_url' => NULL,
-        'dialog_options' => NULL,
+        'edit_attributes' => [],
+        'delete_attributes' => [],
       ],
     ],
     'layout_paragraphs_builder_component_menu' => [
       'variables' => [
+        'attributes' => [],
         'types' => NULL,
       ],
     ],

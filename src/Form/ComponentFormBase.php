@@ -11,8 +11,8 @@ use Drupal\field_group\FormatterHelper;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxFormHelperTrait;
+use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Layout\LayoutPluginManager;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -20,6 +20,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
+use Drupal\layout_paragraphs\DialogHelperTrait;
 
 /**
  * Class LayoutParagraphsComponentFormBase.
@@ -30,6 +31,7 @@ abstract class ComponentFormBase extends FormBase {
 
   use AjaxFormHelperTrait;
   use LayoutParagraphsLayoutRefreshTrait;
+  use DialogHelperTrait;
 
   /**
    * The tempstore service.
@@ -369,7 +371,7 @@ abstract class ComponentFormBase extends FormBase {
    */
   public function cancel(array &$form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
+    $this->ajaxCloseForm($response);
     return $response;
   }
 
@@ -383,6 +385,17 @@ abstract class ComponentFormBase extends FormBase {
    */
   public function access() {
     return AccessResult::allowed();
+  }
+
+  /**
+   * Closes the form with ajax.
+   *
+   * @param \Drupal\Core\Ajax\AjaxResponse $response
+   *   The ajax response.
+   */
+  protected function ajaxCloseForm(AjaxResponse &$response) {
+    $selector = $this->dialogSelector($this->layoutParagraphsLayout);
+    $response->addCommand(new CloseDialogCommand($selector));
   }
 
   /**

@@ -5,11 +5,12 @@ namespace Drupal\layout_paragraphs\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\RemoveCommand;
+use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\layout_paragraphs\DialogHelperTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class DeleteComponentForm.
@@ -17,6 +18,7 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 class DeleteComponentForm extends FormBase {
 
   use LayoutParagraphsLayoutRefreshTrait;
+  use DialogHelperTrait;
 
   /**
    * The layout paragraphs layout tempstore.
@@ -107,7 +109,7 @@ class DeleteComponentForm extends FormBase {
    */
   public function deleteComponent(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
+    $response->addCommand(new CloseDialogCommand($this->dialogSelector($this->layoutParagraphsLayout)));
 
     if ($this->needsRefresh()) {
       return $this->refreshLayout($response);
@@ -127,7 +129,7 @@ class DeleteComponentForm extends FormBase {
    */
   public function closeForm(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
+    $response->addCommand($this->closeDialogCommand($this->layoutParagraphsLayout));
     return $response;
   }
 

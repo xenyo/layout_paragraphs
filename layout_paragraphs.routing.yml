@@ -25,13 +25,9 @@ layout_paragraphs.builder.formatter:
     _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.choose_component:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component/{sibling_uuid}/{placement}/{region}/{parent_uuid}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component'
   defaults:
-    _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::build'
-    region: 0
-    parent_uuid: 0
-    sibling_uuid: 0
-    placement: 0
+    _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::list'
   options:
     parameters:
       layout_paragraphs_layout:
@@ -50,36 +46,10 @@ layout_paragraphs.builder.edit_item:
   requirements:
     _layout_paragraphs_builder_access: 'TRUE'
 
-layout_paragraphs.builder.insert_sibling:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-sibling/{sibling_uuid}/{placement}/{paragraph_type}'
-  defaults:
-    _form: '\Drupal\layout_paragraphs\Form\InsertComponentSiblingForm'
-  options:
-    parameters:
-      layout_paragraphs_layout:
-        layout_paragraphs_layout_tempstore: TRUE
-      paragraph_type:
-        type: entity:paragraphs_type
-  requirements:
-    _layout_paragraphs_builder_access: 'TRUE'
-
 layout_paragraphs.builder.insert:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-component/{paragraph_type}'
   defaults:
-    _form: '\Drupal\layout_paragraphs\Form\InsertComponentForm'
-  options:
-    parameters:
-      layout_paragraphs_layout:
-        layout_paragraphs_layout_tempstore: TRUE
-      paragraph_type:
-        type: entity:paragraphs_type
-  requirements:
-    _layout_paragraphs_builder_access: 'TRUE'
-
-layout_paragraphs.builder.insert_into_region:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-into-region/{parent_uuid}/{region}/{paragraph_type}'
-  defaults:
-    _form: '\Drupal\layout_paragraphs\Form\InsertComponentForm'
+    _controller: '\Drupal\layout_paragraphs\Controller\ComponentFormController::insertForm'
   options:
     parameters:
       layout_paragraphs_layout:

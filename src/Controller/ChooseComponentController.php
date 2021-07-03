@@ -5,14 +5,15 @@ namespace Drupal\layout_paragraphs\Controller;
 use Drupal\Core\Url;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Ajax\AjaxHelperTrait;
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
+use Drupal\layout_paragraphs\DialogHelperTrait;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * ChooseComponentController controller class.
@@ -24,13 +25,17 @@ class ChooseComponentController extends ControllerBase {
 
   use AjaxHelperTrait;
   use LayoutParagraphsLayoutRefreshTrait;
+  use DialogHelperTrait;
 
   /**
    * Settings to pass to jQuery modal dialog.
    *
    * @var array
    */
-  protected $dialogOptions;
+  protected $dialogOptions = [
+    'modal' => TRUE,
+    'width' => '70%',
+  ];
 
   /**
    * The entity type bundle info service.
@@ -57,15 +62,6 @@ class ChooseComponentController extends ControllerBase {
   public function __construct(EntityTypeBundleInfoInterface $entity_type_bundle_info, EventDispatcherInterface $event_dispatcher) {
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->eventDispatcher = $event_dispatcher;
-    $this->dialogOptions = [
-      'width' => '70%',
-      'minWidth' => 500,
-      'maxWidth' => 1000,
-      'draggable' => TRUE,
-      'classes' => [
-        'ui-dialog' => 'lpe-dialog',
-      ],
-    ];
   }
 
   /**
@@ -81,80 +77,50 @@ class ChooseComponentController extends ControllerBase {
   /**
    * Builds the component menu.
    *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request.
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The layout paragraphs layout object.
-   * @param string $sibling_uuid
-   *   The uuid of the paragraph to insert content adjacent to.
-   * @param string $placement
-   *   Whether to insert the new component "before" or "after" the sibling.
-   * @param string $region
-   *   The region the new component should be inserted into.
-   * @param string $parent_uuid
-   *   The uuid of the parent component we are inserting into.
    *
    * @return array
    *   The build array.
    */
-  public function build(
-    LayoutParagraphsLayout $layout_paragraphs_layout,
-    $sibling_uuid = '',
-    $placement = '',
-    $region = '',
-    $parent_uuid = ''
-    ) {
+  public function list(Request $request, LayoutParagraphsLayout $layout_paragraphs_layout) {
 
+    $route_name = 'layout_paragraphs.builder.insert';
     $route_params = [
       'layout_paragraphs_layout' => $layout_paragraphs_layout->id(),
     ];
-    if ($region && $parent_uuid) {
-      $route_name = 'layout_paragraphs.builder.insert_into_region';
-      $route_params += [
-        'parent_uuid' => $parent_uuid,
-        'region' => $region,
-      ];
-    }
-    elseif ($sibling_uuid && $placement) {
-      $route_name = 'layout_paragraphs.builder.insert_sibling';
-      $route_params += [
-        'placement' => $placement,
-        'sibling_uuid' => $sibling_uuid,
-      ];
-      $component = $layout_paragraphs_layout->getComponentByUuid($sibling_uuid);
-      $parent_uuid = $component->getParentUuid();
-      $region = $component->getRegion();
-    }
-    else {
-      $route_name = 'layout_paragraphs.builder.insert';
-    }
-
+    $query_params = [
+      'parent_uuid' => $request->query->get('parent_uuid', NULL),
+      'region' => $request->query->get('region', NULL),
+      'sibling_uuid' => $request->query->get('sibling_uuid', NULL),
+      'placement' => $request->query->get('placement', NULL),
+    ];
+    $types = $this->getAllowedComponentTypes($layout_paragraphs_layout, $query_params['parent_uuid'], $query_params['region']);
     // If there is only one type to render,
     // return the component form instead of a list of links.
-    $types = $this->getAllowedComponentTypes($layout_paragraphs_layout, $parent_uuid, $region);
     if (count($types) === 1) {
       $type_name = key($types);
       $type = $this->entityTypeManager()->getStorage('paragraphs_type')->load($type_name);
-      switch ($route_name) {
-        case 'layout_paragraphs.builder.insert_into_region':
-          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentForm', $layout_paragraphs_layout, $type, $parent_uuid, $region);
-          break;
-
-        case 'layout_paragraphs.builder.insert':
-          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentForm', $layout_paragraphs_layout, $type);
-          break;
-
-        case 'layout_paragraphs.builder.insert_sibling':
-          $response = $this->formBuilder()->getForm('\Drupal\layout_paragraphs\Form\InsertComponentSiblingForm', $layout_paragraphs_layout, $type, $sibling_uuid, $placement);
-          break;
-      }
+      $response = $this->formBuilder->getForm(
+        '\Drupal\layout_paragraphs\Form\InsertComponentForm',
+        $layout_paragraphs_layout,
+        $type,
+        $query_params['parent_uuid'],
+        $query_params['region'],
+        $query_params['sibling_uuid'],
+        $query_params['placement']
+      );
       return $response;
     }
 
     foreach ($types as &$type) {
-      $type['url'] = Url::fromRoute($route_name, $route_params + ['paragraph_type' => $type['id']])->toString();
+      $url_route_params = $route_params + ['paragraph_type' => $type['id']];
+      $url_options = ['query' => $query_params];
+      $type['url'] = Url::fromRoute($route_name, $url_route_params, $url_options)->toString();
       $type['link_attributes'] = new Attribute([
         'class' => ['use-ajax'],
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode($this->dialogOptions),
       ]);
     }
 
@@ -167,6 +133,9 @@ class ChooseComponentController extends ControllerBase {
     $component_menu = [
       '#title' => $this->t('Choose a component'),
       '#theme' => 'layout_paragraphs_builder_component_menu',
+      '#attributes' => [
+        'class' => ['lpb-component-list'],
+      ],
       '#types' => [
         'layout' => $section_components,
         'content' => $content_components,

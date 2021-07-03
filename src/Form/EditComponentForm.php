@@ -3,9 +3,7 @@
 namespace Drupal\layout_paragraphs\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Form\SubformState;
 use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 
@@ -63,7 +61,7 @@ class EditComponentForm extends ComponentFormBase {
   public function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
 
     $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
+    $this->ajaxCloseForm($response);
     if ($this->needsRefresh()) {
       return $this->refreshLayout($response);
     }
