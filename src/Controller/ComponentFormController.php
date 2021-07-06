@@ -74,14 +74,7 @@ class ComponentFormController extends ControllerBase {
     if ($this->isAjax()) {
       $response = new AjaxResponse();
       $selector = $this->dialogSelector($layout_paragraphs_layout);
-      $modal_settings = $this->config('layout_paragraphs.modal_settings');
-      $dialog_options = [
-        'modal' => TRUE,
-        'width' => $modal_settings->get('width'),
-        'height' => $modal_settings->get('width'),
-        'autoResize' => $modal_settings->get('autoresize'),
-      ];
-      $response->addCommand(new OpenDialogCommand($selector, $form['#title'], $form, $dialog_options));
+      $response->addCommand(new OpenDialogCommand($selector, $form['#title'], $form, $this->dialogSettings()));
       return $response;
     }
     return $form;

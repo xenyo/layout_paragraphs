@@ -106,13 +106,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   protected $langcode;
 
   /**
-   * The Layout Paragraphs modal settings.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected $modalSettings;
-
-  /**
    * {@inheritDoc}
    */
   public function __construct(
@@ -124,8 +117,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     LayoutPluginManager $layout_plugin_manager,
     Renderer $renderer,
     EntityTypeBundleInfo $entity_type_bundle_info,
-    EntityRepositoryInterface $entity_repository,
-    ConfigFactoryInterface $config) {
+    EntityRepositoryInterface $entity_repository) {
 
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->tempstore = $tempstore_repository;
@@ -134,7 +126,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $this->renderer = $renderer;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->entityRepository = $entity_repository;
-    $this->modalSettings = $config->get('layout_paragraphs.modal_settings');
   }
 
   /**
@@ -150,8 +141,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $container->get('plugin.manager.core.layout'),
       $container->get('renderer'),
       $container->get('entity_type.bundle.info'),
-      $container->get('entity.repository'),
-      $container->get('config.factory')
+      $container->get('entity.repository')
     );
   }
 
@@ -302,13 +292,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           'use-ajax',
         ],
         'data-dialog-type' => 'dialog',
-        'data-dialog-options' => Json::encode([
-          'width' => $this->modalSettings->get('width'),
-          'height' => $this->modalSettings->get('height'),
-          'autoResize' => $this->modalSettings->get('autoresize'),
-          'modal' => TRUE,
-          'target' => $this->dialogId($this->layoutParagraphsLayout),
-        ]),
+        'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
       ]);
     }
     else {
