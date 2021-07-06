@@ -28,16 +28,6 @@ class ChooseComponentController extends ControllerBase {
   use DialogHelperTrait;
 
   /**
-   * Settings to pass to jQuery modal dialog.
-   *
-   * @var array
-   */
-  protected $dialogOptions = [
-    'modal' => TRUE,
-    'width' => '70%',
-  ];
-
-  /**
    * The entity type bundle info service.
    *
    * @var Drupal\Core\Entity\EntityTypeBundleInfo
