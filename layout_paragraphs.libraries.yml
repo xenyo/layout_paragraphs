@@ -27,7 +27,6 @@ builder:
   dependencies:
     - layout_paragraphs/dragula
     - core/jquery
-    - core/jquery.ui.draggable
     - core/drupal.dialog
     - core/drupal.dialog.ajax
     - core/drupal.ajax
