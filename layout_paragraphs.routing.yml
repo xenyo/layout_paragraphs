@@ -48,6 +48,7 @@ layout_paragraphs.builder.edit_item:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/edit/{component_uuid}'
   defaults:
     _form: '\Drupal\layout_paragraphs\Form\EditComponentForm'
+    operation: 'update'
   options:
     parameters:
       layout_paragraphs_layout:
@@ -56,9 +57,10 @@ layout_paragraphs.builder.edit_item:
     _layout_paragraphs_builder_access: 'TRUE'
 
 layout_paragraphs.builder.insert:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert-component/{paragraph_type}'
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/insert/{paragraph_type}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\ComponentFormController::insertForm'
+    operation: 'create'
   options:
     parameters:
       layout_paragraphs_layout:
@@ -72,6 +74,7 @@ layout_paragraphs.builder.delete_item:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{component_uuid}'
   defaults:
     _form: '\Drupal\layout_paragraphs\Form\DeleteComponentForm'
+    operation: 'delete'
   options:
     parameters:
       layout_paragraphs_layout:
