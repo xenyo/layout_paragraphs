@@ -58,10 +58,10 @@ class LayoutParagraphsBuilderAccess implements AccessInterface {
   ) {
 
     // Check field access.
-    $entity = $layout_paragraphs_layout->getEntity();
     $access = $layout_paragraphs_layout->getParagraphsReferenceField()->access('edit', $account, TRUE);
 
     // Check access to host entity.
+    $entity = $layout_paragraphs_layout->getEntity();
     $lp_operation = $entity->isNew() ? 'create' : 'update';
     $access = $access->andIf($entity->access($lp_operation, $account, TRUE));
 
