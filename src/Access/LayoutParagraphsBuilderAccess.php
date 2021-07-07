@@ -26,11 +26,12 @@ class LayoutParagraphsBuilderAccess implements AccessInterface {
    */
   public function access(AccountInterface $account, LayoutParagraphsLayout $layout_paragraphs_layout) {
     $entity = $layout_paragraphs_layout->getEntity();
+    $field_access = $layout_paragraphs_layout->getParagraphsReferenceField()->access('edit', $account, TRUE);
     if ($entity->isNew()) {
-      return $entity->access('create', $account, TRUE);
+      return $entity->access('create', $account, TRUE)->andIf($field_access);
     }
     else {
-      return $entity->access('update', $account, TRUE);
+      return $entity->access('update', $account, TRUE)->andIf($field_access);
     }
   }
 

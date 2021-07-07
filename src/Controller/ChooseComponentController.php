@@ -93,7 +93,7 @@ class ChooseComponentController extends ControllerBase {
     if (count($types) === 1) {
       $type_name = key($types);
       $type = $this->entityTypeManager()->getStorage('paragraphs_type')->load($type_name);
-      $response = $this->formBuilder->getForm(
+      $response = $this->formBuilder()->getForm(
         '\Drupal\layout_paragraphs\Form\InsertComponentForm',
         $layout_paragraphs_layout,
         $type,
