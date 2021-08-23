@@ -280,6 +280,12 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $query_params = [
       'sibling_uuid' => $entity->uuid(),
     ];
+    if ($parent_uuid = $component->getParentUuid()) {
+      $query_params['parent_uuid'] = $parent_uuid;
+    }
+    if ($region = $component->getRegion()) {
+      $query_params['region'] = $region;
+    }
 
     if ($this->editAccess($entity)) {
       $edit_attributes = new Attribute([

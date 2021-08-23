@@ -104,12 +104,12 @@ class InsertComponentForm extends ComponentFormBase {
     $this->siblingUuid = $sibling_uuid;
     $this->placement = $placement;
 
-    if ($this->parentUuid && $this->region) {
-      $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
-    }
-    elseif ($this->siblingUuid && $this->placement) {
+    if ($this->siblingUuid && $this->placement) {
       $this->domSelector = '[data-uuid="' . $sibling_uuid . '"]';
       $this->method = $placement;
+    }
+    elseif ($this->parentUuid && $this->region) {
+      $this->domSelector = '[data-region-uuid="' . $parent_uuid . '-' . $region . '"]';
     }
     else {
       $this->domSelector = '[data-lpb-id="' . $this->layoutParagraphsLayout->id() . '"]';
