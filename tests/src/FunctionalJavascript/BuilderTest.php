@@ -132,6 +132,21 @@ class BuilderTest extends WebDriverTestBase {
 
   }
 
+  /**
+   * Tests editing a paragraph.
+   */
+  public function testEditComponent() {
+    $this->testAddSection();
+    $this->drupalGet('node/1/edit');
+
+    $page = $this->getSession()->getPage();
+    $button = $page->find('css', 'a.lpb-edit');
+    $button->click();
+
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains('Edit section');
+  }
+
   protected function forceVisible($selector) {
     $this->getSession()->executeScript("jQuery('{$selector} .contextual .trigger').toggleClass('visually-hidden');");
   }

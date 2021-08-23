@@ -536,7 +536,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   True if user can edit.
    */
   protected function editAccess(ParagraphInterface $paragraph) {
-    return $paragraph->access('edit');
+    return $paragraph->access('update');
   }
 
   /**
