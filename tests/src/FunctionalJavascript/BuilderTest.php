@@ -2,8 +2,9 @@
 
 namespace Drupal\Tests\layout_paragraphs\FunctionalJavascript;
 
-use Drupal\Tests\paragraphs\FunctionalJavascript\ParagraphsTestBaseTrait;
+use Behat\Mink\Exception\ExpectationException;
 use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
+use Drupal\Tests\paragraphs\FunctionalJavascript\ParagraphsTestBaseTrait;
 
 /**
  * Tests adding a new layout section to layout paragraphs.
@@ -44,6 +45,7 @@ class BuilderTest extends WebDriverTestBase {
     $this->loginWithPermissions([
       'administer site configuration',
       'administer node fields',
+      'administer node display',
       'administer paragraphs types',
     ]);
 
@@ -66,6 +68,13 @@ class BuilderTest extends WebDriverTestBase {
       'settings[handler_settings][target_bundles_drag_drop][section][enabled]' => TRUE,
       'settings[handler_settings][target_bundles_drag_drop][text][enabled]' => TRUE,
     ], 'Save settings');
+
+    // Use "Layout Paragraphs" formatter for the content field.
+    $this->drupalGet('admin/structure/types/manage/page/display');
+    $this->submitForm([
+      'fields[field_content][type]' => 'layout_paragraphs',
+    ], 'Save');
+
     $this->drupalLogout();
   }
 
@@ -145,6 +154,58 @@ class BuilderTest extends WebDriverTestBase {
 
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->pageTextContains('Edit section');
+  }
+
+  /**
+   * Tests reordering components.
+   */
+  public function testReorderComponents() {
+    $this->testAddSection();
+    $this->drupalGet('node/1/edit');
+
+    $page = $this->getSession()->getPage();
+
+    // Add a SECOND text item to first column.
+    // Because there are only two component types and sections cannot
+    // be nested, this will load the text component form directly.
+    $button = $page->find('css', '[data-id="2"] .lpb-btn--add.after');
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains('field_text');
+
+    $page->fillField('field_text[0][value]', 'Second text item.');
+    // Force show the hidden submit button so we can click it.
+    $this->getSession()->executeScript("jQuery('.lpb-btn--save').attr('style', '');");
+    $button = $this->assertSession()->waitForElementVisible('css', ".lpb-btn--save");
+    $button->press();
+    $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Could not save new component.');
+
+    // Make sure the new component was added AFTER the existing one.
+    $page_text = $page->getHtml();
+    $pos1 = strpos($page_text, 'Second text item.');
+    $pos2 = strpos($page_text, 'Some arbitrary text');
+    if ($pos1 < $pos2) {
+      throw new ExpectationException("New component was incorrectly added above the existing one.", $this->getSession()->getDriver());
+    }
+
+    // Move the new item up above the first.
+    $button = $page->find('css', '.is_new .lpb-up');
+    $button->click();
+
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+    $this->assertSession()->pageTextContains('Node title');
+    $this->assertSession()->pageTextContains('Second text item.');
+
+    // The second component should now appear first in the page source.
+    $page_text = $page->getHtml();
+    $pos1 = strpos($page_text, 'Second text item.');
+    $pos2 = strpos($page_text, 'Some arbitrary text');
+    if ($pos1 > $pos2) {
+      throw new ExpectationException("Components were not correctly reordered.", $this->getSession()->getDriver());
+    }
+
   }
 
   protected function forceVisible($selector) {

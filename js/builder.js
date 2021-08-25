@@ -21,7 +21,9 @@
         };
       });
     Drupal.ajax({
-      url: `/layout-paragraphs-builder/${id}/reorder`,
+      url:
+        drupalSettings.path.baseUrl.slice(0, -1) +
+        `/layout-paragraphs-builder/${id}/reorder`,
       submit: {
         components: JSON.stringify(order),
       },
