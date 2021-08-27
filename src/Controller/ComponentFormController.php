@@ -30,6 +30,7 @@ class ComponentFormController extends ControllerBase {
     'minWidth' => 500,
     'maxWidth' => 1000,
     'draggable' => TRUE,
+    'drupalAutoButtons' => FALSE,
     'classes' => [
       'ui-dialog' => 'lpe-dialog',
     ],

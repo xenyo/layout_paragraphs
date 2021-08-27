@@ -159,6 +159,7 @@ abstract class ComponentFormBase extends FormBase {
           ],
           '#attributes' => [
             'class' => ['lpb-btn--save'],
+            'data-disable-refocus' => 'true',
           ],
         ],
         'cancel' => [
