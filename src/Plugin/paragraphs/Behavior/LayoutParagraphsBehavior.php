@@ -75,7 +75,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    *   The grid discovery service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The grid discovery service.
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsRendererService $layout_paragraphs_service
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsRendererService $layout_paragraphs_renderer_service
    *   The layout paragraphs service.
    */
   public function __construct(

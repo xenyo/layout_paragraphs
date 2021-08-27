@@ -20,23 +20,6 @@ class ComponentFormController extends ControllerBase {
   use DialogHelperTrait;
 
   /**
-   * The options to use for opening the dialog.
-   *
-   * @var array
-   */
-  protected $dialogOptions = [
-    'modal' => TRUE,
-    'width' => '70%',
-    'minWidth' => 500,
-    'maxWidth' => 1000,
-    'draggable' => TRUE,
-    'drupalAutoButtons' => FALSE,
-    'classes' => [
-      'ui-dialog' => 'lpe-dialog',
-    ],
-  ];
-
-  /**
    * Responds with a component insert form.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
