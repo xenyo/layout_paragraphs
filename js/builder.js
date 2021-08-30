@@ -51,9 +51,20 @@
       )
       .attr('tabindex', '-1');
   }
+  function hideEmptyRegionButtons($element) {
+    $element.find('.js-lpb-region').each((i, e) => {
+      const $e = $(e);
+      if ($e.find('.js-lpb-component').length === 0) {
+        $e.find('.lpb-btn--add.center').css('display', 'block');
+      } else {
+        $e.find('.lpb-btn--add.center').css('display', 'none');
+      }
+    });
+  }
   function updateUi($element) {
     reorderComponents($element);
     updateMoveButtons($element);
+    hideEmptyRegionButtons($element);
   }
   /**
    * Moves a component up or down within a simple list of components.
@@ -323,6 +334,7 @@
             drake.containers.push(c);
           });
         updateMoveButtons($element);
+        hideEmptyRegionButtons($element);
       });
       // Respond to a component being updated/inserted.
       if (context.classList && context.classList.contains('js-lpb-component')) {
@@ -334,6 +346,7 @@
             const type = $component.hasClass('is_new') ? 'insert' : 'update';
             $element.trigger(`lpb-component:${type}`, [$component]);
             updateMoveButtons($element);
+            hideEmptyRegionButtons($element);
           });
       }
     },
