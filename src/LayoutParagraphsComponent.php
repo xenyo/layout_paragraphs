@@ -182,7 +182,6 @@ class LayoutParagraphsComponent {
     return [
       'region' => '',
       'parent_uuid' => '',
-      'parent_delta' => '',
     ];
   }
 

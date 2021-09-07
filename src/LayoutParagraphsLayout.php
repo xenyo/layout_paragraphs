@@ -361,7 +361,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       $this->paragraphsReferenceField->setValue($list);
     }
     else {
-      // @Todo: throw exception.
+      // @todo: throw exception.
     }
     return $this;
   }
@@ -421,7 +421,6 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       $new_component_settings = [
         'parent_uuid' => $sibling_settings['parent_uuid'] ?? NULL,
         'region' => $sibling_settings['region'] ?? NULL,
-        'parent_delta' => $sibling_settings['parent_delta'] ?? NULL,
       ];
       $new_component->setSettings($new_component_settings);
       // Get the paragraph entity from the component.
@@ -435,7 +434,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       $this->paragraphsReferenceField->setValue($list);
     }
     else {
-      // @Todo: throw exception.
+      // @todo: throw exception.
     }
     return $this;
   }
