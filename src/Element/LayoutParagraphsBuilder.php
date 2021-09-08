@@ -477,10 +477,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#attributes' => [
         'class' => array_merge(['lpb-btn', 'use-ajax'], $classes),
         'data-dialog-type' => 'dialog',
-        'data-dialog-options' => Json::encode([
-          'modal' => TRUE,
-          'target' => $this->dialogId($this->layoutParagraphsLayout),
-        ]),
+        'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
       ],
       '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
     ];
