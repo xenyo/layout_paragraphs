@@ -138,6 +138,7 @@ abstract class ComponentFormBase extends FormBase {
     $display = EntityFormDisplay::collectRenderDisplay($this->paragraph, 'default');
     $display->buildForm($this->paragraph, $form, $form_state);
     $this->paragraphType = $this->paragraph->getParagraphType();
+    $lp_config = $this->config('layout_paragraphs.settings');
 
     $form += [
       '#title' => $this->formTitle(),
@@ -148,7 +149,7 @@ abstract class ComponentFormBase extends FormBase {
         [$this, 'afterBuild'],
       ],
       'actions' => [
-        '#weight' => 20,
+        '#weight' => 100,
         '#type' => 'actions',
         'submit' => [
           '#type' => 'submit',
@@ -183,6 +184,17 @@ abstract class ComponentFormBase extends FormBase {
       $form['layout_paragraphs'] = [
         '#process' => [
           [$this, 'layoutParagraphsBehaviorForm'],
+        ],
+      ];
+    }
+
+    if (count($this->getEnabledBehaviorPlugins())) {
+      $form['behavior_plugins'] = [
+        '#weight' => $lp_config->get('paragraph_behaviors_position') ?? -99,
+        '#type' => 'details',
+        '#title' => $lp_config->get('paragraph_behaviors_label') ?? $this->t('Behaviors'),
+        '#process' => [
+          [$this, 'behaviorPluginsForm'],
         ],
       ];
     }
@@ -222,6 +234,16 @@ abstract class ComponentFormBase extends FormBase {
    *   The form state object.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+
+    // First validate paragraph behavior forms.
+    foreach ($this->getEnabledBehaviorPlugins() as $behavior_id => $behavior_plugin) {
+      if (!empty($form['behavior_plugins'][$behavior_id])) {
+        $subform_state = SubformState::createForSubform($form['behavior_plugins'][$behavior_id], $form_state->getCompleteForm(), $form_state);
+        $behavior_plugin->validateBehaviorForm($this->paragraph, $form['behavior_plugins'][$behavior_id], $subform_state);
+      }
+    }
+
+    // Validate the paragraph with submitted form values.
     $paragraph = $this->buildParagraphComponent($form, $form_state);
     $violations = $paragraph->validate();
     // Remove violations of inaccessible fields.
@@ -234,6 +256,7 @@ abstract class ComponentFormBase extends FormBase {
       $form_state->setErrorByName('', $violation->getMessage());
     }
     $form['#display']->flagWidgetsErrorsFromViolations($violations, $form, $form_state);
+
   }
 
   /**
@@ -264,12 +287,18 @@ abstract class ComponentFormBase extends FormBase {
     $display = $form['#display'];
 
     $paragraph = clone $this->paragraph;
+    $paragraph->getAllBehaviorSettings();
 
     $paragraphs_type = $paragraph->getParagraphType();
     if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
       $layout_paragraphs_plugin = $paragraphs_type->getEnabledBehaviorPlugins()['layout_paragraphs'];
       $subform_state = SubformState::createForSubform($form['layout_paragraphs'], $form, $form_state);
       $layout_paragraphs_plugin->submitBehaviorForm($paragraph, $form['layout_paragraphs'], $subform_state);
+    }
+
+    foreach ($this->getEnabledBehaviorPlugins() as $behavior_id => $behavior_plugin) {
+      $subform_state = SubformState::createForSubform($form['behavior_plugins'][$behavior_id], $form, $form_state);
+      $behavior_plugin->submitBehaviorForm($paragraph, $form['behavior_plugins'][$behavior_id], $subform_state);
     }
 
     $paragraph->setNeedsSave(TRUE);
@@ -335,6 +364,42 @@ abstract class ComponentFormBase extends FormBase {
       $element['#suffix'] = '</div>';
       $element['layout']['#ajax']['callback'] = [$this, 'ajaxCallback'];
       $element['layout']['#ajax']['wrapper'] = $element_id;
+    }
+    return $element;
+  }
+
+  /**
+   * Form #process callback.
+   *
+   * Attaches the behavior plugin forms.
+   *
+   * @param array $element
+   *   The form element.
+   * @param Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param array $form
+   *   The complete form array.
+   *
+   * @return array
+   *   The processed element.
+   */
+  public function behaviorPluginsForm(array $element, FormStateInterface $form_state, array &$form) {
+
+    $element['#type'] = 'container';
+    $element['#attributes']['class'][] = 'lpb-behavior-plugins';
+
+    foreach ($this->getEnabledBehaviorPlugins() as $behavior_id => $behavior_plugin) {
+      $element[$behavior_id] = [
+        '#parents' => array_merge($element['#parents'], [$behavior_id]),
+        '#type' => 'container',
+        '#attributes' => [
+          'class' => ['lpb-behavior-plugins__' . Html::cleanCssIdentifier($behavior_id)],
+        ],
+      ];
+      $subform_state = SubformState::createForSubform($element[$behavior_id], $form, $form_state);
+      if ($behavior_form = $behavior_plugin->buildBehaviorForm($this->paragraph, $element[$behavior_id], $subform_state)) {
+        $element[$behavior_id] = $behavior_form;
+      }
     }
     return $element;
   }
@@ -484,6 +549,27 @@ abstract class ComponentFormBase extends FormBase {
           ->language()
           ->getId());
     }
+  }
+
+  /**
+   * Returns an array of enabled behavior plugins excluding Layout Paragraphs.
+   *
+   * The Layout Paragraphs behavior plugin form is handled separately.
+   *
+   * @return array
+   *   An array of enabled plugins.
+   */
+  protected function getEnabledBehaviorPlugins() {
+    if ($this->currentUser()->hasPermission('edit behavior plugin settings')) {
+      return array_filter(
+        $this->paragraphType->getEnabledBehaviorPlugins(),
+        function ($key) {
+          return $key != 'layout_paragraphs';
+        },
+        ARRAY_FILTER_USE_KEY
+      );
+    }
+    return [];
   }
 
 }

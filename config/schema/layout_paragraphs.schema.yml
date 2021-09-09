@@ -10,6 +10,14 @@ layout_paragraphs.settings:
       type: integer
       label: 'Show Layout Labels'
       description: 'This option allows to show the Paragraphs Layout Label of each Item added in LP widget Sections/Layouts'
+    paragraph_behaviors_label:
+      type: string
+      label: 'Paragraph behaviors label'
+      descripton: 'The paragraph behaviors form fieldset label'
+    paragraph_behaviors_position:
+      type: integer
+      label: 'Paragraph behaviors fieldset position'
+      description: 'Wheter to render the paragraph behaviors at the top or bottom of paragraph edit forms'
 
 layout_paragraphs.modal_settings:
   type: config_object
@@ -27,7 +35,7 @@ layout_paragraphs.modal_settings:
       type: boolean
       label: 'Modal autoresize'
       description: 'If checked modal forms will automatically resize.'
-   
+
 field.formatter.settings.layout_paragraphs:
   type: mapping
   label: 'Layout Paragraphs format settings'

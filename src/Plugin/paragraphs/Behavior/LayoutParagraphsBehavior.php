@@ -2,22 +2,23 @@
 
 namespace Drupal\layout_paragraphs\Plugin\paragraphs\Behavior;
 
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
-use Drupal\Core\Entity\EntityFieldManager;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\paragraphs\ParagraphsBehaviorBase;
-use Drupal\paragraphs\ParagraphInterface;
-use Drupal\Core\Layout\LayoutPluginManagerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsSection;
-use Drupal\layout_paragraphs\LayoutParagraphsRendererService;
-use Drupal\Core\Layout\LayoutInterface;
-use Drupal\Core\Plugin\PluginWithFormsInterface;
-use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Form\SubformState;
+use Drupal\Core\Layout\LayoutInterface;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\paragraphs\ParagraphInterface;
+use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\paragraphs\ParagraphsBehaviorBase;
+use Drupal\Core\Plugin\PluginWithFormsInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsSection;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsRendererService;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a way to define grid based layouts.
@@ -154,6 +155,30 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     }
 
     return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateBehaviorForm(ParagraphInterface $paragraph, array &$form, FormStateInterface $form_state) {
+    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config'));
+    if ($plugin_form = $this->getLayoutPluginForm($plugin_instance)) {
+      $plugin_form->validateConfigurationForm($form, $form_state);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitBehaviorForm(ParagraphInterface $paragraph, array &$form, FormStateInterface $form_state) {
+    $filtered_values = $this->filterBehaviorFormSubmitValues($paragraph, $form, $form_state);
+    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config'));
+    if ($plugin_form = $this->getLayoutPluginForm($plugin_instance)) {
+      $subform_state = SubformState::createForSubform($form['config'], $form, $form_state);
+      $plugin_form->submitConfigurationForm($form['config'], $subform_state);
+      $filtered_values['config'] = $plugin_form->getConfiguration();
+    }
+    $paragraph->setBehaviorSettings($this->getPluginId(), $filtered_values);
   }
 
   /**

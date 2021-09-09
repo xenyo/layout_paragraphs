@@ -84,6 +84,22 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
       '#default_value' => $lp_config->get('show_layout_labels'),
     ];
 
+    $form['paragraph_behaviors_label'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Paragraph Behaviors Fieldset Label'),
+      '#default_value' => $lp_config->get('paragraph_behaviors_label'),
+    ];
+
+    $form['paragraph_behaviors_position'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Paragraph Behaviors Fieldset Position'),
+      '#options' => [
+        '-99' => $this->t('Top of paragraph edit form'),
+        '99' => $this->t('Bottom of paragraph edit form'),
+      ],
+      '#default_value' => $lp_config->get('paragraph_behaviors_position'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -94,6 +110,8 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
     $lp_config = $this->configFactory()->getEditable('layout_paragraphs.settings');
     $lp_config->set('show_paragraph_labels', $form_state->getValue('show_paragraph_labels'));
     $lp_config->set('show_layout_labels', $form_state->getValue('show_layout_labels'));
+    $lp_config->set('paragraph_behaviors_label', $form_state->getValue('paragraph_behaviors_label'));
+    $lp_config->set('paragraph_behaviors_position', $form_state->getValue('paragraph_behaviors_position'));
     $lp_config->save();
     // Confirmation on form submission.
     $this->messenger()->addMessage($this->t('The Layout Paragraphs settings have been saved.'));
