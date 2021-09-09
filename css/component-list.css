@@ -1,6 +1,7 @@
 
 .lpb-component-list__group > * {
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
 }
 
