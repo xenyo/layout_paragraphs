@@ -178,6 +178,10 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       $plugin_form->submitConfigurationForm($form['config'], $subform_state);
       $filtered_values['config'] = $plugin_form->getConfiguration();
     }
+    // Merge existing behavior settings.
+    $behavior_settings = $paragraph->getAllBehaviorSettings();
+    $filtered_values = $filtered_values + $behavior_settings[$this->getPluginId()];
+    // Set the updated behavior settings.
     $paragraph->setBehaviorSettings($this->getPluginId(), $filtered_values);
   }
 
