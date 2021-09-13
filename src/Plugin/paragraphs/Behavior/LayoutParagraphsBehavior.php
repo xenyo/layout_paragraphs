@@ -180,7 +180,8 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     }
     // Merge existing behavior settings.
     $behavior_settings = $paragraph->getAllBehaviorSettings();
-    $filtered_values = $filtered_values + $behavior_settings[$this->getPluginId()];
+    $existing_settings = $behavior_settings[$this->getPluginId()] ?? [];
+    $filtered_values = $filtered_values + $existing_settings;
     // Set the updated behavior settings.
     $paragraph->setBehaviorSettings($this->getPluginId(), $filtered_values);
   }

@@ -7,6 +7,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\RemoveCommand;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\layout_paragraphs\Ajax\LayoutParagraphsEventCommand;
 use Drupal\layout_paragraphs\DialogHelperTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
@@ -110,12 +111,11 @@ class DeleteComponentForm extends FormBase {
   public function deleteComponent(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
     $response->addCommand(new CloseDialogCommand($this->dialogSelector($this->layoutParagraphsLayout)));
-
     if ($this->needsRefresh()) {
       return $this->refreshLayout($response);
     }
-
     $response->addCommand(new RemoveCommand('[data-uuid="' . $this->componentUuid . '"]'));
+    $response->addCommand(new LayoutParagraphsEventCommand($this->layoutParagraphsLayout, $this->componentUuid, 'component:delete'));
     return $response;
   }
 

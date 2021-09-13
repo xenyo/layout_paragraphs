@@ -1,6 +1,11 @@
 (($, Drupal, debounce, dragula) => {
   const idAttr = 'data-lpb-id';
-  const reorderComponents = debounce($element => {
+  /**
+   * Makes an ajax request to reorder all items in the layout.
+   * This function is debounced below and not called directly.
+   * @param {jQuery} $element The builder element.
+   */
+  function doReorderComponents($element) {
     const id = $element.attr(idAttr);
     const order = $('.js-lpb-component', $element)
       .get()
@@ -26,7 +31,8 @@
         components: JSON.stringify(order),
       },
     }).execute();
-  });
+  }
+  const reorderComponents = debounce(doReorderComponents);
   /**
    * Returns a list of errors for the attempted move, or an empty array if there are no errors.
    * @param {Element} settings The builder settings.
@@ -43,6 +49,10 @@
       )
       .filter(errors => errors !== false && errors !== undefined);
   }
+  /**
+   * Updates move buttons to reflect current state.
+   * @param {jQuery} $element The builder element.
+   */
   function updateMoveButtons($element) {
     $element.find('.lpb-up, .lpb-down').attr('tabindex', '0');
     $element
@@ -51,6 +61,10 @@
       )
       .attr('tabindex', '-1');
   }
+  /**
+   * Hides the add content button in regions that contain components.
+   * @param {jQuery} $element The builder element.
+   */
   function hideEmptyRegionButtons($element) {
     $element.find('.js-lpb-region').each((i, e) => {
       const $e = $(e);
@@ -61,6 +75,10 @@
       }
     });
   }
+  /**
+   * Updates the UI based on currently state.
+   * @param {jQuery} $element The builder element.
+   */
   function updateUi($element) {
     reorderComponents($element);
     updateMoveButtons($element);
@@ -101,11 +119,10 @@
           $moveItem.css({ transform: 'none' });
           $sibling.css({ transform: 'none' });
           $sibling[method]($moveItem);
-          updateUi($moveItem.closest(`[${idAttr}]`));
+          $moveItem.closest(`[${idAttr}]`).trigger('lpb-component:move', [$moveItem.attr('data-uuid')]);
         },
       },
     );
-    $moveItem.closest(`[${idAttr}]`).trigger('lpb-component:move', [$moveItem]);
     if (distance > 50) {
       $('html, body').animate({ scrollTop: destScroll });
     }
@@ -161,9 +178,8 @@
     }
     // Remove the shims and save the order.
     $('.lpb-shim', $element).remove();
-    updateUi($element);
     $item.removeClass('lpb-active-item').focus();
-    $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item]);
+    $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item.attr('data-uuid')]);
   }
   /**
    * Prevents user from navigating away and accidentally loosing changes.
@@ -253,8 +269,7 @@
       if ($el.prev().is('a')) {
         $el.insertBefore($el.prev());
       }
-      $element.trigger('lpb-component:drop', [$el]);
-      updateUi($element);
+      $element.trigger('lpb-component:drop', [$el.attr('data-uuid')]);
     });
     drake.on('drag', el => {
       $element.addClass('is-dragging');
@@ -263,7 +278,7 @@
       } else {
         $element.addClass('is-dragging-item');
       }
-      $element.trigger('lpb-component:drag', [$(el)]);
+      $element.trigger('lpb-component:drag', [$(el).attr('data-uuid')]);
     });
     drake.on('dragend', () => {
       $element
@@ -311,6 +326,11 @@
       }
     }
   });
+  Drupal.AjaxCommands.prototype.LayoutParagraphsEventCommand = (ajax, response, status) => {
+    const {layoutId, componentUuid, eventName} = response;
+    const $element = $(`[data-lpb-id="${layoutId}"]`);
+    $element.trigger(`lpb-${eventName}`, [componentUuid]);
+  }
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Initialize the editor ui.
@@ -322,6 +342,7 @@
         $element.once('lpb-enabled').each(() => {
           $element.data('drake', initDragAndDrop($element, lpbSettings));
           attachEventListeners($element, lpbSettings);
+          $element.trigger('lpb-builder:init');
         });
         const drake = $element.data('drake');
         // Add new containers to the dragula instance.
@@ -333,22 +354,19 @@
           .forEach(c => {
             drake.containers.push(c);
           });
-        updateMoveButtons($element);
-        hideEmptyRegionButtons($element);
       });
-      // Respond to a component being updated/inserted.
-      if (context.classList && context.classList.contains('js-lpb-component')) {
-        $(context)
-          .closest('[data-lpb-id]')
-          .each((index, element) => {
-            const $element = $(element);
-            const $component = $(context);
-            const type = $component.hasClass('is_new') ? 'insert' : 'update';
-            $element.trigger(`lpb-component:${type}`, [$component]);
-            updateMoveButtons($element);
-            hideEmptyRegionButtons($element);
-          });
-      }
+      const events = [
+        'lpb-builder:init.lpb',
+        'lpb-component:insert.lpb',
+        'lpb-component:update.lpb',
+        'lpb-component:move.lpb',
+        'lpb-component:drop.lpb',
+        'lpb-component:delete.lpb'
+      ].join(' ');
+      $('[data-lpb-id]').once('lpb-events').on(events, e => {
+        const $element = $(e.currentTarget);
+        updateUi($element);
+      });
     },
   };
 })(jQuery, Drupal, Drupal.debounce, dragula);

@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\layout_paragraphs\Ajax\LayoutParagraphsEventCommand;
 
 /**
  * Class InsertComponentForm.
@@ -159,6 +160,7 @@ class InsertComponentForm extends ComponentFormBase {
         break;
     }
 
+    $response->addCommand(new LayoutParagraphsEventCommand($this->layoutParagraphsLayout, $uuid, 'component:insert'));
     return $response;
   }
 

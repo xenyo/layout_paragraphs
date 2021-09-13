@@ -6,6 +6,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\layout_paragraphs\Ajax\LayoutParagraphsEventCommand;
 
 /**
  * Class LayoutParagraphsComponentEditForm.
@@ -70,6 +71,7 @@ class EditComponentForm extends ComponentFormBase {
     $rendered_item = $this->renderParagraph($uuid);
 
     $response->addCommand(new ReplaceCommand("[data-uuid={$uuid}]", $rendered_item));
+    $response->addCommand(new LayoutParagraphsEventCommand($this->layoutParagraphsLayout, $uuid, 'component:update'));
     return $response;
   }
 
