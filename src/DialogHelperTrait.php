@@ -67,6 +67,7 @@ trait DialogHelperTrait {
       'autoResize' => $config->get('autoresize'),
       'modal' => TRUE,
       'drupalAutoButtons' => FALSE,
+      'dialogClass' => 'lpb-dialog',
     ];
 
     if (!empty($layout)) {
