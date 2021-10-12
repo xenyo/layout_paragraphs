@@ -62,8 +62,8 @@ trait DialogHelperTrait {
     $config = \Drupal::config('layout_paragraphs.modal_settings');
 
     $modal_settings = [
-      'width' => $config->get('width'),
-      'height' => $config->get('height'),
+      'width' => $config->get('width') ?? '768px',
+      'height' => $config->get('height') ?? 'auto',
       'autoResize' => $config->get('autoresize'),
       'modal' => TRUE,
       'drupalAutoButtons' => FALSE,
