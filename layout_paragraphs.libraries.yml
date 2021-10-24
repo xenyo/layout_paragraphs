@@ -17,6 +17,8 @@ component_list:
       css/component-list.css: {}
   js:
     js/component-list.js: {}
+  dependencies:
+    - core/jquery
 
 builder:
   css:
@@ -27,6 +29,7 @@ builder:
   dependencies:
     - layout_paragraphs/dragula
     - core/jquery
+    - core/jquery.once
     - core/drupal.dialog
     - core/drupal.dialog.ajax
     - core/drupal.ajax
@@ -38,6 +41,9 @@ builder_form:
       css/builder-form.css: {}
   js:
     js/builder-form.js: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.once
 
 layout_select:
   css:
