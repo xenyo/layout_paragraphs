@@ -26,6 +26,21 @@ and install Layout Paragraphs.
 - Choose “Layout Paragraphs” as the field formatter for the desired paragraph reference field under “Manage display”.
 - That’s it. Start creating (or editing) content to see the module in action.
 
+### Layout Paragraphs vs Layout Builder
+
+Layout Paragraphs provides an effortless drag-and-drop editing experience for writers, editors, and marketers. It has been designed from the ground up to meet the needs of people who work with content. Unlike Layout Builder in Drupal core, Layout Paragraphs  is not a site building tool. Rather, Layout Paragraphs is an authoring tool. (Also note that Layout Paragraphs is compatible with Layout Builder, meaning both can be installed and used on the same site.)
+
+#### Key Differences between Layout Paragraphs and Layout Builder
+
+- Layout Paragraphs works with Paragraphs, not Blocks.
+- Layout Paragraphs is built on Drupal’s field system. Configuring Layout Paragraphs is as easy as configuring an entity reference field (aka Paragraphs field).
+- Layout Paragraphs supports quickly toggling between different layouts within a given section, without having to delete the section.
+- Layout Paragraphs supports nested layouts.
+- Layout Paragraphs provides a “What You See Is What You Get” authoring experience, especially when configured to use the “Layout Paragraphs Builder” field formatter. 
+- Because Layout Paragraphs works with entity reference fields, it is extremely flexible and offers a broad range of applications.
+- Layout Paragraphs is by design much simpler than Layout Builder, focused entirely on the content entry – or authoring – experience.
+- Layout Paragraphs does not support creating templates, site-wide defaults, or default layouts for content types.  For these and other site-building needs, Layout Builder is a more appropriate solution.
+
 ### Maintainers
 - Creator: [Justin Toupin (justin2pin)](https://www.drupal.org/u/justin2pin)
 - [Italo Mairo (itamair)](https://www.drupal.org/u/itamair)
