@@ -8,3 +8,5 @@ configure: layout_paragraphs.label_settings
 dependencies:
   - drupal:paragraphs
   - drupal:layout_discovery
+test_dependencies:
+  - ds:ds
