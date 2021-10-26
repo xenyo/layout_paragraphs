@@ -1,0 +1,7 @@
+name: "Layout Paragraphs Test of Altered Paragraph Templates"
+description: "Controls should render correctly even when paragraph templates are customized."
+core_version_requirement: ^8 || ^9
+package: Layout Paragraphs
+type: module
+dependencies:
+  - layout_paragraphs:layout_paragraphs

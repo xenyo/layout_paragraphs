@@ -1,5 +1,24 @@
 (($, Drupal, debounce, dragula) => {
   const idAttr = 'data-lpb-id';
+
+  /**
+   * Attaches UI elements to $container.
+   * @param {jQuery} $container
+   *   The container.
+   * @param {string} id
+   *   The container id.
+   */
+  function attachUiElements($container, id, settings) {
+    const lpbBuilderSettings = settings.lpBuilder || {};
+    const uiElements = lpbBuilderSettings.uiElements || {};
+    const containerUiElements = uiElements[id] || [];
+    containerUiElements.forEach((uiElement) => {
+      const {element, method} = uiElement;
+      $container[method](element);
+    });
+    Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
+  }
+
   /**
    * Makes an ajax request to reorder all items in the layout.
    * This function is debounced below and not called directly.
@@ -366,6 +385,17 @@
       $('[data-lpb-id]').once('lpb-events').on(events, e => {
         const $element = $(e.currentTarget);
         updateUi($element);
+      });
+
+      // Add UI elements to the builder, each component, and each region.
+      [
+        `${idAttr}`,
+        'data-uuid',
+        'data-region-uuid',
+      ].forEach((attr) => {
+        $(`[${attr}]`).not('.has-components').once('lpb-ui-elements').each((i, el) => {
+          attachUiElements($(el), el.getAttribute(attr), settings);
+        });
       });
     },
   };

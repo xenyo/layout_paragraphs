@@ -10,7 +10,6 @@ use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Access\AccessResultForbidden;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Render\Element\RenderElement;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -231,10 +230,18 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $element['#is_empty'] = $this->layoutParagraphsLayout->isEmpty();
     $element['#empty_message'] = $this->layoutParagraphsLayout->getSetting('empty_message', $this->t('Start adding content.'));
     if ($this->layoutParagraphsLayout->getSetting('require_layouts', FALSE)) {
-      $element['#insert_button'] = $this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]);
+      $this->addJsUiElement(
+        $element,
+        $this->layoutParagraphsLayout->id(),
+        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]))
+      );
     }
     else {
-      $element['#insert_button'] = $this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]);
+      $this->addJsUiElement(
+        $element,
+        $this->layoutParagraphsLayout->id(),
+        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]))
+      );
     }
     $element['#root_components'] = [];
     foreach ($this->layoutParagraphsLayout->getRootComponents() as $component) {
@@ -325,8 +332,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     else {
       $delete_attributes = [];
     }
-
-    $build['controls'] = [
+    
+    $controls = [
       '#theme' => 'layout_paragraphs_builder_controls',
       '#attributes' => [
         'class' => [
@@ -339,17 +346,38 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#weight' => -10001,
     ];
     if ($component->isLayout()) {
-      $build['controls']['#attributes']['class'][] = 'is-layout';
+      $controls['#attributes']['class'][] = 'is-layout';
     }
+    $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'prepend');
 
     if ($this->createAccess()) {
       if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {
-        $build['insert_before'] = $this->insertSectionButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before']);
-        $build['insert_after'] = $this->insertSectionButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after']);
+        $this->addJsUiElement(
+          $build,
+          $entity->uuid(),
+          $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
+          'prepend'
+        );
+        $this->addJsUiElement(
+          $build,
+          $entity->uuid(),
+          $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after'])),
+          'append'
+        );
       }
       else {
-        $build['insert_before'] = $this->insertComponentButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before']);
-        $build['insert_after'] = $this->insertComponentButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after']);
+        $this->addJsUiElement(
+          $build,
+          $entity->uuid(),
+          $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
+          'prepend'
+        );
+        $this->addJsUiElement(
+          $build,
+          $entity->uuid(),
+          $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'after'], -10000, ['after'])),
+          'append'
+        );
       }
     }
 
@@ -380,7 +408,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           ],
         ];
         if ($this->createAccess()) {
-          $build['regions'][$region_name]['insert_button'] = $this->insertComponentButton($url_params, $query_params, 10000, ['center']);
+          $this->addJsUiElement(
+            $build,
+            $entity->uuid() . '-' . $region_name,
+            $this->doRender($this->insertComponentButton($url_params, $query_params, 10000, ['center']))
+          );
         }
       }
     }
@@ -663,6 +695,43 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       }
     }
     $this->tempstore->set($this->layoutParagraphsLayout);
+  }
+
+  /**
+   * Adds a UI element to the Javascript settings array.
+   *
+   * Builder UI elements are attached to components (paragraphs)
+   * in Javascript so that the UI is correctly rendered even when
+   * the component (paragraph) template has been customized and the
+   * contents of the content array are no longer output.
+   *
+   * @param array $build
+   *   The build array to attach JS settings to.
+   * @param string $id
+   *   The element container's id.
+   * @param \Drupal\Core\Render\Markup $element
+   *   The UI element.
+   * @param string $method
+   *   The javascript method to use to attach $element to its container.
+   */
+  public function addJsUiElement(array &$build, string $id, Markup $element, string $method = 'append') {
+    $build['#attached']['drupalSettings']['lpBuilder']['uiElements'][$id][] = [
+      'element' => $element,
+      'method' => $method,
+    ];
+  }
+
+  /**
+   * Processes a render array to markup.
+   *
+   * @param array $render_array
+   *   The render array to process.
+   *
+   * @return \Drupal\Core\Render\Markup
+   *   The markup object.
+   */
+  public function doRender(array $render_array) {
+    return $this->renderer->render($render_array);
   }
 
 }

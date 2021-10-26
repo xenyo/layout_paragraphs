@@ -43,6 +43,9 @@ field.formatter.settings.layout_paragraphs:
     view_mode:
       type: string
       label: 'View mode'
+    link:
+      type: string
+      label: 'Link'      
 
 field.formatter.settings.layout_paragraphs_builder:
   type: mapping
@@ -51,6 +54,9 @@ field.formatter.settings.layout_paragraphs_builder:
     view_mode:
       type: string
       label: 'View mode'
+    link:
+      type: string
+      label: 'Link'
     preview_view_mode:
       type: string
       label: 'Preview view mode'

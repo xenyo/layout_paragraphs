@@ -71,9 +71,10 @@ class BuilderTest extends WebDriverTestBase {
 
     // Use "Layout Paragraphs" formatter for the content field.
     $this->drupalGet('admin/structure/types/manage/page/display');
-    $this->submitForm([
-      'fields[field_content][type]' => 'layout_paragraphs',
-    ], 'Save');
+    $page = $this->getSession()->getPage();
+    $page->selectFieldOption('fields[field_content][type]', 'layout_paragraphs');
+    $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to choose layout paragraphs field formatter.');
+    $this->submitForm([], 'Save');
 
     $this->drupalLogout();
   }
