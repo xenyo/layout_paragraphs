@@ -3,6 +3,8 @@
 namespace Drupal\layout_paragraphs\Controller;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Ajax\AjaxHelperTrait;
+use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
@@ -15,6 +17,8 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
  * Reorders the components of a Layout Paragraphs Layout.
  */
 class ReorderController extends ControllerBase {
+
+  use AjaxHelperTrait;
 
   /**
    * The tempstore service.
@@ -54,6 +58,10 @@ class ReorderController extends ControllerBase {
     if ($ordered_components = Json::decode($request->request->get("components"))) {
       $layout_paragraphs_layout->reorderComponents($ordered_components);
       $this->tempstore->set($layout_paragraphs_layout);
+    }
+    // If invoked via ajax, no need to re-render the builder UI.
+    if ($this->isAjax()) {
+      return new AjaxResponse();
     }
     return [
       '#type' => 'layout_paragraphs_builder',
