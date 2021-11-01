@@ -2,25 +2,26 @@
 
 namespace Drupal\layout_paragraphs\Element;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Template\Attribute;
+use Drupal\Component\Serialization\Json;
+use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Access\AccessResultForbidden;
-use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Render\Element\RenderElement;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Template\Attribute;
-use Drupal\paragraphs\ParagraphInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsSection;
-use Drupal\layout_paragraphs\LayoutParagraphsComponent;
-use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\layout_paragraphs\DialogHelperTrait;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsSection;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsComponent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 
 /**
  * Defines a render element for building the Layout Builder UI.
@@ -332,7 +333,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     else {
       $delete_attributes = [];
     }
-    
+
     $controls = [
       '#theme' => 'layout_paragraphs_builder_controls',
       '#attributes' => [
@@ -343,6 +344,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#label' => $entity->getParagraphType()->label,
       '#edit_attributes' => $edit_attributes,
       '#delete_attributes' => $delete_attributes,
+      '#unique_id' => Html::getUniqueId('lpb-controls'),
       '#weight' => -10001,
     ];
     if ($component->isLayout()) {

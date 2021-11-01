@@ -117,36 +117,26 @@ class BuilderTest extends WebDriverTestBase {
     $third_col = $page->find('css', '.layout__region--third');
     $this->assertNotEmpty($third_col);
 
-    // Add a text item to first column.
-    // Because there are only two component types and sections cannot
-    // be nested, this will load the text component form directly.
-    $button = $page->find('css', '.layout__region--first .lpb-btn--add');
-    $button->click();
-    $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->pageTextContains('field_text');
+  }
 
-    $page->fillField('field_text[0][value]', 'Some arbitrary text');
-    // Force show the hidden submit button so we can click it.
-    $this->getSession()->executeScript("jQuery('.lpb-btn--save').attr('style', '');");
-    $button = $this->assertSession()->waitForElementVisible('css', ".lpb-btn--save");
-    $button->press();
-
-    $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->pageTextContains('Some arbitrary text');
-
+  /**
+   * Tests adding a component into a section.
+   */
+  public function testAddComponent() {
+    $this->testAddSection();
+    $this->addTextComponent('Some arbitrary text', '.layout__region--first .lpb-btn--add');
     $this->submitForm([
       'title[0][value]' => 'Node title',
     ], 'Save');
     $this->assertSession()->pageTextContains('Node title');
     $this->assertSession()->pageTextContains('Some arbitrary text');
-
   }
 
   /**
    * Tests editing a paragraph.
    */
   public function testEditComponent() {
-    $this->testAddSection();
+    $this->testAddComponent();
     $this->drupalGet('node/1/edit');
 
     $page = $this->getSession()->getPage();
@@ -161,35 +151,14 @@ class BuilderTest extends WebDriverTestBase {
    * Tests reordering components.
    */
   public function testReorderComponents() {
-    $this->testAddSection();
+    $this->testAddComponent();
     $this->drupalGet('node/1/edit');
 
     $page = $this->getSession()->getPage();
+    $this->addTextComponent('Second text item.', '[data-id="2"] .lpb-btn--add.after');
+    $this->assertOrderOfStrings(['Some arbitrary text', 'Second text item.'], 'Second item was not correctly added after the first.');
 
-    // Add a SECOND text item to first column.
-    // Because there are only two component types and sections cannot
-    // be nested, this will load the text component form directly.
-    $button = $page->find('css', '[data-id="2"] .lpb-btn--add.after');
-    $button->click();
-    $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->pageTextContains('field_text');
-
-    $page->fillField('field_text[0][value]', 'Second text item.');
-    // Force show the hidden submit button so we can click it.
-    $this->getSession()->executeScript("jQuery('.lpb-btn--save').attr('style', '');");
-    $button = $this->assertSession()->waitForElementVisible('css', ".lpb-btn--save");
-    $button->press();
-    $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Could not save new component.');
-
-    // Make sure the new component was added AFTER the existing one.
-    $page_text = $page->getHtml();
-    $pos1 = strpos($page_text, 'Second text item.');
-    $pos2 = strpos($page_text, 'Some arbitrary text');
-    if ($pos1 < $pos2) {
-      throw new ExpectationException("New component was incorrectly added above the existing one.", $this->getSession()->getDriver());
-    }
-
-    // Move the new item up above the first.
+    // Click the new item's move up button.
     $button = $page->find('css', '.is_new .lpb-up');
     $button->click();
 
@@ -200,17 +169,92 @@ class BuilderTest extends WebDriverTestBase {
     $this->assertSession()->pageTextContains('Second text item.');
 
     // The second component should now appear first in the page source.
-    $page_text = $page->getHtml();
-    $pos1 = strpos($page_text, 'Second text item.');
-    $pos2 = strpos($page_text, 'Some arbitrary text');
-    if ($pos1 > $pos2) {
-      throw new ExpectationException("Components were not correctly reordered.", $this->getSession()->getDriver());
-    }
-
+    $this->assertOrderOfStrings(['Second text item.', 'Some arbitrary text'], 'Components were not correctly reordered.');
   }
 
+  /**
+   * Tests keyboard navigation.
+   */
+  public function testKeyboardNavigation() {
+
+    $this->testAddSection();
+    $page = $this->getSession()->getPage();
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+
+    $this->drupalGet('node/1/edit');
+    $this->addTextComponent('First item', '.layout__region--first .lpb-btn--add');
+    $this->addTextComponent('Second item', '.layout__region--second .lpb-btn--add');
+    $this->addTextComponent('Third item', '.layout__region--third .lpb-btn--add');
+
+    // Click the new item's drag button.
+    // This should create a <div> with the id 'lpb-navigatin-msg'.
+    $button = $page->find('css', '.layout__region--third .lpb-drag');
+    $button->click();
+    $this->assertSession()->elementExists('css', '#lpb-navigating-msg');
+
+    // Moves third item to bottom of second region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Second item', 'Third item']);
+
+    // Moves third item to top of second region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Third item', 'Second item']);
+
+    // Moves third item to bottom of first region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Third item', 'Second item']);
+
+    // Moves third item to top of first region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['Third item', 'First item', 'Second item']);
+
+    // Save the node.
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+
+    // Ensures reordering was correctly applied via Ajax.
+    $this->assertOrderOfStrings(['Third item', 'First item', 'Second item']);
+  }
+
+  /**
+   * Uses Javascript to make a DOM element visible.
+   *
+   * @param string $selector
+   *   A css selector.
+   */
   protected function forceVisible($selector) {
     $this->getSession()->executeScript("jQuery('{$selector} .contextual .trigger').toggleClass('visually-hidden');");
+  }
+
+  /**
+   * Inserts a text component by clicking the "+" button.
+   *
+   * @param string $text
+   *   The text for the component's field_text value.
+   * @param string $css_selector
+   *   A css selector targeting the "+" button.
+   */
+  protected function addTextComponent($text, $css_selector) {
+    $page = $this->getSession()->getPage();
+    // Add a text item to first column.
+    // Because there are only two component types and sections cannot
+    // be nested, this will load the text component form directly.
+    $button = $page->find('css', $css_selector);
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains('field_text');
+
+    $page->fillField('field_text[0][value]', $text);
+    // Force show the hidden submit button so we can click it.
+    $this->getSession()->executeScript("jQuery('.lpb-btn--save').attr('style', '');");
+    $button = $this->assertSession()->waitForElementVisible('css', ".lpb-btn--save");
+    $button->press();
+
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains($text);
   }
 
   /**
@@ -226,6 +270,53 @@ class BuilderTest extends WebDriverTestBase {
     $user = $this->drupalCreateUser($permissions);
     $this->drupalLogin($user);
     return $user;
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * Added method with fixed return comment for IDE type hinting.
+   *
+   * @return \Drupal\FunctionalJavascriptTests\JSWebAssert
+   *   A new JS web assert object.
+   */
+  public function assertSession($name = '') {
+    $js_web_assert = parent::assertSession($name);
+    return $js_web_assert;
+  }
+
+  /**
+   * Asserts that provided strings appear on page in same order as in array.
+   *
+   * @param array $strings
+   *   A list of strings in the order they are expected to appear.
+   * @param string $assert_message
+   *   Message if assertion fails.
+   */
+  protected function assertOrderOfStrings(array $strings, $assert_message = 'Strings are not in correct order.') {
+    $page = $this->getSession()->getPage();
+    $page_text = $page->getHtml();
+    $highmark = -1;
+    foreach ($strings as $string) {
+      $this->assertSession()->pageTextContains($string);
+      $pos = strpos($page_text, $string);
+      if ($pos <= $highmark) {
+        throw new ExpectationException($assert_message, $this->getSession()->getDriver());
+      }
+      $highmark = $pos;
+    }
+  }
+
+  /**
+   * Simulates pressing a key with javascript.
+   *
+   * @param string $key_code
+   *   The string key code (i.e. ArrowUp, Enter).
+   */
+  protected function keyPress($key_code) {
+    $script = 'var e = new KeyboardEvent("keydown", {bubbles : true, cancelable : true, code: "' . $key_code . '"});
+    document.body.dispatchEvent(e);';
+    $this->getSession()->executeScript($script);
   }
 
 }

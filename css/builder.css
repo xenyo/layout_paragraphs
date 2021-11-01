@@ -29,7 +29,8 @@
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
   bottom: 20px;
 }
-.is-dragging .js-lpb-region {
+.is-dragging .js-lpb-region,
+.is-navigating .js-lpb-region {
   outline: 1px dotted blue;
 }
 .is-dragging .t-reversed .js-lpb-region {
@@ -41,9 +42,12 @@
   transition: all .15s linear;
   position: relative;
 }
-.js-lpb-component:hover,
-.js-lpb-component:focus-within {
+.lp-builder:not(.is-navigating) .js-lpb-component:hover,
+.lp-builder:not(.is-navigating) .js-lpb-component:focus-within {
   outline: 1px solid blue;
+}
+.js-lpb-component.is-navigating {
+  outline: 3px solid blue;
 }
 .js-lpb-component {
   cursor: grab;
@@ -52,12 +56,9 @@
 .js-lpb-component:focus-within .js-lpb-region {
   outline: 1px dotted rgba(0, 0, 255, 0.5);
 }
-.js-lpb-component:hover .js-lpb-region:hover,
-.js-lpb-component:focus-within .js-lpb-region:focus-within {
+.lp-builder:not(.is-navigating) .js-lpb-component:hover .js-lpb-region:hover,
+.lp-builder:not(.is-navigating) .js-lpb-component:focus-within .js-lpb-region:focus-within {
   outline: 1px solid rgba(0, 0, 255, 0.5);
-}
-.js-lpb-component:hover .js-lpb-active-item {
-  outline: 1px solid blue !important;
 }
 .lpb-layout {
   padding: 20px;
@@ -68,10 +69,6 @@
   border: 1px dotted #ccc;
   padding: 5px 10px;
   font-size: small;
-}
-.lpb-layout.lpb-active-item {
-  outline: 3px solid #fff !important;
-  box-shadow: 0 0 0 4px rgba(0, 0, 255, 1);
 }
 .js-lpb-btn--add {
   position: absolute;
@@ -91,6 +88,10 @@
   box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.25), 0px 1px 3px rgba(0, 0, 0, 0.25);
   background-color: #fff;
 }
+.lpb-controls:hover,
+.lpb-controls:focus-within {
+  z-index: 1010;
+}
 .lpb-controls.is-layout {
   background-color: #00659B;
   border-radius: 6px 6px 0px 0px;
@@ -100,8 +101,8 @@
   left: default;
   right: -1px;
 }
-.js-lpb-component:hover > .lpb-controls,
-.js-lpb-component:focus-within > .lpb-controls {
+.lp-builder:not(.is-navigating) .js-lpb-component:hover > .lpb-controls,
+.lp-builder:not(.is-navigating) .js-lpb-component:focus-within > .lpb-controls {
   opacity: 1;
 }
 .lpb-controls a span {
@@ -231,8 +232,8 @@
 .js-lpb-component > .lpb-btn {
   opacity: 0;
 }
-.js-lpb-component:hover > .lpb-btn,
-.js-lpb-component:focus-within > .lpb-btn {
+.lp-builder:not(.is-navigating) .js-lpb-component:hover > .lpb-btn,
+.lp-builder:not(.is-navigating) .js-lpb-component:focus-within > .lpb-btn {
   opacity: 1;
 }
 .lpb-btn--add {
@@ -257,6 +258,12 @@
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M13 6V11H18V13H13V18H11V12.999L6 13V11L11 10.999V6H13Z' fill='%23130F13'/%3E%3C/svg%3E%0A");
   opacity: 1;
 }
+.lpb-btn--add:hover,
+.lpb-btn:hover,
+.lpb-btn--add:focus-within,
+.lpb-btn:focus-within {
+  z-index: 1010;
+}
 .js-lpb-component .lpb-btn--add,
 .js-lpb-region .lpb-btn--add {
   opacity: 0;
@@ -275,13 +282,13 @@
 .lpb-btn--add.after {
   bottom: -16px;
 }
-.js-lpb-component:hover > .lpb-btn--add,
-.js-lpb-component:focus-within > .lpb-btn--add {
+.lp-builder:not(.is-navigating) .js-lpb-component:hover > .lpb-btn--add,
+.lp-builder:not(.is-navigating) .js-lpb-component:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }
-.js-lpb-region:hover > .lpb-btn--add,
-.js-lpb-region:focus-within > .lpb-btn--add {
+.lp-builder:not(.is-navigating) .js-lpb-region:hover > .lpb-btn--add,
+.lp-builder:not(.is-navigating) .js-lpb-region:focus-within > .lpb-btn--add {
   visibility: visible;
   opacity: 1;
 }
@@ -359,4 +366,43 @@ a.lpb-enable-button::before {
 .lpb-formatter:hover .lpb-enable,
 .lpb-formatter:focus-within .lpb-enable {
   opacity: 1;
+}
+
+.lpb-tooltiptext {
+  opacity: 0;
+  transition: all .15s linear;
+  width: auto;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 100%;
+  left: -7px;
+  margin-bottom: -2px;
+  white-space: nowrap;
+}
+.lpb-tooltiptext::after {
+  content: " ";
+  position: absolute;
+  top: 100%; /* At the bottom of the tooltip */
+  left: 20px;
+  border-width: 7px;
+  border-style: solid;
+  border-color: black transparent transparent transparent;
+}
+.lp-builder:not(.is-dragging) .lpb-tooltip--hover:hover + .lpb-tooltiptext {
+  transition-delay: 1s;
+}
+.lp-builder:not(.is-dragging) .lpb-tooltip--focus:focus + .lpb-tooltiptext,
+.lp-builder:not(.is-dragging) .lpb-tooltip--hover:hover + .lpb-tooltiptext,
+.lpb-tooltiptext--visible{
+  opacity: 1;
+}
+.js-lpb-ui-message {
+  background-color: 000;
+  color: #fff;
+  text-align: center;
+  position: static;
 }

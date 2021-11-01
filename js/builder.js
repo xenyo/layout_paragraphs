@@ -7,13 +7,15 @@
    *   The container.
    * @param {string} id
    *   The container id.
+   * @param {Object} settings
+   *   The settings object.
    */
   function attachUiElements($container, id, settings) {
     const lpbBuilderSettings = settings.lpBuilder || {};
     const uiElements = lpbBuilderSettings.uiElements || {};
     const containerUiElements = uiElements[id] || [];
-    containerUiElements.forEach((uiElement) => {
-      const {element, method} = uiElement;
+    containerUiElements.forEach(uiElement => {
+      const { element, method } = uiElement;
       $container[method](element);
     });
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
@@ -138,7 +140,9 @@
           $moveItem.css({ transform: 'none' });
           $sibling.css({ transform: 'none' });
           $sibling[method]($moveItem);
-          $moveItem.closest(`[${idAttr}]`).trigger('lpb-component:move', [$moveItem.attr('data-uuid')]);
+          $moveItem
+            .closest(`[${idAttr}]`)
+            .trigger('lpb-component:move', [$moveItem.attr('data-uuid')]);
         },
       },
     );
@@ -160,7 +164,7 @@
     // Add shims as target elements.
     if (dir === -1) {
       $(
-        '.js-lpb-region .lpb-btn--add, .lpb-layout:not(.lpb-active-item)',
+        '.js-lpb-region .lpb-btn--add.center, .lpb-layout:not(.lpb-active-item)',
         $element,
       ).before('<div class="lpb-shim"></div>');
     } else if (dir === 1) {
@@ -198,7 +202,34 @@
     // Remove the shims and save the order.
     $('.lpb-shim', $element).remove();
     $item.removeClass('lpb-active-item').focus();
-    $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item.attr('data-uuid')]);
+    $item
+      .closest(`[${idAttr}]`)
+      .trigger('lpb-component:move', [$item.attr('data-uuid')]);
+  }
+  function startNav($item) {
+    const $msg = $(
+      `<div id="lpb-navigating-msg" class="lpb-tooltiptext lpb-tooltiptext--visible js-lpb-tooltiptext">${Drupal.t(
+        'Use arrow keys to move. Press Return or Tab when finished.',
+      )}</div>`,
+    );
+    $item
+      .closest('.lp-builder')
+      .addClass('is-navigating')
+      .find('.is-navigating')
+      .removeClass('is-navigating');
+    $item
+      .attr('aria-describedby', 'lpb-navigating-msg')
+      .addClass('is-navigating')
+      .prepend($msg);
+  }
+  function stopNav($item) {
+    $item
+      .removeClass('is-navigating')
+      .closest('.lp-builder')
+      .removeClass('is-navigating')
+      .attr('aria-describedby', '')
+      .find('.js-lpb-tooltiptext')
+      .remove();
   }
   /**
    * Prevents user from navigating away and accidentally loosing changes.
@@ -246,14 +277,28 @@
       $(e.currentTarget).focus();
       return false;
     });
+    $element.on('click.lp-builder', '.lpb-drag', e => {
+      const $btn = $(e.currentTarget);
+      startNav($btn.closest('.js-lpb-component'));
+    });
     document.addEventListener('keydown', e => {
-      const $item = $('.js-lpb-component:focus');
+      const $item = $('.js-lpb-component.is-navigating');
       if ($item.length) {
-        if (e.code === 'ArrowDown' && $item) {
-          nav($item, 1, settings);
-        }
-        if (e.code === 'ArrowUp' && $item) {
-          nav($item, -1, settings);
+        switch (e.code) {
+          case 'ArrowUp':
+          case 'ArrowLeft':
+            nav($item, -1, settings);
+            break;
+          case 'ArrowDown':
+          case 'ArrowRight':
+            nav($item, 1, settings);
+            break;
+          case 'Enter':
+          case 'Tab':
+            stopNav($item);
+            break;
+          default:
+            break;
         }
       }
     });
@@ -345,11 +390,15 @@
       }
     }
   });
-  Drupal.AjaxCommands.prototype.LayoutParagraphsEventCommand = (ajax, response, status) => {
-    const {layoutId, componentUuid, eventName} = response;
+  Drupal.AjaxCommands.prototype.LayoutParagraphsEventCommand = (
+    ajax,
+    response,
+    status,
+  ) => {
+    const { layoutId, componentUuid, eventName } = response;
     const $element = $(`[data-lpb-id="${layoutId}"]`);
     $element.trigger(`lpb-${eventName}`, [componentUuid]);
-  }
+  };
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Initialize the editor ui.
@@ -380,22 +429,23 @@
         'lpb-component:update.lpb',
         'lpb-component:move.lpb',
         'lpb-component:drop.lpb',
-        'lpb-component:delete.lpb'
+        'lpb-component:delete.lpb',
       ].join(' ');
-      $('[data-lpb-id]').once('lpb-events').on(events, e => {
-        const $element = $(e.currentTarget);
-        updateUi($element);
-      });
+      $('[data-lpb-id]')
+        .once('lpb-events')
+        .on(events, e => {
+          const $element = $(e.currentTarget);
+          updateUi($element);
+        });
 
       // Add UI elements to the builder, each component, and each region.
-      [
-        `${idAttr}`,
-        'data-uuid',
-        'data-region-uuid',
-      ].forEach((attr) => {
-        $(`[${attr}]`).not('.has-components').once('lpb-ui-elements').each((i, el) => {
-          attachUiElements($(el), el.getAttribute(attr), settings);
-        });
+      [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach(attr => {
+        $(`[${attr}]`)
+          .not('.has-components')
+          .once('lpb-ui-elements')
+          .each((i, el) => {
+            attachUiElements($(el), el.getAttribute(attr), settings);
+          });
       });
     },
   };

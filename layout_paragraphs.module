@@ -61,6 +61,7 @@ function layout_paragraphs_theme() {
         'label' => NULL,
         'edit_attributes' => [],
         'delete_attributes' => [],
+        'unique_id' => [],
       ],
     ],
     'layout_paragraphs_builder_component_menu' => [
