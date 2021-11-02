@@ -370,6 +370,7 @@ a.lpb-enable-button::before {
 
 .lpb-tooltiptext {
   opacity: 0;
+  pointer-events: none;
   transition: all .15s linear;
   width: auto;
   background-color: black;
