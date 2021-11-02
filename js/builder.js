@@ -221,6 +221,7 @@
       .attr('aria-describedby', 'lpb-navigating-msg')
       .addClass('is-navigating')
       .prepend($msg);
+    $item.before('<div class="lpb-navigating-placeholder"></div>');
   }
   function stopNav($item) {
     $item
@@ -229,7 +230,16 @@
       .removeClass('is-navigating')
       .attr('aria-describedby', '')
       .find('.js-lpb-tooltiptext')
+      .remove()
+      .closest(`[${idAttr}]`)
+      .find('.lpb-navigating-placeholder')
       .remove();
+  }
+  function cancelNav($item) {
+    const $builder = $item.closest(`[${idAttr}]`);
+    $builder.find('.lpb-navigating-placeholder').replaceWith($item);
+    updateUi($builder);
+    stopNav($item);
   }
   /**
    * Prevents user from navigating away and accidentally loosing changes.
@@ -296,6 +306,9 @@
           case 'Enter':
           case 'Tab':
             stopNav($item);
+            break;
+          case 'Escape':
+            cancelNav($item);
             break;
           default:
             break;

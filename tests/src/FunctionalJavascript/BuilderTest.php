@@ -220,6 +220,58 @@ class BuilderTest extends WebDriverTestBase {
   }
 
   /**
+   * Tests pressing the ESC key during keyboard navigation.
+   */
+  public function testKeyboardNavigationEsc() {
+
+    $this->testAddSection();
+    $page = $this->getSession()->getPage();
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+
+    $this->drupalGet('node/1/edit');
+    $this->addTextComponent('First item', '.layout__region--first .lpb-btn--add');
+    $this->addTextComponent('Second item', '.layout__region--second .lpb-btn--add');
+    $this->addTextComponent('Third item', '.layout__region--third .lpb-btn--add');
+
+    // Click the new item's drag button.
+    // This should create a <div> with the id 'lpb-navigatin-msg'.
+    $button = $page->find('css', '.layout__region--third .lpb-drag');
+    $button->click();
+    $this->assertSession()->elementExists('css', '#lpb-navigating-msg');
+
+    // Moves third item to bottom of second region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Second item', 'Third item']);
+
+    // Moves third item to top of second region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Third item', 'Second item']);
+
+    // Moves third item to bottom of first region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['First item', 'Third item', 'Second item']);
+
+    // Moves third item to top of first region.
+    $this->keyPress('ArrowUp');
+    $this->assertOrderOfStrings(['Third item', 'First item', 'Second item']);
+
+    // The Escape button should cancel reordering and return items
+    // to their original order.
+    $this->keyPress('Escape');
+    $this->assertOrderOfStrings(['First item', 'Second item', 'Third item']);
+
+    // Save the node.
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+
+    // Ensures canceling reordering was correctly applied via Ajax.
+    $this->assertOrderOfStrings(['First item', 'Second item', 'Third item']);
+  }
+
+  /**
    * Uses Javascript to make a DOM element visible.
    *
    * @param string $selector
