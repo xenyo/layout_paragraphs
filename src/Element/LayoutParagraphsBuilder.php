@@ -22,6 +22,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsComponent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
+use Drupal\paragraphs\Entity\Paragraph;
 
 /**
  * Defines a render element for building the Layout Builder UI.
@@ -350,6 +351,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     if ($component->isLayout()) {
       $controls['#attributes']['class'][] = 'is-layout';
     }
+    $controls = $this->buildControls($component);
     $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'prepend');
 
     if ($this->createAccess()) {
@@ -417,6 +419,121 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           );
         }
       }
+    }
+    return $build;
+  }
+
+  /**
+   * Builds the controls UI element for a layout component.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsComponent $component
+   *   The component.
+   *
+   * @return array
+   *   The controls render array.
+   */
+  protected function buildControls(LayoutParagraphsComponent $component) {
+    $entity = $component->getEntity();
+    $id = Html::getUniqueId('lpb-controls');
+    $controls = [
+      'drag_handle' => [
+        '#type' => 'link',
+        '#title' => $this->t('Drag'),
+        '#url' => Url::fromUri('internal:#move'),
+        '#attributes' => [
+          'class' => [
+            'lpb-drag',
+            'lpb-tooltip--hover',
+            'lpb-tooltip--focus',
+          ],
+          'aria-describedy' => $id . '--tip',
+        ],
+      ],
+      'nav_tooltip' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#attributes' => [
+          'class' => [
+            'lpb-tooltiptext',
+          ],
+          'id' => $id . '--tip',
+        ],
+        '#value' => $this->t('Drag or click and use arrow keys to move. <br />Press Return or Tab when finished.'),
+      ],
+      'label' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#attributes' => [
+          'class' => ['lpb-controls-label'],
+        ],
+        '#value' => $entity->getParagraphType()->label,
+      ],
+      'move_up' => [
+        '#type' => 'link',
+        '#title' => $this->t('Move up'),
+        '#url' => Url::fromUri('internal:#move-up'),
+        '#attributes' => [
+          'class' => ['lpb-up'],
+        ],
+      ],
+      'move_down' => [
+        '#type' => 'link',
+        '#url' => Url::fromUri('internal:#move-down'),
+        '#title' => $this->t('Move down'),
+        '#attributes' => [
+          'class' => ['lpb-down'],
+        ],
+      ],
+      'edit_link' => [
+        '#type' => 'link',
+        '#url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
+          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+          'component_uuid' => $entity->uuid(),
+        ]),
+        '#title' => $this->t('Edit'),
+        '#attributes' => [
+          'class' => [
+            'lpb-edit',
+            'use-ajax',
+          ],
+          'data-dialog-type' => 'dialog',
+          'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
+        ],
+        '#access' => $this->editAccess($entity),
+      ],
+      'delete_link' => [
+        '#type' => 'link',
+        '#url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
+          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
+          'component_uuid' => $entity->uuid(),
+        ]),
+        '#title' => $this->t('Delete'),
+        '#attributes' => [
+          'class' => [
+            'lpb-delete',
+            'use-ajax',
+          ],
+          'data-dialog-type' => 'dialog',
+          'data-dialog-options' => Json::encode([
+            'modal' => TRUE,
+            'target' => $this->dialogId($this->layoutParagraphsLayout),
+          ]),
+        ],
+        '#access' => $this->deleteAccess($entity),
+      ],
+    ];
+    $build = [
+      '#theme' => 'layout_paragraphs_builder_controls',
+      '#attributes' => [
+        'class' => [
+          'lpb-controls',
+        ],
+      ],
+      '#controls' => $controls,
+      '#weight' => -10001,
+    ];
+    if ($component->isLayout()) {
+      $build['#attributes']['class'][] = 'is-layout';
     }
     return $build;
   }

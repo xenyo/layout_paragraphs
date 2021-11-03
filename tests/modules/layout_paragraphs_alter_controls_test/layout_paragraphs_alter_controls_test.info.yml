@@ -1,0 +1,8 @@
+name: Layout Paragraphs Alter Controls Test
+description: Tests that the controls UI element can be altered by third party modules.
+core_version_requirement: ^8 || ^9
+package: Layout Paragraphs
+type: module
+dependencies:
+  - layout_paragraphs:layout_paragraphs
+

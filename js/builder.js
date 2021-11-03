@@ -330,11 +330,7 @@
           if ($handle.closest('.lpb-drag').length) {
             return true;
           }
-          if (
-            $handle.closest(
-              '.lpb-controls,.js-lpb-toggle,.lpb-status,.js-lpb-section-menu',
-            ).length
-          ) {
+          if ($handle.closest('.lpb-controls').length) {
             return false;
           }
           return true;
