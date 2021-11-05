@@ -9,7 +9,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\DialogHelperTrait;
+use Drupal\layout_paragraphs\Utility\Dialog;
 
 /**
  * Class definition for ComponentFormController.
@@ -17,7 +17,6 @@ use Drupal\layout_paragraphs\DialogHelperTrait;
 class ComponentFormController extends ControllerBase {
 
   use AjaxHelperTrait;
-  use DialogHelperTrait;
 
   /**
    * Responds with a component insert form.
@@ -57,8 +56,8 @@ class ComponentFormController extends ControllerBase {
   protected function openForm(array $form, LayoutParagraphsLayout $layout_paragraphs_layout) {
     if ($this->isAjax()) {
       $response = new AjaxResponse();
-      $selector = $this->dialogSelector($layout_paragraphs_layout);
-      $response->addCommand(new OpenDialogCommand($selector, $form['#title'], $form, $this->dialogSettings()));
+      $selector = Dialog::dialogSelector($layout_paragraphs_layout);
+      $response->addCommand(new OpenDialogCommand($selector, $form['#title'], $form, Dialog::dialogSettings()));
       return $response;
     }
     return $form;

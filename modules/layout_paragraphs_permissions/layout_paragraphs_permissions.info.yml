@@ -1,0 +1,6 @@
+name: Layout Paragraphs Permissions
+description: Provides a drag and drop permission for Layout Paragraphs components.
+core_version_requirement: ^8 || ^9
+type: module
+dependencies:
+  - layout_paragraphs:layout_paragraphs

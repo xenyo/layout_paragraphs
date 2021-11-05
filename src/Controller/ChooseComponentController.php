@@ -10,7 +10,6 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
-use Drupal\layout_paragraphs\DialogHelperTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -25,7 +24,6 @@ class ChooseComponentController extends ControllerBase {
 
   use AjaxHelperTrait;
   use LayoutParagraphsLayoutRefreshTrait;
-  use DialogHelperTrait;
 
   /**
    * The entity type bundle info service.

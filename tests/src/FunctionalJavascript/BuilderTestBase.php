@@ -38,10 +38,11 @@ abstract class BuilderTestBase extends WebDriverTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+
     $this->addParagraphsType('section');
     $this->addParagraphsType('text');
     $this->addFieldtoParagraphType('text', 'field_text', 'text');
-    $this->addParagraphedContentType('page', 'field_content', 'layout_paragraphs');
+
     $this->loginWithPermissions([
       'administer site configuration',
       'administer node fields',
@@ -61,22 +62,32 @@ abstract class BuilderTestBase extends WebDriverTestBase {
       ],
     ], 'Save');
     $this->assertSession()->pageTextContains('Saved the section Paragraphs type.');
+    $this->addLayoutParagraphedContentType('page', 'field_content');
+    $this->drupalLogout();
+  }
 
+  /**
+   * Adds a content type with a layout paragraphs field.
+   *
+   * @param string $type_name
+   *   The name of the content type.
+   * @param string $paragraph_field
+   *   The name of the paragraphs reference field.
+   */
+  protected function addLayoutParagraphedContentType($type_name, $paragraph_field) {
+    $this->addParagraphedContentType($type_name, $paragraph_field, 'layout_paragraphs');
     // Add "section" and "text" paragraph types to the "page" content type.
-    $this->drupalGet('admin/structure/types/manage/page/fields/node.page.field_content');
+    $this->drupalGet('admin/structure/types/manage/page/fields/node.' . $type_name . '.' . $paragraph_field);
+    // Enables all paragraph types.
     $this->submitForm([
-      'settings[handler_settings][target_bundles_drag_drop][section][enabled]' => TRUE,
-      'settings[handler_settings][target_bundles_drag_drop][text][enabled]' => TRUE,
+      'settings[handler_settings][negate]' => '1',
     ], 'Save settings');
-
     // Use "Layout Paragraphs" formatter for the content field.
-    $this->drupalGet('admin/structure/types/manage/page/display');
+    $this->drupalGet('admin/structure/types/manage/' . $type_name . '/display');
     $page = $this->getSession()->getPage();
-    $page->selectFieldOption('fields[field_content][type]', 'layout_paragraphs');
+    $page->selectFieldOption('fields[' . $paragraph_field . '][type]', 'layout_paragraphs');
     $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to choose layout paragraphs field formatter.');
     $this->submitForm([], 'Save');
-
-    $this->drupalLogout();
   }
 
   /**

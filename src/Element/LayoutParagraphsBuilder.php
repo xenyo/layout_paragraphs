@@ -6,7 +6,6 @@ use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Template\Attribute;
 use Drupal\Component\Serialization\Json;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Access\AccessResultAllowed;
@@ -14,7 +13,7 @@ use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
-use Drupal\layout_paragraphs\DialogHelperTrait;
+use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
@@ -22,7 +21,6 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsComponent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Drupal\paragraphs\Entity\Paragraph;
 
 /**
  * Defines a render element for building the Layout Builder UI.
@@ -33,8 +31,6 @@ use Drupal\paragraphs\Entity\Paragraph;
  *   Plugin classes are internal.
  */
 class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryPluginInterface {
-
-  use DialogHelperTrait;
 
   /**
    * The layout paragraphs tempstore service.
@@ -180,6 +176,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $element_uuid = $element['#uuid'];
     $preview_view_mode = $this->layoutParagraphsLayout->getSetting('preview_view_mode', 'default');
 
+    $element['#layout_paragraphs_layout'] = $this->layoutParagraphsLayout;
     $element['#components'] = [];
     if ($this->isTranslating()) {
       $this->initTranslations();
@@ -296,45 +293,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $query_params['region'] = $region;
     }
 
-    if ($this->editAccess($entity)) {
-      $edit_attributes = new Attribute([
-        'href' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
-          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-          'component_uuid' => $entity->uuid(),
-        ])->toString(),
-        'class' => [
-          'lpb-edit',
-          'use-ajax',
-        ],
-        'data-dialog-type' => 'dialog',
-        'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
-      ]);
-    }
-    else {
-      $edit_attributes = [];
-    }
-
-    if ($this->deleteAccess($entity)) {
-      $delete_attributes = new Attribute([
-        'href' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
-          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-          'component_uuid' => $entity->uuid(),
-        ])->toString(),
-        'class' => [
-          'lpb-delete',
-          'use-ajax',
-        ],
-        'data-dialog-type' => 'dialog',
-        'data-dialog-options' => Json::encode([
-          'modal' => TRUE,
-          'target' => $this->dialogId($this->layoutParagraphsLayout),
-        ]),
-      ]);
-    }
-    else {
-      $delete_attributes = [];
-    }
-
     $controls = [
       '#theme' => 'layout_paragraphs_builder_controls',
       '#attributes' => [
@@ -342,16 +300,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           'lpb-controls',
         ],
       ],
-      '#label' => $entity->getParagraphType()->label,
-      '#edit_attributes' => $edit_attributes,
-      '#delete_attributes' => $delete_attributes,
-      '#unique_id' => Html::getUniqueId('lpb-controls'),
-      '#weight' => -10001,
+      '#uuid' => $entity->uuid(),
+      '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
+      '#edit_access' => $this->editAccess($entity),
+      '#delete_access' => $this->deleteAccess($entity),
     ];
-    if ($component->isLayout()) {
-      $controls['#attributes']['class'][] = 'is-layout';
-    }
-    $controls = $this->buildControls($component);
     $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'prepend');
 
     if ($this->createAccess()) {
@@ -424,121 +377,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   }
 
   /**
-   * Builds the controls UI element for a layout component.
-   *
-   * @param \Drupal\layout_paragraphs\LayoutParagraphsComponent $component
-   *   The component.
-   *
-   * @return array
-   *   The controls render array.
-   */
-  protected function buildControls(LayoutParagraphsComponent $component) {
-    $entity = $component->getEntity();
-    $id = Html::getUniqueId('lpb-controls');
-    $controls = [
-      'drag_handle' => [
-        '#type' => 'link',
-        '#title' => $this->t('Drag'),
-        '#url' => Url::fromUri('internal:#move'),
-        '#attributes' => [
-          'class' => [
-            'lpb-drag',
-            'lpb-tooltip--hover',
-            'lpb-tooltip--focus',
-          ],
-          'aria-describedy' => $id . '--tip',
-        ],
-      ],
-      'nav_tooltip' => [
-        '#type' => 'html_tag',
-        '#tag' => 'span',
-        '#attributes' => [
-          'class' => [
-            'lpb-tooltiptext',
-          ],
-          'id' => $id . '--tip',
-        ],
-        '#value' => $this->t('Drag or click and use arrow keys to move. <br />Press Return or Tab when finished.'),
-      ],
-      'label' => [
-        '#type' => 'html_tag',
-        '#tag' => 'span',
-        '#attributes' => [
-          'class' => ['lpb-controls-label'],
-        ],
-        '#value' => $entity->getParagraphType()->label,
-      ],
-      'move_up' => [
-        '#type' => 'link',
-        '#title' => $this->t('Move up'),
-        '#url' => Url::fromUri('internal:#move-up'),
-        '#attributes' => [
-          'class' => ['lpb-up'],
-        ],
-      ],
-      'move_down' => [
-        '#type' => 'link',
-        '#url' => Url::fromUri('internal:#move-down'),
-        '#title' => $this->t('Move down'),
-        '#attributes' => [
-          'class' => ['lpb-down'],
-        ],
-      ],
-      'edit_link' => [
-        '#type' => 'link',
-        '#url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
-          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-          'component_uuid' => $entity->uuid(),
-        ]),
-        '#title' => $this->t('Edit'),
-        '#attributes' => [
-          'class' => [
-            'lpb-edit',
-            'use-ajax',
-          ],
-          'data-dialog-type' => 'dialog',
-          'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
-        ],
-        '#access' => $this->editAccess($entity),
-      ],
-      'delete_link' => [
-        '#type' => 'link',
-        '#url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
-          'layout_paragraphs_layout' => $this->layoutParagraphsLayout->id(),
-          'component_uuid' => $entity->uuid(),
-        ]),
-        '#title' => $this->t('Delete'),
-        '#attributes' => [
-          'class' => [
-            'lpb-delete',
-            'use-ajax',
-          ],
-          'data-dialog-type' => 'dialog',
-          'data-dialog-options' => Json::encode([
-            'modal' => TRUE,
-            'target' => $this->dialogId($this->layoutParagraphsLayout),
-          ]),
-        ],
-        '#access' => $this->deleteAccess($entity),
-      ],
-    ];
-    $build = [
-      '#theme' => 'layout_paragraphs_builder_controls',
-      '#attributes' => [
-        'class' => [
-          'lpb-controls',
-        ],
-      ],
-      '#controls' => $controls,
-      '#weight' => -10001,
-    ];
-    if ($component->isLayout()) {
-      $build['#attributes']['class'][] = 'is-layout';
-    }
-    return $build;
-  }
-
-  /**
    * Filters problematic markup from rendered component.
    *
    * @param mixed $content
@@ -598,7 +436,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         'class' => array_merge(['lpb-btn--add', 'use-ajax'], $classes),
         'data-dialog-type' => 'dialog',
         'data-dialog-options' => Json::encode([
-          'target' => $this->dialogId($this->layoutParagraphsLayout),
+          'target' => Dialog::dialogId($this->layoutParagraphsLayout),
           'modal' => TRUE,
         ]),
       ],
@@ -628,7 +466,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#attributes' => [
         'class' => array_merge(['lpb-btn', 'use-ajax'], $classes),
         'data-dialog-type' => 'dialog',
-        'data-dialog-options' => Json::encode($this->dialogSettings($this->layoutParagraphsLayout)),
+        'data-dialog-options' => Json::encode(Dialog::dialogSettings($this->layoutParagraphsLayout)),
       ],
       '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
     ];
@@ -640,7 +478,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   protected function dialogOptions() {
     return [
       'modal' => TRUE,
-      'target' => $this->dialogId($this->layoutParagraphsLayout),
+      'target' => Dialog::dialogId($this->layoutParagraphsLayout),
     ];
   }
 

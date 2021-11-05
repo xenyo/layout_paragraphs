@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Drupal\layout_paragraphs\DialogHelperTrait;
+use Drupal\layout_paragraphs\Utility\Dialog;
 
 /**
  * Class LayoutParagraphsComponentFormBase.
@@ -31,7 +31,6 @@ abstract class ComponentFormBase extends FormBase {
 
   use AjaxFormHelperTrait;
   use LayoutParagraphsLayoutRefreshTrait;
-  use DialogHelperTrait;
 
   /**
    * The tempstore service.
@@ -460,7 +459,7 @@ abstract class ComponentFormBase extends FormBase {
    *   The ajax response.
    */
   protected function ajaxCloseForm(AjaxResponse &$response) {
-    $selector = $this->dialogSelector($this->layoutParagraphsLayout);
+    $selector = Dialog::dialogSelector($this->layoutParagraphsLayout);
     $response->addCommand(new CloseDialogCommand($selector));
   }
 

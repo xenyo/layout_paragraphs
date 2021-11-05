@@ -1,14 +1,15 @@
 <?php
 
-namespace Drupal\layout_paragraphs;
+namespace Drupal\layout_paragraphs\Utility;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Ajax\CloseDialogCommand;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 
 /**
- * Defines a dialog id helper trait.
+ * Defines a Dialog utility class.
  */
-trait DialogHelperTrait {
+class Dialog {
 
   /**
    * Generates a dialog id for a given layout.
@@ -19,7 +20,7 @@ trait DialogHelperTrait {
    * @return string
    *   The id.
    */
-  protected function dialogId(LayoutParagraphsLayout $layout) {
+  public static function dialogId(LayoutParagraphsLayout $layout) {
     return Html::getId('lpb-dialog-' . $layout->id());
   }
 
@@ -32,8 +33,8 @@ trait DialogHelperTrait {
    * @return string
    *   The dom selector for the dialog.
    */
-  protected function dialogSelector(LayoutParagraphsLayout $layout) {
-    return '#' . $this->dialogId($layout);
+  public static function dialogSelector(LayoutParagraphsLayout $layout) {
+    return '#' . static::dialogId($layout);
   }
 
   /**
@@ -45,8 +46,8 @@ trait DialogHelperTrait {
    * @return \Drupal\Core\Ajax\CommandInterface
    *   The close command.
    */
-  protected function closeDialogCommand(LayoutParagraphsLayout $layout) {
-    return new CloseDialogCommand($this->dialogSelector($layout));
+  public static function closeDialogCommand(LayoutParagraphsLayout $layout) {
+    return new CloseDialogCommand(static::dialogSelector($layout));
   }
 
   /**
@@ -58,7 +59,7 @@ trait DialogHelperTrait {
    * @return array
    *   The modal settings.
    */
-  protected function dialogSettings(LayoutParagraphsLayout $layout = NULL) {
+  public static function dialogSettings(LayoutParagraphsLayout $layout = NULL) {
     $config = \Drupal::config('layout_paragraphs.modal_settings');
 
     $modal_settings = [
@@ -71,7 +72,7 @@ trait DialogHelperTrait {
     ];
 
     if (!empty($layout)) {
-      $modal_settings['target'] = $this->dialogId($layout);
+      $modal_settings['target'] = static::dialogId($layout);
     }
 
     return $modal_settings;

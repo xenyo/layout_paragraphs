@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * Contains Layout Paragraphs Permissions module.
+ */
+
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+
+/**
+ * Implements hook_preprocess_layout_paragraphs_builder_controls().
+ */
+function layout_paragraphs_permissions_preprocess_layout_paragraphs_builder_controls(&$variables) {
+  foreach (['drag_handle', 'move_up', 'move_down'] as $key) {
+    $variables['controls'][$key]['#access'] = layout_paragraphs_permissions_access($variables['layout_paragraphs_layout'], 'reorder');
+  }
+}
+
+/**
+ * Implements hook_preprocess_layout_paragraphs_builder().
+ */
+function layout_paragraphs_permissions_preprocess_layout_paragraphs_builder(&$variables) {
+  if (layout_paragraphs_permissions_access($variables['layout_paragraphs_layout'], 'reorder')->isForbidden()) {
+    $variables['attributes']['class'][] = 'js-lpb-reordering-disabled';
+    $variables['#attached']['library'][] = 'layout_paragraphs_permissions/disable_reorder';
+  }
+}
+
+/**
+ * Checks access for current user on provided layout for provided operation.
+ *
+ * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+ *   The layout.
+ * @param string $operation
+ *   The operation (i.e. "reorder" or "edit").
+ *
+ * @return AccessResult
+ *   The access.
+ */
+function layout_paragraphs_permissions_access(LayoutParagraphsLayout $layout_paragraphs_layout, string $operation) {
+  $access_handler = Drupal::service('layout_paragraphs.builder_access');
+  return $access_handler->access(
+    Drupal::currentUser(),
+    $layout_paragraphs_layout,
+    $operation
+  );
+}

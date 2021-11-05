@@ -37,6 +37,7 @@ layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\ChooseComponentController::list'
+    operation: 'create'
   options:
     parameters:
       layout_paragraphs_layout:
@@ -86,6 +87,7 @@ layout_paragraphs.builder.reorder:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/reorder'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\ReorderController::build'
+    operation: 'reorder'
   options:
     parameters:
       layout_paragraphs_layout:

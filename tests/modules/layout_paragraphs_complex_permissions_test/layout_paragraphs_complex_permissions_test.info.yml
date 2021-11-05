@@ -1,0 +1,8 @@
+name: Layout Paragraphs Complex Permissions Test
+description: Tests more complex layout permissions setup
+core_version_requirement: ^8 || ^9
+type: module
+package: Layout Paragraphs
+dependencies:
+  - layout_paragraphs
+  - layout_paragraphs_permissions

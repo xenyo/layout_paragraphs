@@ -5,8 +5,12 @@
  * Contains layout_paragraphs.module.
  */
 
+use Drupal\Core\Url;
+use Drupal\Component\Utility\Html;
 use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\layout_paragraphs\Utility\Dialog;
 
 /**
  * Implements hook_help().
@@ -44,6 +48,7 @@ function layout_paragraphs_theme() {
         'empty_message' => '',
         'insert_button' => '',
         'translation_warning' => '',
+        'layout_paragraphs_layout' => NULL,
       ],
     ],
     'layout_paragraphs_builder_formatter' => [
@@ -59,6 +64,10 @@ function layout_paragraphs_theme() {
       'variables' => [
         'attributes' => [],
         'controls' => [],
+        'layout_paragraphs_layout' => NULL,
+        'uuid' => NULL,
+        'edit_access' => FALSE,
+        'delete_access' => FALSE,
       ],
     ],
     'layout_paragraphs_builder_component_menu' => [
@@ -110,6 +119,109 @@ function layout_paragraphs_module_implements_alter(&$implementations, $hook) {
 function layout_paragraphs_preprocess_radios(&$variables) {
   if (isset($variables['element']['#wrapper_attributes'])) {
     $variables['attributes'] += $variables['element']['#wrapper_attributes'];
+  }
+}
+
+/**
+ * Implements hook_preprocess_layout_paragraphs_builder_controls().
+ */
+function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$variables) {
+  /** @var \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout */
+  $layout = $variables['layout_paragraphs_layout'];
+  $uuid = $variables['uuid'];
+  $component = $layout->getComponentByUuid($uuid);
+  $entity = $component->getEntity();
+  $id = Html::getUniqueId('lpb-controls');
+
+  $variables['controls'] += [
+    'drag_handle' => [
+      '#type' => 'link',
+      '#title' => t('Drag'),
+      '#url' => Url::fromUri('internal:#move'),
+      '#attributes' => [
+        'class' => [
+          'lpb-drag',
+          'lpb-tooltip--hover',
+          'lpb-tooltip--focus',
+        ],
+        'aria-describedy' => $id . '--tip',
+      ],
+    ],
+    'nav_tooltip' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#attributes' => [
+        'class' => [
+          'lpb-tooltiptext',
+        ],
+        'id' => $id . '--tip',
+      ],
+      '#value' => t('Drag or click and use arrow keys to move. <br />Press Return or Tab when finished.'),
+    ],
+    'label' => [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#attributes' => [
+        'class' => ['lpb-controls-label'],
+      ],
+      '#value' => $entity->getParagraphType()->label,
+    ],
+    'move_up' => [
+      '#type' => 'link',
+      '#title' => t('Move up'),
+      '#url' => Url::fromUri('internal:#move-up'),
+      '#attributes' => [
+        'class' => ['lpb-up'],
+      ],
+    ],
+    'move_down' => [
+      '#type' => 'link',
+      '#url' => Url::fromUri('internal:#move-down'),
+      '#title' => t('Move down'),
+      '#attributes' => [
+        'class' => ['lpb-down'],
+      ],
+    ],
+    'edit_link' => [
+      '#type' => 'link',
+      '#url' => Url::fromRoute('layout_paragraphs.builder.edit_item', [
+        'layout_paragraphs_layout' => $layout->id(),
+        'component_uuid' => $entity->uuid(),
+      ]),
+      '#title' => t('Edit'),
+      '#attributes' => [
+        'class' => [
+          'lpb-edit',
+          'use-ajax',
+        ],
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode(Dialog::dialogSettings($layout)),
+      ],
+      '#access' => $variables['edit_access'],
+    ],
+    'delete_link' => [
+      '#type' => 'link',
+      '#url' => Url::fromRoute('layout_paragraphs.builder.delete_item', [
+        'layout_paragraphs_layout' => $layout->id(),
+        'component_uuid' => $entity->uuid(),
+      ]),
+      '#title' => t('Delete'),
+      '#attributes' => [
+        'class' => [
+          'lpb-delete',
+          'use-ajax',
+        ],
+        'data-dialog-type' => 'dialog',
+        'data-dialog-options' => Json::encode([
+          'modal' => TRUE,
+          'target' => Dialog::dialogId($layout),
+        ]),
+      ],
+      '#access' => $variables['delete_access'],
+    ],
+  ];
+  if ($component->isLayout()) {
+    $variables['#attributes']['class'][] = 'is-layout';
   }
 }
 
