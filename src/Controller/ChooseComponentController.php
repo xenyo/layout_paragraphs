@@ -177,23 +177,26 @@ class ChooseComponentController extends ControllerBase {
     $settings = $items->getSettings()['handler_settings'];
     $sorted_bundles = $this->getSortedAllowedTypes($settings);
     $storage = $this->entityTypeManager()->getStorage('paragraphs_type');
+    $types = [];
     foreach (array_keys($sorted_bundles) as $bundle) {
-      /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
-      $paragraphs_type = $storage->load($bundle);
-      $plugins = $paragraphs_type->getEnabledBehaviorPlugins();
-      $section_component = isset($plugins['layout_paragraphs']);
-      $path = '';
-      // Get the icon and pass to Javascript.
-      if (method_exists($paragraphs_type, 'getIconUrl')) {
-        $path = $paragraphs_type->getIconUrl();
+      if (TRUE === $this->entityTypeManager->getAccessControlHandler('paragraph')->createAccess($bundle)) {
+        /** @var \Drupal\paragraphs\Entity\ParagraphsType $paragraphs_type */
+        $paragraphs_type = $storage->load($bundle);
+        $plugins = $paragraphs_type->getEnabledBehaviorPlugins();
+        $section_component = isset($plugins['layout_paragraphs']);
+        $path = '';
+        // Get the icon and pass to Javascript.
+        if (method_exists($paragraphs_type, 'getIconUrl')) {
+          $path = $paragraphs_type->getIconUrl();
+        }
+        $types[$bundle] = [
+          'id' => $paragraphs_type->id(),
+          'label' => $paragraphs_type->label(),
+          'image' => $path,
+          'description' => $paragraphs_type->getDescription(),
+          'is_section' => $section_component,
+        ];
       }
-      $types[$bundle] = [
-        'id' => $paragraphs_type->id(),
-        'label' => $paragraphs_type->label(),
-        'image' => $path,
-        'description' => $paragraphs_type->getDescription(),
-        'is_section' => $section_component,
-      ];
     }
     return $types;
   }
