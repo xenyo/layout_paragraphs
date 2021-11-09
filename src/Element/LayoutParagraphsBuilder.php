@@ -232,14 +232,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $this->addJsUiElement(
         $element,
         $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]))
+        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center']))
       );
     }
     else {
       $this->addJsUiElement(
         $element,
         $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()]))
+        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center']))
       );
     }
     $element['#root_components'] = [];
