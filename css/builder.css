@@ -24,7 +24,7 @@
 }
 .lpb-empty-message {
   text-align: center;
-  padding-bottom: 10px;
+  padding-bottom: 40px;
 }
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
   bottom: 20px;
@@ -83,6 +83,8 @@
   display: flex;
   z-index: 10;
   position: absolute;
+  left: 0;
+  top: 0;
   opacity: 0;
   border-radius: 0px 0px 6px 0px;
   box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.25), 0px 1px 3px rgba(0, 0, 0, 0.25);
@@ -224,6 +226,10 @@
 }
 .lpb-btn.after {
   bottom: -15px;
+}
+.lpb-btn.center {
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 .js-lpb-component > .lpb-btn {
   opacity: 0;
