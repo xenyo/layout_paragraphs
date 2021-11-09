@@ -226,12 +226,12 @@
   function stopNav($item) {
     $item
       .removeClass('is-navigating')
-      .closest('.lp-builder')
-      .removeClass('is-navigating')
       .attr('aria-describedby', '')
       .find('.js-lpb-tooltiptext')
-      .remove()
+      .remove();
+    $item
       .closest(`[${idAttr}]`)
+      .removeClass('is-navigating')
       .find('.lpb-navigating-placeholder')
       .remove();
   }
