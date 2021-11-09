@@ -1,3 +1,7 @@
 reorder layout paragraphs components:
   title: 'Reorder layout paragraphs components'
   description: 'Grants access to drag and drop, move, and other navigation for Layout Paragraphs components.'
+
+edit layout paragraphs plugin config:
+  title: 'Edit Layout Paragraphs Plugin Config'
+  description: "Allow access to the 'Layout plugin configuration' form when creating/editing a Layout"

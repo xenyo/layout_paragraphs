@@ -5,6 +5,7 @@
  * Contains Layout Paragraphs Permissions module.
  */
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 
 /**
@@ -44,4 +45,31 @@ function layout_paragraphs_permissions_access(LayoutParagraphsLayout $layout_par
     $layout_paragraphs_layout,
     $operation
   );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function layout_paragraphs_permissions_form_layout_paragraphs_component_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $form['layout_paragraphs']['#process'][] = 'layout_paragraphs_permissions_layout_plugin_form_process';
+}
+
+/**
+ * Process callback to check permission for layout plugin forms.
+ *
+ * @param array $element
+ *   The element.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ * @param array $complete_form
+ *   The complete form array.
+ *
+ * @return array
+ *   The processed element.
+ */
+function layout_paragraphs_permissions_layout_plugin_form_process(array $element, FormStateInterface $form_state, array $complete_form) {
+  if (!empty($element['config']) && is_array($element['config'])) {
+    $element['config']['#access'] = Drupal::currentUser()->hasPermission('edit layout paragraphs plugin config');
+  }
+  return $element;
 }
