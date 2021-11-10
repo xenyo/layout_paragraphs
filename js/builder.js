@@ -450,6 +450,7 @@
       // Add UI elements to the builder, each component, and each region.
       [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach(attr => {
         $(`[${attr}]`)
+          .not('.lpb-formatter')
           .not('.has-components')
           .once('lpb-ui-elements')
           .each((i, el) => {
