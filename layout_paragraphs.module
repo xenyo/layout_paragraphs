@@ -230,7 +230,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
     ],
   ];
   if ($component->isLayout()) {
-    $variables['#attributes']['class'][] = 'is-layout';
+    $variables['attributes']['class'][] = 'is-layout';
   }
 }
 

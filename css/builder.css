@@ -1,4 +1,3 @@
-
 .lpb-dialog {
   z-index: 700;
 }
@@ -100,7 +99,7 @@
   box-shadow: none;
   color: #fff;
   top: -40px;
-  left: default;
+  left: auto;
   right: -1px;
 }
 .lp-builder:not(.is-navigating) .js-lpb-component:hover > .lpb-controls,
