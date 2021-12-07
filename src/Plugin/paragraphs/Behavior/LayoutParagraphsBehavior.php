@@ -126,7 +126,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     $layout_id = Html::escape($layout_id);
     $default_value = !empty($layout_id) ? $layout_id : key($available_layouts);
     // @todo - Throw an error if plugin instance cannot be loaded.
-    $plugin_instance = $this->layoutPluginManager->createInstance($default_value, $layout_settings);
+    $plugin_instance = $this->layoutPluginManager->createInstance($default_value, $layout_settings ?? []);
     $plugin_form = $this->getLayoutPluginForm($plugin_instance);
     $wrapper_id = Html::getId(implode('-', array_merge($form['#parents'], ['layout-options'])));
     $form['layout'] = [
@@ -161,7 +161,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    * {@inheritdoc}
    */
   public function validateBehaviorForm(ParagraphInterface $paragraph, array &$form, FormStateInterface $form_state) {
-    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config'));
+    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config') ?? []);
     if ($plugin_form = $this->getLayoutPluginForm($plugin_instance)) {
       $plugin_form->validateConfigurationForm($form, $form_state);
     }
@@ -172,7 +172,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    */
   public function submitBehaviorForm(ParagraphInterface $paragraph, array &$form, FormStateInterface $form_state) {
     $filtered_values = $this->filterBehaviorFormSubmitValues($paragraph, $form, $form_state);
-    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config'));
+    $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config') ?? []);
     if ($plugin_form = $this->getLayoutPluginForm($plugin_instance)) {
       $subform_state = SubformState::createForSubform($form['config'], $form, $form_state);
       $plugin_form->submitConfigurationForm($form['config'], $subform_state);

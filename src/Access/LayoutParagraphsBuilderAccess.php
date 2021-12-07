@@ -40,7 +40,7 @@ class LayoutParagraphsBuilderAccess implements AccessInterface {
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The layout paragraphs layout object.
    * @param string $operation
-   *   The operation being peformed (i.e. 'create' or 'delete').
+   *   The operation being performed (i.e. 'create' or 'delete').
    * @param string $component_uuid
    *   The specific component being acted on.
    * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type

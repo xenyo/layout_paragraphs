@@ -124,6 +124,8 @@ function layout_paragraphs_preprocess_radios(&$variables) {
 
 /**
  * Implements hook_preprocess_layout_paragraphs_builder_controls().
+ *
+ * @todo Consider adding an alter/info hook for altering this output.
  */
 function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$variables) {
   /** @var \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout */
@@ -146,6 +148,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         ],
         'aria-describedy' => $id . '--tip',
       ],
+      '#weight' => 10,
     ],
     'nav_tooltip' => [
       '#type' => 'html_tag',
@@ -157,6 +160,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         'id' => $id . '--tip',
       ],
       '#value' => t('Drag or click and use arrow keys to move. <br />Press Return or Tab when finished.'),
+      '#weight' => 20,
     ],
     'label' => [
       '#type' => 'html_tag',
@@ -165,6 +169,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         'class' => ['lpb-controls-label'],
       ],
       '#value' => $entity->getParagraphType()->label,
+      '#weight' => 30,
     ],
     'move_up' => [
       '#type' => 'link',
@@ -173,6 +178,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
       '#attributes' => [
         'class' => ['lpb-up'],
       ],
+      '#weight' => 40,
     ],
     'move_down' => [
       '#type' => 'link',
@@ -181,6 +187,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
       '#attributes' => [
         'class' => ['lpb-down'],
       ],
+      '#weight' => 50,
     ],
     'edit_link' => [
       '#type' => 'link',
@@ -198,6 +205,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         'data-dialog-options' => Json::encode(Dialog::dialogSettings($layout)),
       ],
       '#access' => $variables['edit_access'],
+      '#weight' => 60,
     ],
     'delete_link' => [
       '#type' => 'link',
@@ -218,6 +226,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         ]),
       ],
       '#access' => $variables['delete_access'],
+      '#weight' => 70,
     ],
   ];
   if ($component->isLayout()) {

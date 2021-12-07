@@ -5,7 +5,6 @@ namespace Drupal\layout_paragraphs\Element;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
-use Drupal\Component\Utility\Html;
 use Drupal\Component\Serialization\Json;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Access\AccessResultAllowed;
@@ -148,7 +147,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * Properties:
    * - #layout_paragraphs_layout: a LayoutParagraphsLayout instance.
    * - #uuid: if provided, the uuid of the single paragraph to render.
-   * - #sounce_langcode: if provided, the source entity language.
+   * - #source_langcode: if provided, the source entity language.
    */
   public function getInfo() {
     return [
@@ -164,6 +163,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
 
   /**
    * Pre-render callback: Renders the UI.
+   *
+   * @todo Better inline comments for all functionality in this method.
    */
   public function preRender($element) {
     $this->layoutParagraphsLayout = $this->tempstore->get($element['#layout_paragraphs_layout']);

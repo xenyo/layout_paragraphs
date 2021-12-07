@@ -156,6 +156,7 @@ class ChooseComponentController extends ControllerBase {
    *   Returns an array of allowed component types.
    */
   public function getAllowedComponentTypes(LayoutParagraphsLayout $layout, $parent_uuid = NULL, $region = NULL) {
+    // @todo Document and add tests for what is happening here.
     $component_types = $this->getComponentTypes($layout);
     $event = new LayoutParagraphsAllowedTypesEvent($component_types, $layout, $parent_uuid, $region);
     $this->eventDispatcher->dispatch(LayoutParagraphsAllowedTypesEvent::EVENT_NAME, $event);
