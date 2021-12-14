@@ -76,11 +76,10 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *   A unique id.
    */
   public function id() {
-    return Crypt::hashBase64(
-      $this->getEntity()->getEntityType()->id()
-      . $this->getEntity()->id()
-      . $this->getFieldName()
-    );
+    $uuid = $this->getEntity()->uuid();
+    $field_name = $this->getFieldName();
+    $id = Crypt::hashBase64($uuid . $field_name);
+    return $id;
   }
 
   /**

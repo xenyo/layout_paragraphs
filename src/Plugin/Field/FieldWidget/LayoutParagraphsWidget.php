@@ -2,6 +2,7 @@
 
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -137,13 +138,20 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-
-    $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
-    if (!$form_state->getUserInput()) {
+    $input = $form_state->getUserInput();
+    // If the form is being rendered for the first time, create a new Layout
+    // Paragraphs Layout instance, save it to tempstore, and store the key.
+    if (empty($input)) {
+      $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
       $this->tempstore->set($this->layoutParagraphsLayout);
+      $layout_paragraphs_storage_key = $this->tempstore->getStorageKey($this->layoutParagraphsLayout);
     }
+    // On subsequent form renders, this loads the correct Layout Paragraphs
+    // Layout from the tempstore using the storage key.
     else {
-      $this->layoutParagraphsLayout = $this->tempstore->get($this->layoutParagraphsLayout);
+      $parents = array_merge($form['#parents'], [$this->fieldDefinition->getName(), 'layout_paragraphs_storage_key']);
+      $layout_paragraphs_storage_key = NestedArray::getValue($input, $parents);
+      $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
     }
     $element += [
       '#type' => 'fieldset',
@@ -151,6 +159,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
+      ],
+      // Stores the Layout Paragraphs Layout storage key.
+      'layout_paragraphs_storage_key' => [
+        '#type' => 'hidden',
+        '#default_value' => $layout_paragraphs_storage_key,
       ],
     ];
     if ($source = $form_state->get(['content_translation', 'source'])) {
@@ -164,21 +177,26 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function extractFormValues(FieldItemListInterface $items, array $form, FormStateInterface $form_state) {
     $field_name = $this->fieldDefinition->getName();
+    // Load the correct layout paragraphs layout instnace using the value
+    // passed in the layout_instance_id hidden field.
     $path = array_merge($form['#parents'], [$field_name]);
-    $layout_paragraphs_layout = $this->tempstore->get(new LayoutParagraphsLayout($items));
-    $values = [];
-    foreach ($layout_paragraphs_layout->getParagraphsReferenceField() as $item) {
-      if ($item->entity) {
-        $entity = $item->entity;
-        $entity->setNeedsSave(TRUE);
-        $values[] = [
-          'entity' => $entity,
-          'target_id' => $entity->id(),
-          'target_revision_id' => $entity->getRevisionId(),
-        ];
+    $layout_paragraphs_storage_key = $form_state->getValue(array_merge($path, ['layout_paragraphs_storage_key']));
+    if (!empty($layout_paragraphs_storage_key)) {
+      $layout_paragraphs_layout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
+      $values = [];
+      foreach ($layout_paragraphs_layout->getParagraphsReferenceField() as $item) {
+        if ($item->entity) {
+          $entity = $item->entity;
+          $entity->setNeedsSave(TRUE);
+          $values[] = [
+            'entity' => $entity,
+            'target_id' => $entity->id(),
+            'target_revision_id' => $entity->getRevisionId(),
+          ];
+        }
       }
+      $form_state->setValue($path, $values);
     }
-    $form_state->setValue($path, $values);
     return parent::extractFormValues($items, $form, $form_state);
   }
 
