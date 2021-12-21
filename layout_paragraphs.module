@@ -9,8 +9,10 @@ use Drupal\Core\Url;
 use Drupal\Component\Utility\Html;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\layout_paragraphs\Utility\Dialog;
+use Drupal\paragraphs\Entity\ParagraphsType;
 
 /**
  * Implements hook_help().
@@ -231,6 +233,37 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
   ];
   if ($component->isLayout()) {
     $variables['attributes']['class'][] = 'is-layout';
+  }
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ *
+ * Adds the layout paragraphs form fields to "Manage form display" tab.
+ */
+function layout_paragraphs_entity_extra_field_info() {
+  $extra = [];
+  foreach (ParagraphsType::loadMultiple() as $paragraphs_type) {
+    if ($paragraphs_type->hasEnabledBehaviorPlugin('layout_paragraphs')) {
+      $extra['paragraph'][$paragraphs_type->id()]['form']['layout_paragraphs_fields'] = [
+        'label' => t('Layout selection and configuration form'),
+        'visible' => TRUE,
+        'weight' => -200,
+      ];
+    }
+  }
+  return $extra;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adjusts the field weight based on settings from "Manage form display" tab.
+ */
+function layout_paragraphs_form_layout_paragraphs_component_form_alter(&$form, FormStateInterface $form_state) {
+  $display = $form['#display'];
+  if ($layout_paragraphs_fields = $display->getComponent('layout_paragraphs_fields')) {
+    $form['layout_paragraphs']['#weight'] = $layout_paragraphs_fields['weight'];
   }
 }
 
