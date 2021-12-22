@@ -304,6 +304,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#uuid' => $entity->uuid(),
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#edit_access' => $this->editAccess($entity),
+      '#duplicate_access' => $this->createAccess(),
       '#delete_access' => $this->deleteAccess($entity),
     ];
     $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'prepend');

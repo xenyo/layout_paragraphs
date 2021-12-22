@@ -30,6 +30,12 @@ class LayoutParagraphsPermissionsBuilderAccess extends LayoutParagraphsBuilderAc
         : AccessResult::forbidden();
       $access = $access->andIf($reorder_access);
     }
+    if ($operation == 'duplicate') {
+      $duplicate_access = $account->hasPermission('duplicate layout paragraphs components')
+        ? AccessResult::allowed()
+        : AccessResult::forbidden();
+      $access = $access->andIf($duplicate_access);
+    }
     return $access;
   }
 

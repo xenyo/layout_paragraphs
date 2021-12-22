@@ -69,6 +69,7 @@ function layout_paragraphs_theme() {
         'layout_paragraphs_layout' => NULL,
         'uuid' => NULL,
         'edit_access' => FALSE,
+        'duplicate_access' => FALSE,
         'delete_access' => FALSE,
       ],
     ],
@@ -208,6 +209,22 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
       ],
       '#access' => $variables['edit_access'],
       '#weight' => 60,
+    ],
+    'duplicate_link' => [
+      '#type' => 'link',
+      '#url' => Url::fromRoute('layout_paragraphs.builder.duplicate_item', [
+        'layout_paragraphs_layout' => $layout->id(),
+        'source_uuid' => $entity->uuid(),
+      ]),
+      '#title' => t('Duplicate'),
+      '#attributes' => [
+        'class' => [
+          'lpb-duplicate',
+          'use-ajax',
+        ],
+      ],
+      '#access' => $variables['duplicate_access'],
+      '#weight' => 65,
     ],
     'delete_link' => [
       '#type' => 'link',

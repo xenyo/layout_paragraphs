@@ -71,6 +71,18 @@ layout_paragraphs.builder.insert:
   requirements:
     _layout_paragraphs_builder_access: 'TRUE'
 
+layout_paragraphs.builder.duplicate_item:
+  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/duplicate/{source_uuid}'
+  defaults:
+    _controller: '\Drupal\layout_paragraphs\Controller\DuplicateController::duplicate'
+    operation: 'duplicate'
+  options:
+    parameters:
+      layout_paragraphs_layout:
+        layout_paragraphs_layout_tempstore: TRUE
+  requirements:
+    _layout_paragraphs_builder_access: 'TRUE'
+
 layout_paragraphs.builder.delete_item:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/delete/{component_uuid}'
   defaults:

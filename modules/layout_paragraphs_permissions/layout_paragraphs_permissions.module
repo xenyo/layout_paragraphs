@@ -15,6 +15,7 @@ function layout_paragraphs_permissions_preprocess_layout_paragraphs_builder_cont
   foreach (['drag_handle', 'move_up', 'move_down'] as $key) {
     $variables['controls'][$key]['#access'] = layout_paragraphs_permissions_access($variables['layout_paragraphs_layout'], 'reorder');
   }
+  $variables['controls']['duplicate_link']['#access'] = layout_paragraphs_permissions_access($variables['layout_paragraphs_layout'], 'duplicate');
 }
 
 /**

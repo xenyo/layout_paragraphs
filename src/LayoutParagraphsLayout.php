@@ -330,6 +330,43 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   }
 
   /**
+   * Duplicates a component.
+   *
+   * @param string $source_uuid
+   *   The source uuid of the component to duplicate.
+   * @param string $target_section_uuid
+   *   The uuid of the target section component.
+   *   If null, the clone will be inserted in the same section, after
+   *   the source. If set, the clone will be inserted in the target section,
+   *   appended in the same region as the source.
+   *
+   * @return \Drupal\layout_paragraphs\LayoutParagraphsComponent
+   *   The duplicated component.
+   */
+  public function duplicateComponent(string $source_uuid, string $target_section_uuid = NULL) {
+    $source_component = $this->getComponentByUuid($source_uuid);
+    $cloned_paragraph = $source_component->getEntity()->createDuplicate();
+    if ($target_section_uuid) {
+      $this->insertIntoRegion(
+        $target_section_uuid,
+        $source_component->getRegion(),
+        $cloned_paragraph,
+      );
+    }
+    else {
+      $this->insertAfterComponent($source_uuid, $cloned_paragraph);
+    }
+    if ($source_component->isLayout()) {
+      /** @var \Drupal\layout_paragraphs\LayoutParagraphsSection $section */
+      $section = $this->getLayoutSection($source_component->getEntity());
+      foreach ($section->getComponents() as $component) {
+        $this->duplicateComponent($component->getEntity()->uuid(), $cloned_paragraph->uuid());
+      }
+    }
+    return $this->getComponent($cloned_paragraph);
+  }
+
+  /**
    * Insert a paragraph component before an existing component.
    *
    * @param string $parent_uuid

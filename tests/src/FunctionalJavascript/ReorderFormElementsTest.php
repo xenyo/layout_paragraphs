@@ -7,7 +7,7 @@ namespace Drupal\Tests\layout_paragraphs\FunctionalJavascript;
  *
  * @group layout_paragraphs
  */
-class ReorderFormElements extends BuilderTestBase {
+class ReorderFormElementsTest extends BuilderTestBase {
 
   /**
    * Tests moving the "Published" flag above/below LP fields.
