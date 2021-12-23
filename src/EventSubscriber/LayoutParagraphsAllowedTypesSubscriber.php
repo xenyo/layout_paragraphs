@@ -5,8 +5,14 @@ namespace Drupal\layout_paragraphs\EventSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
 
+/**
+ * Class definition for LayoutParagraphsAllowedTypesSubcriber.
+ */
 class LayoutParagraphsAllowedTypesSubscriber implements EventSubscriberInterface {
 
+  /**
+   * {@inheritDoc}
+   */
   public static function getSubscribedEvents() {
     return [
       LayoutParagraphsAllowedTypesEvent::EVENT_NAME => 'typeRestrictions',
@@ -18,8 +24,6 @@ class LayoutParagraphsAllowedTypesSubscriber implements EventSubscriberInterface
    *
    * @param \Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent $event
    *   The allowed types event.
-   *
-   * @return bool
    */
   public function typeRestrictions(LayoutParagraphsAllowedTypesEvent $event) {
 

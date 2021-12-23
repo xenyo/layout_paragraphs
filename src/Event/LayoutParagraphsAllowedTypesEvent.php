@@ -7,6 +7,12 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 
 /**
  * Class definition for Layout Paragraphs Allowed Types event.
+ *
+ * Developers can subscribe to this event and alter the Layout Paragraphs
+ * component types (aka Paragraph Types) that are rendered in the "Choose a
+ * Component" popup. For example: if you wished to develop a module that limits
+ * what Paragraph Types can be added in particular, specific regions/layout
+ * combinations.
  */
 class LayoutParagraphsAllowedTypesEvent extends Event {
 
