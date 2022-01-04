@@ -77,12 +77,22 @@ class DeleteComponentForm extends FormBase {
         '#ajax' => [
           'callback' => '::deleteComponent',
         ],
+        '#attributes' => [
+          'class' => ['lpb-btn--confirm-delete'],
+          'data-disable-refocus' => 'true',
+        ],
       ],
       'cancel' => [
         '#type' => 'button',
         '#value' => $this->t('Cancel'),
         '#ajax' => [
           'callback' => '::closeForm',
+        ],
+        '#attributes' => [
+          'class' => [
+            'dialog-cancel',
+            'lpb-btn--cancel',
+          ],
         ],
       ],
     ];

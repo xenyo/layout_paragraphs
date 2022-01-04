@@ -242,6 +242,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
         'data-dialog-options' => Json::encode([
           'modal' => TRUE,
           'target' => Dialog::dialogId($layout),
+          'dialogClass' => 'lpb-dialog',
         ]),
       ],
       '#access' => $variables['delete_access'],

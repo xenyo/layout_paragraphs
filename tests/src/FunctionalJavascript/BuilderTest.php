@@ -62,6 +62,37 @@ class BuilderTest extends BuilderTestBase {
   }
 
   /**
+   * Tests deleting a component.
+   */
+  public function testDeleteComponent() {
+    $this->testAddComponent();
+    $this->drupalGet('node/1/edit');
+    $page = $this->getSession()->getPage();
+    // Press delete on the component in the first region.
+    $button = $page->find('css', '.layout__region--first a.lpb-delete');
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains('Delete text');
+    // Confirm delete.
+    $button = $page->find('css', 'button.lpb-btn--confirm-delete');
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    // Component should no longer be on page.
+    $this->assertSession()->pageTextNotContains('Some arbitrary text');
+    // Add a new component and press delete.
+    $this->addTextComponent('New text component.', '.layout__region--first .lpb-btn--add');
+    $button = $page->find('css', '.layout__region--first a.lpb-delete');
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    // Cancel the operation.
+    $button = $page->find('css', 'button.dialog-cancel');
+    $button->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->pageTextContains('New text component.');
+    $this->assertSession()->pageTextNotContains('Delete text');
+  }
+
+  /**
    * Tests reordering components with the "move up" button.
    */
   public function testReorderComponents() {
