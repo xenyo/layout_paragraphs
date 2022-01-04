@@ -488,7 +488,9 @@
           },
         });
       });
-      $dialog.dialog('option', 'buttons', buttons);
+      if (buttons.length) {
+        $dialog.dialog('option', 'buttons', buttons);
+      }
     }
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);

@@ -5,27 +5,25 @@
 * @preserve
 **/
 
-(($, Drupal, debounce, dragula) => {
-  const idAttr = 'data-lpb-id';
+(function ($, Drupal, debounce, dragula) {
+  var idAttr = 'data-lpb-id';
 
   function attachUiElements($container, id, settings) {
-    const lpbBuilderSettings = settings.lpBuilder || {};
-    const uiElements = lpbBuilderSettings.uiElements || {};
-    const containerUiElements = uiElements[id] || [];
-    containerUiElements.forEach(uiElement => {
-      const {
-        element,
-        method
-      } = uiElement;
+    var lpbBuilderSettings = settings.lpBuilder || {};
+    var uiElements = lpbBuilderSettings.uiElements || {};
+    var containerUiElements = uiElements[id] || [];
+    containerUiElements.forEach(function (uiElement) {
+      var element = uiElement.element,
+          method = uiElement.method;
       $container[method](element);
     });
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
   }
 
   function doReorderComponents($element) {
-    const id = $element.attr(idAttr);
-    const order = $('.js-lpb-component', $element).get().map(item => {
-      const $item = $(item);
+    var id = $element.attr(idAttr);
+    var order = $('.js-lpb-component', $element).get().map(function (item) {
+      var $item = $(item);
       return {
         uuid: $item.attr('data-uuid'),
         parentUuid: $item.parents('.js-lpb-component').first().attr('data-uuid') || null,
@@ -33,17 +31,21 @@
       };
     });
     Drupal.ajax({
-      url: `${drupalSettings.path.baseUrl}${drupalSettings.path.pathPrefix}layout-paragraphs-builder/${id}/reorder`,
+      url: "".concat(drupalSettings.path.baseUrl).concat(drupalSettings.path.pathPrefix, "layout-paragraphs-builder/").concat(id, "/reorder"),
       submit: {
         components: JSON.stringify(order)
       }
     }).execute();
   }
 
-  const reorderComponents = debounce(doReorderComponents);
+  var reorderComponents = debounce(doReorderComponents);
 
   function moveErrors(settings, el, target, source, sibling) {
-    return Drupal._lpbMoveErrors.map(validator => validator.apply(null, [settings, el, target, source, sibling])).filter(errors => errors !== false && errors !== undefined);
+    return Drupal._lpbMoveErrors.map(function (validator) {
+      return validator.apply(null, [settings, el, target, source, sibling]);
+    }).filter(function (errors) {
+      return errors !== false && errors !== undefined;
+    });
   }
 
   function updateMoveButtons($element) {
@@ -52,8 +54,8 @@
   }
 
   function hideEmptyRegionButtons($element) {
-    $element.find('.js-lpb-region').each((i, e) => {
-      const $e = $(e);
+    $element.find('.js-lpb-region').each(function (i, e) {
+      var $e = $(e);
 
       if ($e.find('.js-lpb-component').length === 0) {
         $e.find('.lpb-btn--add.center').css('display', 'block');
@@ -70,13 +72,12 @@
   }
 
   function move($moveItem, direction) {
-    const $sibling = direction === 1 ? $moveItem.nextAll('.js-lpb-component').first() : $moveItem.prevAll('.js-lpb-component').first();
-    const method = direction === 1 ? 'after' : 'before';
-    const {
-      scrollY
-    } = window;
-    const destScroll = scrollY + $sibling.outerHeight() * direction;
-    const distance = Math.abs(destScroll - scrollY);
+    var $sibling = direction === 1 ? $moveItem.nextAll('.js-lpb-component').first() : $moveItem.prevAll('.js-lpb-component').first();
+    var method = direction === 1 ? 'after' : 'before';
+    var _window = window,
+        scrollY = _window.scrollY;
+    var destScroll = scrollY + $sibling.outerHeight() * direction;
+    var distance = Math.abs(destScroll - scrollY);
 
     if ($sibling.length === 0) {
       return false;
@@ -89,19 +90,17 @@
     }, {
       duration: Math.max(100, Math.min(distance, 500)),
       easing: 'swing',
-
-      step() {
-        const a = $sibling.outerHeight() * (this.translateY / 100);
-        const b = -$moveItem.outerHeight() * (this.translateY / 100);
+      step: function step() {
+        var a = $sibling.outerHeight() * (this.translateY / 100);
+        var b = -$moveItem.outerHeight() * (this.translateY / 100);
         $moveItem.css({
-          transform: `translateY(${a}px)`
+          transform: "translateY(".concat(a, "px)")
         });
         $sibling.css({
-          transform: `translateY(${b}px)`
+          transform: "translateY(".concat(b, "px)")
         });
       },
-
-      complete() {
+      complete: function complete() {
         $moveItem.css({
           transform: 'none'
         });
@@ -109,9 +108,8 @@
           transform: 'none'
         });
         $sibling[method]($moveItem);
-        $moveItem.closest(`[${idAttr}]`).trigger('lpb-component:move', [$moveItem.attr('data-uuid')]);
+        $moveItem.closest("[".concat(idAttr, "]")).trigger('lpb-component:move', [$moveItem.attr('data-uuid')]);
       }
-
     });
 
     if (distance > 50) {
@@ -122,7 +120,7 @@
   }
 
   function nav($item, dir, settings) {
-    const $element = $item.closest(`[${idAttr}]`);
+    var $element = $item.closest("[".concat(idAttr, "]"));
     $item.addClass('lpb-active-item');
 
     if (dir === -1) {
@@ -132,9 +130,13 @@
       $('.lpb-layout:not(.lpb-active-item)', $element).after('<div class="lpb-shim"></div>');
     }
 
-    const targets = $('.js-lpb-component, .lpb-shim', $element).toArray().filter(i => !$.contains($item[0], i)).filter(i => i.className.indexOf('lpb-layout') === -1 || i === $item[0]);
-    const currentElement = $item[0];
-    let pos = targets.indexOf(currentElement);
+    var targets = $('.js-lpb-component, .lpb-shim', $element).toArray().filter(function (i) {
+      return !$.contains($item[0], i);
+    }).filter(function (i) {
+      return i.className.indexOf('lpb-layout') === -1 || i === $item[0];
+    });
+    var currentElement = $item[0];
+    var pos = targets.indexOf(currentElement);
 
     while (targets[pos + dir] !== undefined && moveErrors(settings, $item[0], targets[pos + dir].parentNode, null, $item.next().length ? $item.next()[0] : null).length > 0) {
       pos += dir;
@@ -146,11 +148,11 @@
 
     $('.lpb-shim', $element).remove();
     $item.removeClass('lpb-active-item').focus();
-    $item.closest(`[${idAttr}]`).trigger('lpb-component:move', [$item.attr('data-uuid')]);
+    $item.closest("[".concat(idAttr, "]")).trigger('lpb-component:move', [$item.attr('data-uuid')]);
   }
 
   function startNav($item) {
-    const $msg = $(`<div id="lpb-navigating-msg" class="lpb-tooltiptext lpb-tooltiptext--visible js-lpb-tooltiptext">${Drupal.t('Use arrow keys to move. Press Return or Tab when finished.')}</div>`);
+    var $msg = $("<div id=\"lpb-navigating-msg\" class=\"lpb-tooltiptext lpb-tooltiptext--visible js-lpb-tooltiptext\">".concat(Drupal.t('Use arrow keys to move. Press Return or Tab when finished.'), "</div>"));
     $item.closest('.lp-builder').addClass('is-navigating').find('.is-navigating').removeClass('is-navigating');
     $item.attr('aria-describedby', 'lpb-navigating-msg').addClass('is-navigating').prepend($msg);
     $item.before('<div class="lpb-navigating-placeholder"></div>');
@@ -158,52 +160,52 @@
 
   function stopNav($item) {
     $item.removeClass('is-navigating').attr('aria-describedby', '').find('.js-lpb-tooltiptext').remove();
-    $item.closest(`[${idAttr}]`).removeClass('is-navigating').find('.lpb-navigating-placeholder').remove();
+    $item.closest("[".concat(idAttr, "]")).removeClass('is-navigating').find('.lpb-navigating-placeholder').remove();
   }
 
   function cancelNav($item) {
-    const $builder = $item.closest(`[${idAttr}]`);
+    var $builder = $item.closest("[".concat(idAttr, "]"));
     $builder.find('.lpb-navigating-placeholder').replaceWith($item);
     updateUi($builder);
     stopNav($item);
   }
 
   function preventLostChanges($element) {
-    const events = ['lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb'].join(' ');
-    $element.on(events, e => {
+    var events = ['lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb'].join(' ');
+    $element.on(events, function (e) {
       $(e.currentTarget).addClass('is_changed');
     });
-    window.addEventListener('beforeunload', e => {
-      if ($(`.is_changed[${idAttr}]`).length) {
+    window.addEventListener('beforeunload', function (e) {
+      if ($(".is_changed[".concat(idAttr, "]")).length) {
         e.preventDefault();
         e.returnValue = '';
       }
     });
-    $('.form-actions').find('input[type="submit"], a').click(() => {
+    $('.form-actions').find('input[type="submit"], a').click(function () {
       $element.removeClass('is_changed');
     });
   }
 
   function attachEventListeners($element, settings) {
     preventLostChanges($element);
-    $element.on('click.lp-builder', '.lpb-up', e => {
+    $element.on('click.lp-builder', '.lpb-up', function (e) {
       move($(e.target).closest('.js-lpb-component'), -1);
       return false;
     });
-    $element.on('click.lp-builder', '.lpb-down', e => {
+    $element.on('click.lp-builder', '.lpb-down', function (e) {
       move($(e.target).closest('.js-lpb-component'), 1);
       return false;
     });
-    $element.on('click.lp-builder', '.js-lpb-component', e => {
+    $element.on('click.lp-builder', '.js-lpb-component', function (e) {
       $(e.currentTarget).focus();
       return false;
     });
-    $element.on('click.lp-builder', '.lpb-drag', e => {
-      const $btn = $(e.currentTarget);
+    $element.on('click.lp-builder', '.lpb-drag', function (e) {
+      var $btn = $(e.currentTarget);
       startNav($btn.closest('.js-lpb-component'));
     });
-    document.addEventListener('keydown', e => {
-      const $item = $('.js-lpb-component.is-navigating');
+    document.addEventListener('keydown', function (e) {
+      var $item = $('.js-lpb-component.is-navigating');
 
       if ($item.length) {
         switch (e.code) {
@@ -234,11 +236,12 @@
   }
 
   function initDragAndDrop($element, settings) {
-    const drake = dragula($element.find('.js-lpb-component-list, .js-lpb-region').not('.is-dragula-enabled').get(), {
-      accepts: (el, target, source, sibling) => moveErrors(settings, el, target, source, sibling).length === 0,
-
-      moves(el, source, handle) {
-        const $handle = $(handle);
+    var drake = dragula($element.find('.js-lpb-component-list, .js-lpb-region').not('.is-dragula-enabled').get(), {
+      accepts: function accepts(el, target, source, sibling) {
+        return moveErrors(settings, el, target, source, sibling).length === 0;
+      },
+      moves: function moves(el, source, handle) {
+        var $handle = $(handle);
 
         if ($handle.closest('.lpb-drag').length) {
           return true;
@@ -250,10 +253,9 @@
 
         return true;
       }
-
     });
-    drake.on('drop', el => {
-      const $el = $(el);
+    drake.on('drop', function (el) {
+      var $el = $(el);
 
       if ($el.prev().is('a')) {
         $el.insertBefore($el.prev());
@@ -261,7 +263,7 @@
 
       $element.trigger('lpb-component:drop', [$el.attr('data-uuid')]);
     });
-    drake.on('drag', el => {
+    drake.on('drag', function (el) {
       $element.addClass('is-dragging');
 
       if (el.className.indexOf('lpb-layout') > -1) {
@@ -272,13 +274,13 @@
 
       $element.trigger('lpb-component:drag', [$(el).attr('data-uuid')]);
     });
-    drake.on('dragend', () => {
+    drake.on('dragend', function () {
       $element.removeClass('is-dragging').removeClass('is-dragging-layout').removeClass('is-dragging-item');
     });
-    drake.on('over', (el, container) => {
+    drake.on('over', function (el, container) {
       $(container).addClass('drag-target');
     });
-    drake.on('out', (el, container) => {
+    drake.on('out', function (el, container) {
       $(container).removeClass('drag-target');
     });
     return drake;
@@ -286,18 +288,18 @@
 
   Drupal._lpbMoveErrors = [];
 
-  Drupal.registerLpbMoveError = f => {
+  Drupal.registerLpbMoveError = function (f) {
     Drupal._lpbMoveErrors.push(f);
   };
 
-  Drupal.registerLpbMoveError((settings, el, target) => {
+  Drupal.registerLpbMoveError(function (settings, el, target) {
     if (el.classList.contains('lpb-layout') && $(target).parents('.lpb-layout').length > settings.nesting_depth) {
       return Drupal.t('Exceeds nesting depth of @depth.', {
         '@depth': settings.nesting_depth
       });
     }
   });
-  Drupal.registerLpbMoveError((settings, el, target) => {
+  Drupal.registerLpbMoveError(function (settings, el, target) {
     if (settings.require_layouts) {
       if (el.classList.contains('js-lpb-component') && !el.classList.contains('lpb-layout') && !target.classList.contains('js-lpb-region')) {
         return Drupal.t('Components must be added inside sections.');
@@ -305,57 +307,54 @@
     }
   });
 
-  Drupal.AjaxCommands.prototype.LayoutParagraphsEventCommand = (ajax, response) => {
-    const {
-      layoutId,
-      componentUuid,
-      eventName
-    } = response;
-    const $element = $(`[data-lpb-id="${layoutId}"]`);
-    $element.trigger(`lpb-${eventName}`, [componentUuid]);
+  Drupal.AjaxCommands.prototype.LayoutParagraphsEventCommand = function (ajax, response) {
+    var layoutId = response.layoutId,
+        componentUuid = response.componentUuid,
+        eventName = response.eventName;
+    var $element = $("[data-lpb-id=\"".concat(layoutId, "\"]"));
+    $element.trigger("lpb-".concat(eventName), [componentUuid]);
   };
 
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      $(`.has-components[${idAttr}]`).each((index, element) => {
-        const $element = $(element);
-        const id = $element.attr(idAttr);
-        const lpbSettings = settings.lpBuilder[id];
-        $element.once('lpb-enabled').each(() => {
+      $(".has-components[".concat(idAttr, "]")).each(function (index, element) {
+        var $element = $(element);
+        var id = $element.attr(idAttr);
+        var lpbSettings = settings.lpBuilder[id];
+        $element.once('lpb-enabled').each(function () {
           $element.data('drake', initDragAndDrop($element, lpbSettings));
           attachEventListeners($element, lpbSettings);
           $element.trigger('lpb-builder:init');
         });
-        const drake = $element.data('drake');
-        $element.find('.js-lpb-region').not('.is-dragula-enabled').addClass('.is-dragula-enabled').get().forEach(c => {
+        var drake = $element.data('drake');
+        $element.find('.js-lpb-region').not('.is-dragula-enabled').addClass('.is-dragula-enabled').get().forEach(function (c) {
           drake.containers.push(c);
         });
       });
-      const events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
-      $('[data-lpb-id]').once('lpb-events').on(events, e => {
-        const $element = $(e.currentTarget);
+      var events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
+      $('[data-lpb-id]').once('lpb-events').on(events, function (e) {
+        var $element = $(e.currentTarget);
         updateUi($element);
       });
-      [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach(attr => {
-        $(`[${attr}]`).not('.lpb-formatter').not('.has-components').once('lpb-ui-elements').each((i, el) => {
+      ["".concat(idAttr), 'data-uuid', 'data-region-uuid'].forEach(function (attr) {
+        $("[".concat(attr, "]")).not('.lpb-formatter').not('.has-components').once('lpb-ui-elements').each(function (i, el) {
           attachUiElements($(el), el.getAttribute(attr), settings);
         });
       });
     }
   };
-  $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
+  $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
     if ($dialog.attr('id').indexOf('lpb-dialog-') === 0) {
-      const buttons = [];
-      const $buttons = $dialog.find('.layout-paragraphs-component-form > .form-actions input[type=submit], .layout-paragraphs-component-form > .form-actions a.button');
-      $buttons.each((_i, el) => {
-        const $originalButton = $(el).css({
+      var buttons = [];
+      var $buttons = $dialog.find('.layout-paragraphs-component-form > .form-actions input[type=submit], .layout-paragraphs-component-form > .form-actions a.button');
+      $buttons.each(function (_i, el) {
+        var $originalButton = $(el).css({
           display: 'none'
         });
         buttons.push({
           text: $originalButton.html() || $originalButton.attr('value'),
           class: $originalButton.attr('class'),
-
-          click(e) {
+          click: function click(e) {
             if ($originalButton.is('a')) {
               $originalButton[0].click();
             } else {
@@ -363,10 +362,12 @@
               e.preventDefault();
             }
           }
-
         });
       });
-      $dialog.dialog('option', 'buttons', buttons);
+
+      if (buttons.length) {
+        $dialog.dialog('option', 'buttons', buttons);
+      }
     }
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
