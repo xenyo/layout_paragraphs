@@ -187,7 +187,7 @@ class InsertComponentForm extends ComponentFormBase {
    *
    * @return $this
    */
-  protected function insertComponent() {
+  public function insertComponent() {
     if ($this->parentUuid && $this->region) {
       $this->layoutParagraphsLayout->insertIntoRegion($this->parentUuid, $this->region, $this->paragraph);
     }
