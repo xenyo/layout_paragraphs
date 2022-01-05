@@ -170,14 +170,14 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   public function getFieldName() {
     /** @var \Drupal\field\Entity\FieldConfig $definition **/
     $definition = $this->paragraphsReferenceField->getFieldDefinition();
-    $field_name = $definition->get('field_name');
+    $field_name = $definition->getName();
     return $field_name;
   }
 
   /**
    * Wraps the paragraph in the component class.
    *
-   * @param Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
    *   The paragraph entity.
    *
    * @return LayoutParagraphsComponent|LayoutParagraphsSection

@@ -52,7 +52,7 @@ trait LayoutParagraphsLayoutRefreshTrait {
    *
    * @return $this
    */
-  protected function setLayoutParagraphsLayout(LayoutParagraphsLayout $layout_paragraphs_layout) {
+  public function setLayoutParagraphsLayout(LayoutParagraphsLayout $layout_paragraphs_layout) {
     $this->layoutParagraphsLayout = $layout_paragraphs_layout;
     $reference_field = clone $this->layoutParagraphsLayout->getParagraphsReferenceField();
     $settings = $this->layoutParagraphsLayout->getSettings();
