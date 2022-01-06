@@ -526,17 +526,13 @@
   // Repositions open dialogs.
   // @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
   // @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
-  let lpDialogInterval;
   $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
-      if (lpDialogInterval) {
-        clearInterval(lpDialogInterval);
-      }
       $dialog.data('lpOriginalHeight', $dialog.outerHeight());
-      lpDialogInterval = setInterval(repositionDialog.bind(null, $dialog), 500);
+      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
     }
   });
-  $(window).on('dialog:beforeclose', () => {
-    clearInterval(lpDialogInterval);
+  $(window).on('dialog:beforeclose', (event, dialog, $dialog) => {
+    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);

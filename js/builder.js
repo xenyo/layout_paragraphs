@@ -401,18 +401,13 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       }
     }
   });
-  var lpDialogInterval;
   $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
-      if (lpDialogInterval) {
-        clearInterval(lpDialogInterval);
-      }
-
       $dialog.data('lpOriginalHeight', $dialog.outerHeight());
-      lpDialogInterval = setInterval(repositionDialog.bind(null, $dialog), 500);
+      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
     }
   });
-  $(window).on('dialog:beforeclose', function () {
-    clearInterval(lpDialogInterval);
+  $(window).on('dialog:beforeclose', function (event, dialog, $dialog) {
+    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
