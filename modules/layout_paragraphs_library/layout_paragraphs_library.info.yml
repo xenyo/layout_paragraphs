@@ -1,0 +1,8 @@
+name: Layout Paragraphs Library
+description: Provides integration between Layout Paragraphs and Paragraphs Library
+core_version_requirement: ^8 || ^9
+type: module
+package: 'Paragraphs'
+dependencies:
+  - layout_paragraphs:layout_paragraphs
+  - paragraphs:paragraphs_library
