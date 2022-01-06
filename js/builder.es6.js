@@ -22,7 +22,7 @@
   }
 
   /**
-   * Repositions open dialogs when their height changes to exceed viewport.
+   * Repositions open dialogs when their height changes.
    *
    * The height of an open dialog will change based on its contents and can
    * cause a dialog to grow taller than the current window viewport, making
@@ -31,24 +31,16 @@
    * @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
    * @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
    *
-   * @param {Number} intervalId
-   *   The interval id.
+   * @param {jQuery} $dialog
+   *   The dialog jQuery object.
    */
-  function repositionDialog(intervalId) {
-    const $dialogs = $('.lpb-dialog');
-    if ($dialogs.length === 0) {
-      clearInterval(intervalId);
-      return;
+  function repositionDialog($dialog) {
+    const height = $dialog.outerHeight();
+    if ($dialog.data('lpOriginalHeight') !== height) {
+      const pos = $dialog.dialog('option', 'position');
+      $dialog.dialog('option', 'position', pos);
+      $dialog.data('lpOriginalHeight', height);
     }
-    $dialogs.each((i, dialog) => {
-      const bounding = dialog.getBoundingClientRect();
-      const viewPortHeight = window.innerHeight || document.documentElement.clientHeight;
-      if (bounding.bottom > viewPortHeight) {
-        const $dialog =  $('.ui-dialog-content', dialog);
-        const pos = $dialog.dialog('option', 'position');
-        $dialog.dialog('option', 'position', pos);
-      }
-    });
   }
 
   /**
@@ -534,11 +526,13 @@
   // Repositions open dialogs.
   // @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
   // @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
-  let lpDialogInterval;
   $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
-      clearInterval(lpDialogInterval);
-      lpDialogInterval = setInterval(repositionDialog.bind(null, lpDialogInterval), 500);
+      $dialog.data('lpOriginalHeight', $dialog.outerHeight());
+      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
     }
+  });
+  $(window).on('dialog:beforeclose', (event, dialog, $dialog) => {
+    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
