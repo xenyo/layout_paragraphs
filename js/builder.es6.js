@@ -14,7 +14,7 @@
     const lpbBuilderSettings = settings.lpBuilder || {};
     const uiElements = lpbBuilderSettings.uiElements || {};
     const containerUiElements = uiElements[id] || [];
-    containerUiElements.forEach((uiElement) => {
+    Object.entries(containerUiElements).forEach(([key, uiElement]) => {
       const { element, method } = uiElement;
       $container[method](element);
     });
