@@ -5,8 +5,6 @@
  * Install, update and uninstall functions for the Layout Paragraphs module.
  */
 
-use Drupal\Core\Database\Database;
-
 /**
  * The "Disabled Items" feature has been deprecated in Layout Paragraphs 2.x.
  *
@@ -21,9 +19,13 @@ function layout_paragraphs_update_9001(&$sandbox) {
   if (!isset($sandbox['progress'])) {
     $sandbox['progress'] = 0;
     $sandbox['current_pk'] = 0;
-    $sandbox['max'] = Database::getConnection()
-      ->query('SELECT COUNT(id) FROM {paragraphs_item_field_data} WHERE behavior_settings LIKE \'%_disabled%\' AND behavior_settings LIKE \'%layout_paragraphs%\'')
-      ->fetchField() - 1;
+    $sandbox['max'] = (int) \Drupal::database()
+      ->select('paragraphs_item_field_data')
+      ->condition('behavior_settings', '%_disabled%', 'LIKE')
+      ->condition('behavior_settings', '%layout_paragraphs%', 'LIKE')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
   }
 
   $ids = Drupal::entityQuery('paragraph')
