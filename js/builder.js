@@ -36,6 +36,16 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
   }
 
+  function repositionDialog($dialog) {
+    var height = $dialog.outerHeight();
+
+    if ($dialog.data('lpOriginalHeight') !== height) {
+      var pos = $dialog.dialog('option', 'position');
+      $dialog.dialog('option', 'position', pos);
+      $dialog.data('lpOriginalHeight', height);
+    }
+  }
+
   function doReorderComponents($element) {
     var id = $element.attr(idAttr);
     var order = $('.js-lpb-component', $element).get().map(function (item) {
@@ -385,5 +395,14 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         $dialog.dialog('option', 'buttons', buttons);
       }
     }
+  });
+  $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
+    if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
+      $dialog.data('lpOriginalHeight', $dialog.outerHeight());
+      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
+    }
+  });
+  $(window).on('dialog:beforeclose', function (event, dialog, $dialog) {
+    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
