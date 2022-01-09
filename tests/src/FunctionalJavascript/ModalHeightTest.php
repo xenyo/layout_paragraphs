@@ -34,8 +34,8 @@ class ModalHeightTest extends BuilderTestBase {
     $this->getSession()->executeScript('jQuery(\'.layout-paragraphs-component-form\').height(\'2000px\');');
 
     // Save button should be reachable.
-    $this->assertSession()->waitForElementVisible('css', '.lpb-btn--save');
-    $this->assertSession()->assertVisibleInViewport('css', '.lpb-btn--save');
+    $this->assertSession()->waitForElementVisible('css', '.ui-dialog-buttonpane .lpb-btn--save', 1000);
+    $this->assertSession()->assertVisibleInViewport('css', '.ui-dialog-buttonpane .lpb-btn--save');
 
   }
 
