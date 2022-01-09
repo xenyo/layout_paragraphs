@@ -233,14 +233,16 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $this->addJsUiElement(
         $element,
         $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center']))
+        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
+        'insert'
       );
     }
     else {
       $this->addJsUiElement(
         $element,
         $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center']))
+        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
+        'insert'
       );
     }
     $element['#root_components'] = [];
@@ -277,6 +279,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'js-lpb-component';
+    $build['#layout_paragraphs_component'] = TRUE;
     if ($entity->isNew()) {
       $build['#attributes']['class'][] = 'is_new';
     }
@@ -307,7 +310,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#duplicate_access' => $this->createAccess(),
       '#delete_access' => $this->deleteAccess($entity),
     ];
-    $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'prepend');
+    $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'controls', 'prepend');
 
     if ($this->createAccess()) {
       if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {
@@ -315,12 +318,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           $build,
           $entity->uuid(),
           $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
+          'insert_before',
           'prepend'
         );
         $this->addJsUiElement(
           $build,
           $entity->uuid(),
           $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after'])),
+          'insert_after',
           'append'
         );
       }
@@ -329,12 +334,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           $build,
           $entity->uuid(),
           $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
+          'insert_before',
           'prepend'
         );
         $this->addJsUiElement(
           $build,
           $entity->uuid(),
           $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'after'], -10000, ['after'])),
+          'insert_after',
           'append'
         );
       }
@@ -370,7 +377,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           $this->addJsUiElement(
             $build,
             $entity->uuid() . '-' . $region_name,
-            $this->doRender($this->insertComponentButton($url_params, $query_params, 10000, ['center']))
+            $this->doRender($this->insertComponentButton($url_params, $query_params, 10000, ['center'])),
+            'insert'
           );
         }
       }
@@ -675,8 +683,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @param string $method
    *   The javascript method to use to attach $element to its container.
    */
-  public function addJsUiElement(array &$build, string $id, Markup $element, string $method = 'append') {
-    $build['#attached']['drupalSettings']['lpBuilder']['uiElements'][$id][] = [
+  public function addJsUiElement(array &$build, string $id, Markup $element, string $key, string $method = 'append') {
+    $build['#attached']['drupalSettings']['lpBuilder']['uiElements'][$id][$key] = [
       'element' => $element,
       'method' => $method,
     ];

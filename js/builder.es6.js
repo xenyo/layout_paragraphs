@@ -14,11 +14,33 @@
     const lpbBuilderSettings = settings.lpBuilder || {};
     const uiElements = lpbBuilderSettings.uiElements || {};
     const containerUiElements = uiElements[id] || [];
-    containerUiElements.forEach((uiElement) => {
+    Object.entries(containerUiElements).forEach(([key, uiElement]) => {
       const { element, method } = uiElement;
       $container[method](element);
     });
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
+  }
+
+  /**
+   * Repositions open dialogs when their height changes.
+   *
+   * The height of an open dialog will change based on its contents and can
+   * cause a dialog to grow taller than the current window viewport, making
+   * it impossible to reach parts of the content (for example, submit buttons).
+   * Repositioning the dialog fixes the issue.
+   * @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
+   * @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
+   *
+   * @param {jQuery} $dialog
+   *   The dialog jQuery object.
+   */
+  function repositionDialog($dialog) {
+    const height = $dialog.outerHeight();
+    if ($dialog.data('lpOriginalHeight') !== height) {
+      const pos = $dialog.dialog('option', 'position');
+      $dialog.dialog('option', 'position', pos);
+      $dialog.data('lpOriginalHeight', height);
+    }
   }
 
   /**
@@ -492,5 +514,17 @@
         $dialog.dialog('option', 'buttons', buttons);
       }
     }
+  });
+  // Repositions open dialogs.
+  // @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
+  // @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
+  $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
+    if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
+      $dialog.data('lpOriginalHeight', $dialog.outerHeight());
+      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
+    }
+  });
+  $(window).on('dialog:beforeclose', (event, dialog, $dialog) => {
+    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);

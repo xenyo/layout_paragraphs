@@ -13,6 +13,13 @@
  * layout_paragraphs.module.
  * @see layout_paragraphs_theme()
  *
+ * Developers can use hook_entity_view_alter() and check the presence of
+ * $build['#layout_paragraphs_component'] to modify the build array for
+ * Layout Paragraphs components. Additionally, UI elements (controls, insert
+ * links, etc.) can be modified in hook_entity_view_alter() with
+ * $build['drupalSettings']['lpBuilder']['uiElements'].
+ * @see https://www.drupal.org/project/layout_paragraphs/issues/3256930
+ *
  * In addition to native hook functions, Layout Paragraphs uses events to
  * allow developers to customize behavior.
  * @see \Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent

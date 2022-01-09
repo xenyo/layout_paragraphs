@@ -97,6 +97,8 @@ class LayoutParagraphsBuilderForm extends FormBase {
         ],
       ],
     ];
+    $form['actions']['#attributes']['class'][] = 'lpb-form__actions';
+
     return $form;
   }
 
