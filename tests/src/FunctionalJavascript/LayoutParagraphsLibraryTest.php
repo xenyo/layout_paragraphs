@@ -5,10 +5,9 @@ namespace Drupal\Tests\layout_paragraphs\FunctionalJavascript;
 /**
  * Tests layout paragraphs permissions.
  *
- * @requires module paragraphs_library
- * @requires module entity_usage
- *
  * @group layout_paragraphs
+ * @requires module entity_usage
+ * @requires module paragraphs_library
  */
 class LayoutParagraphsLibraryTest extends BuilderTestBase {
 
@@ -23,6 +22,7 @@ class LayoutParagraphsLibraryTest extends BuilderTestBase {
     'field_ui',
     'block',
     'paragraphs_test',
+    'entity_usage',
     'paragraphs_library',
     'layout_paragraphs_library',
   ];
