@@ -8,26 +8,28 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Access\AccessResult;
 use Drupal\field_group\FormatterHelper;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxFormHelperTrait;
-use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Layout\LayoutPluginManager;
+use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\Contracts\ComponentFormInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Drupal\layout_paragraphs\Utility\Dialog;
 
 /**
  * Class LayoutParagraphsComponentFormBase.
  *
  * Base form for Layout Paragraphs component forms.
  */
-abstract class ComponentFormBase extends FormBase {
+abstract class ComponentFormBase extends FormBase implements ComponentFormInterface {
 
   use AjaxFormHelperTrait;
   use LayoutParagraphsLayoutRefreshTrait;
@@ -122,6 +124,27 @@ abstract class ComponentFormBase extends FormBase {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  public function getParagraph() {
+    return $this->paragraph;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setParagraph(Paragraph $paragraph) {
+    $this->paragraph = $paragraph;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function getLayoutParagraphsLayout() {
+    return $this->layoutParagraphsLayout;
+  }
+
+  /**
    * Builds a component (paragraph) edit form.
    *
    * @param array $form
@@ -152,6 +175,7 @@ abstract class ComponentFormBase extends FormBase {
         '#type' => 'actions',
         'submit' => [
           '#type' => 'submit',
+          '#weight' => 100,
           '#value' => $this->t('Save'),
           '#ajax' => [
             'callback' => '::ajaxSubmit',
@@ -164,6 +188,7 @@ abstract class ComponentFormBase extends FormBase {
         ],
         'cancel' => [
           '#type' => 'button',
+          '#weight' => 200,
           '#value' => $this->t('Cancel'),
           '#ajax' => [
             'callback' => '::cancel',
@@ -267,8 +292,13 @@ abstract class ComponentFormBase extends FormBase {
    *   The form state object.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->paragraph = $this->buildParagraphComponent($form, $form_state);
+    $this->setParagraph($this->buildParagraphComponent($form, $form_state));
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  abstract public function successfulAjaxSubmit(array $form, FormStateInterface $form_state);
 
   /**
    * Builds the paragraph component using submitted form values.
@@ -281,7 +311,7 @@ abstract class ComponentFormBase extends FormBase {
    * @return \Drupal\paragraphs\Entity\Paragraph
    *   The paragraph entity.
    */
-  protected function buildParagraphComponent(array $form, FormStateInterface $form_state) {
+  public function buildParagraphComponent(array $form, FormStateInterface $form_state) {
     /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
     $display = $form['#display'];
 
@@ -343,7 +373,7 @@ abstract class ComponentFormBase extends FormBase {
    *
    * @param array $element
    *   The form element.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
    * @param array $form
    *   The complete form array.
