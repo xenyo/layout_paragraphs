@@ -36,6 +36,11 @@ function layout_paragraphs_library_form_layout_paragraphs_component_form_alter(a
       '#ajax' => [
         'callback' => 'layout_paragraphs_library_ajax',
       ],
+      '#attributes' => [
+        'class' => [
+          'lpb-btn--promote-to-library',
+        ],
+      ],
       '#weight' => 110,
     ];
     // Fix inline_entity_form compabitility.
