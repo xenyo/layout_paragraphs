@@ -116,6 +116,13 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     $button = $page->find('css', $css_selector);
     $button->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
+
+    $title = $page->find('css', '.ui-dialog-title');
+    if ($title->getText() == 'Choose a component') {
+      $page->clickLink('text');
+      $this->assertSession()->assertWaitOnAjaxRequest();
+    }
+
     $this->assertSession()->pageTextContains('field_text');
 
     $page->fillField('field_text[0][value]', $text);

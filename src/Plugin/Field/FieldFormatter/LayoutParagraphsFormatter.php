@@ -42,23 +42,25 @@ class LayoutParagraphsFormatter extends EntityReferenceRevisionsEntityFormatter 
     $entities = [];
 
     foreach ($items as $delta => $item) {
-      // Ignore items where no entity could be loaded in prepareView() and
-      // items that are not root level components.
-      if (!empty($item->_loaded)
-        && LayoutParagraphsComponent::isRootComponent($item->entity)) {
+      // Ignore items where no entity could be loaded in prepareView().
+      if (!empty($item->_loaded)) {
         $entity = $item->entity;
-
         $access = $this->checkAccess($entity);
         // Add the access result's cacheability, ::view() needs it.
         $item->_accessCacheability = CacheableMetadata::createFromObject($access);
         if ($access->isAllowed()) {
-          // Set the entity in the correct language for display.
-          if ($entity instanceof TranslatableInterface) {
-            $entity = \Drupal::service('entity.repository')->getTranslationFromContext($entity, $langcode);
-          }
           // Add the referring item, in case the formatter needs it.
           $entity->_referringItem = $items[$delta];
-          $entities[$delta] = $entity;
+          // Only include root level components. Nested components are rendered
+          // by their parent respective containers.
+          // @see Drupal\layout_paragraphs\LayoutParagraphsRendererService.
+          if (LayoutParagraphsComponent::isRootComponent($item->entity)) {
+            // Set the entity in the correct language for display.
+            if ($entity instanceof TranslatableInterface) {
+              $entity = \Drupal::service('entity.repository')->getTranslationFromContext($entity, $langcode);
+            }
+            $entities[$delta] = $entity;
+          }
         }
       }
     }

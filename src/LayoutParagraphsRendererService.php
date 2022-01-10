@@ -48,7 +48,9 @@ class LayoutParagraphsRendererService {
   /**
    * Renders a single Layout Paragraph Section for the provided paragraph.
    *
-   * @param Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param array $build
+   *   The build array.
+   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
    *   The paragraph entity.
    * @param string $view_mode
    *   The view mode.
