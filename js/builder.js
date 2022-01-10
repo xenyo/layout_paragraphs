@@ -371,6 +371,10 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
   };
   $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
     if ($dialog.attr('id').indexOf('lpb-dialog-') === 0) {
+      if ($dialog.dialog('option', 'buttons').length > 0) {
+        return;
+      }
+
       var buttons = [];
       var $buttons = $dialog.find('.layout-paragraphs-component-form > .form-actions input[type=submit], .layout-paragraphs-component-form > .form-actions a.button');
       $buttons.each(function (_i, el) {
@@ -396,13 +400,18 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       }
     }
   });
+  var lpDialogInterval;
   $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
+      if (lpDialogInterval) {
+        clearInterval(lpDialogInterval);
+      }
+
       $dialog.data('lpOriginalHeight', $dialog.outerHeight());
-      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
+      lpDialogInterval = setInterval(repositionDialog.bind(null, $dialog), 500);
     }
   });
-  $(window).on('dialog:beforeclose', function (event, dialog, $dialog) {
-    clearInterval($dialog.data('lpDialogInterval'));
+  $(window).on('dialog:beforeclose', function () {
+    clearInterval(lpDialogInterval);
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);

@@ -486,6 +486,10 @@
   // @see https://www.drupal.org/project/layout_paragraphs/issues/3216981
   $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
     if ($dialog.attr('id').indexOf('lpb-dialog-') === 0) {
+      // If buttons have already been added to the buttonpane, do not continue.
+      if ($dialog.dialog('option', 'buttons').length > 0) {
+        return;
+      }
       const buttons = [];
       const $buttons = $dialog.find(
         '.layout-paragraphs-component-form > .form-actions input[type=submit], .layout-paragraphs-component-form > .form-actions a.button',
@@ -518,13 +522,17 @@
   // Repositions open dialogs.
   // @see https://www.drupal.org/project/layout_paragraphs/issues/3252978
   // @see https://stackoverflow.com/questions/5456298/refresh-jquery-ui-dialog-position
+  let lpDialogInterval;
   $(window).on('dialog:aftercreate', (event, dialog, $dialog) => {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
+      if (lpDialogInterval) {
+        clearInterval(lpDialogInterval);
+      }
       $dialog.data('lpOriginalHeight', $dialog.outerHeight());
-      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
+      lpDialogInterval = setInterval(repositionDialog.bind(null, $dialog), 500);
     }
   });
-  $(window).on('dialog:beforeclose', (event, dialog, $dialog) => {
-    clearInterval($dialog.data('lpDialogInterval'));
+  $(window).on('dialog:beforeclose', () => {
+    clearInterval(lpDialogInterval);
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
