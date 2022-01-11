@@ -31,7 +31,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
       var element = uiElement.element,
           method = uiElement.method;
-      $container[method](element);
+      $container[method]($(element).addClass('js-lpb-ui'));
     });
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
   }

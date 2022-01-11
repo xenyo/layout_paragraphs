@@ -16,7 +16,7 @@
     const containerUiElements = uiElements[id] || [];
     Object.entries(containerUiElements).forEach(([key, uiElement]) => {
       const { element, method } = uiElement;
-      $container[method](element);
+      $container[method]($(element).addClass('js-lpb-ui'));
     });
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
   }
