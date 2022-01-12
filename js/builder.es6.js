@@ -428,7 +428,32 @@
   };
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      // Initialize the editor ui.
+      // Add UI elements to the builder, each component, and each region.
+      [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach((attr) => {
+        $(`[${attr}]`)
+          .not('.lpb-formatter')
+          .not('.has-components')
+          .once('lpb-ui-elements')
+          .each((i, el) => {
+            attachUiElements($(el), el.getAttribute(attr), settings);
+          });
+      });
+      // Listen to relevant events and update UI.
+      const events = [
+        'lpb-builder:init.lpb',
+        'lpb-component:insert.lpb',
+        'lpb-component:update.lpb',
+        'lpb-component:move.lpb',
+        'lpb-component:drop.lpb',
+        'lpb-component:delete.lpb',
+      ].join(' ');
+      $('[data-lpb-id]')
+        .once('lpb-events')
+        .on(events, (e) => {
+          const $element = $(e.currentTarget);
+          updateUi($element);
+        });
+      // Initialize the editor drag and drop ui.
       $(`.has-components[${idAttr}]`).each((index, element) => {
         const $element = $(element);
         const id = $element.attr(idAttr);
@@ -448,31 +473,6 @@
           .get()
           .forEach((c) => {
             drake.containers.push(c);
-          });
-      });
-      const events = [
-        'lpb-builder:init.lpb',
-        'lpb-component:insert.lpb',
-        'lpb-component:update.lpb',
-        'lpb-component:move.lpb',
-        'lpb-component:drop.lpb',
-        'lpb-component:delete.lpb',
-      ].join(' ');
-      $('[data-lpb-id]')
-        .once('lpb-events')
-        .on(events, (e) => {
-          const $element = $(e.currentTarget);
-          updateUi($element);
-        });
-
-      // Add UI elements to the builder, each component, and each region.
-      [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach((attr) => {
-        $(`[${attr}]`)
-          .not('.lpb-formatter')
-          .not('.has-components')
-          .once('lpb-ui-elements')
-          .each((i, el) => {
-            attachUiElements($(el), el.getAttribute(attr), settings);
           });
       });
     },

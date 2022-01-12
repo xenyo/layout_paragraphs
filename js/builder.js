@@ -343,6 +343,16 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
+      ["".concat(idAttr), 'data-uuid', 'data-region-uuid'].forEach(function (attr) {
+        $("[".concat(attr, "]")).not('.lpb-formatter').not('.has-components').once('lpb-ui-elements').each(function (i, el) {
+          attachUiElements($(el), el.getAttribute(attr), settings);
+        });
+      });
+      var events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
+      $('[data-lpb-id]').once('lpb-events').on(events, function (e) {
+        var $element = $(e.currentTarget);
+        updateUi($element);
+      });
       $(".has-components[".concat(idAttr, "]")).each(function (index, element) {
         var $element = $(element);
         var id = $element.attr(idAttr);
@@ -355,16 +365,6 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         var drake = $element.data('drake');
         $element.find('.js-lpb-region').not('.is-dragula-enabled').addClass('.is-dragula-enabled').get().forEach(function (c) {
           drake.containers.push(c);
-        });
-      });
-      var events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
-      $('[data-lpb-id]').once('lpb-events').on(events, function (e) {
-        var $element = $(e.currentTarget);
-        updateUi($element);
-      });
-      ["".concat(idAttr), 'data-uuid', 'data-region-uuid'].forEach(function (attr) {
-        $("[".concat(attr, "]")).not('.lpb-formatter').not('.has-components').once('lpb-ui-elements').each(function (i, el) {
-          attachUiElements($(el), el.getAttribute(attr), settings);
         });
       });
     }
