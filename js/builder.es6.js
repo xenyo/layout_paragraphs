@@ -68,7 +68,11 @@
       submit: {
         components: JSON.stringify(order),
       },
-    }).execute();
+      error: () => {
+        // Fail silently to prevent console errors.
+      }
+    })
+    .execute();
   }
   const reorderComponents = debounce(doReorderComponents);
   /**

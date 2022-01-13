@@ -60,7 +60,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       url: "".concat(drupalSettings.path.baseUrl).concat(drupalSettings.path.pathPrefix, "layout-paragraphs-builder/").concat(id, "/reorder"),
       submit: {
         components: JSON.stringify(order)
-      }
+      },
+      error: function error() {}
     }).execute();
   }
 
