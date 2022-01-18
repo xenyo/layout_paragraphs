@@ -95,6 +95,9 @@ class LayoutParagraphsBuilderForm extends FormBase {
         '#ajax' => [
           'callback' => '::close',
         ],
+        '#attributes' => [
+          'class' => ['lpb-btn--cancel'],
+        ],
       ],
     ];
     $form['actions']['#attributes']['class'][] = 'lpb-form__actions';
