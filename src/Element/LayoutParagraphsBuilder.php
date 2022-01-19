@@ -449,6 +449,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
           'target' => Dialog::dialogId($this->layoutParagraphsLayout),
           'modal' => TRUE,
           'drupalAutoButtons' => FALSE,
+          'dialogClass' => 'lpb-dialog',
         ]),
       ],
       '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
@@ -479,6 +480,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         'data-dialog-type' => 'dialog',
         'data-dialog-options' => Json::encode(Dialog::dialogSettings($this->layoutParagraphsLayout)),
         'drupalAutoButtons' => FALSE,
+        'dialogClass' => 'lpb-dialog',
       ],
       '#url' => Url::fromRoute('layout_paragraphs.builder.choose_component', $route_params, ['query' => $query_params]),
     ];
