@@ -247,6 +247,7 @@ function layout_paragraphs_preprocess_layout_paragraphs_builder_controls(&$varia
           'modal' => TRUE,
           'target' => Dialog::dialogId($layout),
           'dialogClass' => 'lpb-dialog',
+          'width' => 'auto',
         ]),
         'title' => t('Delete'),
       ],

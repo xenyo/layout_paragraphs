@@ -65,9 +65,9 @@ class DeleteComponentForm extends FormBase {
     $this->componentUuid = $component_uuid;
     $component = $this->layoutParagraphsLayout->getComponentByUuid($this->componentUuid);
     $type = $component->getEntity()->getParagraphType()->label();
-    $form['#title'] = $this->t('Delete @type', ['@type' => $type]);
+    $form['#title'] = $this->t('Delete component', ['@type' => $type]);
     $form['confirm'] = [
-      '#markup' => $this->t('Really delete this @type? There is no undo.', ['@type' => $type]),
+      '#markup' => $this->t('Really delete this "@type" component? There is no undo.', ['@type' => $type]),
     ];
     $form['actions'] = [
       '#type' => 'actions',
