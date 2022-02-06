@@ -139,9 +139,11 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $input = $form_state->getUserInput();
+    $parents = array_merge($form['#parents'], [$this->fieldDefinition->getName(), 'layout_paragraphs_storage_key']);
+    $layout_paragraphs_storage_key = NestedArray::getValue($input, $parents);
     // If the form is being rendered for the first time, create a new Layout
     // Paragraphs Layout instance, save it to tempstore, and store the key.
-    if (empty($input)) {
+    if (empty($layout_paragraphs_storage_key)) {
       $this->layoutParagraphsLayout = new LayoutParagraphsLayout($items, $this->getSettings());
       $this->tempstore->set($this->layoutParagraphsLayout);
       $layout_paragraphs_storage_key = $this->tempstore->getStorageKey($this->layoutParagraphsLayout);
@@ -149,8 +151,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     // On subsequent form renders, this loads the correct Layout Paragraphs
     // Layout from the tempstore using the storage key.
     else {
-      $parents = array_merge($form['#parents'], [$this->fieldDefinition->getName(), 'layout_paragraphs_storage_key']);
-      $layout_paragraphs_storage_key = NestedArray::getValue($input, $parents);
       $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
     }
     $element += [
