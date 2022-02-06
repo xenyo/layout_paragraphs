@@ -72,7 +72,7 @@ class BuilderTest extends BuilderTestBase {
     $button = $page->find('css', '.layout__region--first a.lpb-delete');
     $button->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->pageTextContains('Delete text');
+    $this->assertSession()->pageTextContains('Delete component');
     // Confirm delete.
     $button = $page->find('css', 'button.lpb-btn--confirm-delete');
     $button->click();
@@ -89,7 +89,7 @@ class BuilderTest extends BuilderTestBase {
     $button->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->pageTextContains('New text component.');
-    $this->assertSession()->pageTextNotContains('Delete text');
+    $this->assertSession()->pageTextNotContains('Delete component');
   }
 
   /**
