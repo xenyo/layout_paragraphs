@@ -5,12 +5,14 @@ namespace Drupal\layout_paragraphs\Plugin\Field\FieldFormatter;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\Access\LayoutParagraphsBuilderAccess;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 use Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget;
 
@@ -19,7 +21,7 @@ use Drupal\layout_paragraphs\Plugin\Field\FieldWidget\LayoutParagraphsWidget;
  *
  * @FieldFormatter(
  *   id = "layout_paragraphs_builder",
- *   label = @Translation("Layout Paragraphs Builder"),
+ *   label = @Translation("Layout Paragraphs Builder (Experimental)"),
  *   description = @Translation("Renders editable paragraphs with layout."),
  *   field_types = {
  *     "entity_reference_revisions"
@@ -36,11 +38,27 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
   protected $tempstore;
 
   /**
+   * The Layout Paragraphs Builder Access service.
+   *
+   * @var \Drupal\layout_paragraphs\Access\LayoutParagraphsBuilderAccess
+   */
+  protected $layoutParagraphsBuilderAccess;
+
+  /**
+   * Account for the logged in user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $account;
+
+  /**
    * {@inheritDoc}
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, LoggerChannelFactoryInterface $logger_factory, EntityDisplayRepositoryInterface $entity_display_repository, LayoutParagraphsLayoutTempstoreRepository $tempstore) {
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, LoggerChannelFactoryInterface $logger_factory, EntityDisplayRepositoryInterface $entity_display_repository, LayoutParagraphsLayoutTempstoreRepository $tempstore, LayoutParagraphsBuilderAccess $layout_paragraphs_builder_access, AccountProxyInterface $current_user) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $logger_factory, $entity_display_repository);
     $this->tempstore = $tempstore;
+    $this->layoutParagraphsBuilderAccess = $layout_paragraphs_builder_access;
+    $this->account = $current_user->getAccount();
   }
 
   /**
@@ -57,7 +75,9 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
       $configuration['third_party_settings'],
       $container->get('logger.factory'),
       $container->get('entity_display.repository'),
-      $container->get('layout_paragraphs.tempstore_repository')
+      $container->get('layout_paragraphs.tempstore_repository'),
+      $container->get('layout_paragraphs.builder_access'),
+      $container->get('current_user')
     );
   }
 
@@ -71,19 +91,20 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
       '#root_components' => parent::view($items, $langcode),
     ];
     $entity = $items->getEntity();
-    if (!$entity->access('update')) {
-      return $elements['#root_components'];
-    }
-
     /** @var \Drupal\Core\Entity\EntityDefintion $definition */
     $definition = $items->getFieldDefinition();
     $layout = new LayoutParagraphsLayout($items, $this->getSettings() + ['reference_field_view_mode' => $this->viewMode]);
-    $this->tempstore->set($layout);
-    $layout = $this->tempstore->get($layout);
+
+    if ($this->layoutParagraphsBuilderAccess->access($this->account, $layout)->isForbidden()) {
+      return $elements['#root_components'];
+    }
 
     $elements['#link_text'] = $this->t('Edit @label', ['@label' => $definition->label()]);
     $elements['#link_url'] = Url::fromRoute('layout_paragraphs.builder.formatter', [
-      'layout_paragraphs_layout' => $layout->id(),
+      'entity_type' => $entity->getEntityTypeId(),
+      'entity' => $entity->id(),
+      'field_name' => $items->getName(),
+      'view_mode' => $this->viewMode,
     ]);
     $elements['#field_label'] = $definition->label();
     $elements['#type'] = 'container';

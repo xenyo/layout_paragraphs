@@ -365,11 +365,12 @@ a.lpb-enable-button::before {
   background-position: 50% 50%;
   background-repeat: no-repeat;
 }
-
+.lpb-formatter {
+  position: relative;
+}
 .lpb-formatter:hover,
 .lpb-formatter:focus-within {
   outline: 1px solid blue;
-  position: relative;
 }
 
 .lpb-formatter:hover .lpb-enable,

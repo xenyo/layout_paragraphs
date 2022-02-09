@@ -8,6 +8,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\MessageCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
@@ -71,10 +72,31 @@ class LayoutParagraphsBuilderForm extends FormBase {
     array $form,
     FormStateInterface $form_state,
     LayoutParagraphsLayout $layout_paragraphs_layout = NULL) {
-    $this->layoutParagraphsLayout = $layout_paragraphs_layout;
+
+    $parents = array_merge($form['#parents'] ?? [], ['layout_paragraphs_storage_key']);
+    $input = $form_state->getUserInput();
+    $layout_paragraphs_storage_key = NestedArray::getValue($input, $parents);
+
+    // If the form is being rendered for the first time, save the Layout
+    // Paragraphs Layout instance to tempstore and store the key.
+    if (empty($layout_paragraphs_storage_key)) {
+      $this->tempstore->set($layout_paragraphs_layout);
+      $layout_paragraphs_storage_key = $this->tempstore->getStorageKey($layout_paragraphs_layout);
+      $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
+    }
+    // On subsequent form renders, this loads the correct Layout Paragraphs
+    // Layout from the tempstore using the storage key.
+    else {
+      $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
+    }
+
     $form['layout_paragraphs_builder_ui'] = [
       '#type' => 'layout_paragraphs_builder',
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
+    ];
+    $form['layout_paragraphs_storage_key'] = [
+      '#type' => 'hidden',
+      '#default_value' => $layout_paragraphs_storage_key,
     ];
     $form['#attributes']['data-lpb-form-id'] = Html::getId($this->layoutParagraphsLayout->id());
     $form['actions'] = [

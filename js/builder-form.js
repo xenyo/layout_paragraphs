@@ -8,6 +8,12 @@
 (function ($, Drupal) {
   Drupal.behaviors.layoutParagraphsBuilderForm = {
     attach: function attach(context) {
+      $('.lpb-enable_wrapper').removeClass('hidden');
+      $('[data-lpb-form-id]').each(function (i, e) {
+        var p = $(e).parents('[data-lpb-id]').toArray();
+        var parent = p || e;
+        $('.lpb-enable_wrapper', parent).addClass('hidden');
+      });
       var events = ['lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb'].join(' ');
       $('[data-lpb-id]', context).once('lpb-builder-form').on(events, function (e) {
         $(e.currentTarget).closest('[data-lpb-form-id]').find('[data-drupal-selector="edit-close"]').val(Drupal.t('Cancel'));
