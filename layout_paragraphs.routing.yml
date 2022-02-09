@@ -23,15 +23,15 @@ layout_paragraphs.modal_settings:
     _permission: 'administer site configuration'
 
 layout_paragraphs.builder.formatter:
-  path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/formatter'
+  path: '/layout-paragraphs-builder/formatter/{entity_type}/{entity}/{field_name}/{view_mode}'
   defaults:
     _controller: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::build'
   options:
     parameters:
-      layout_paragraphs_layout:
-        layout_paragraphs_layout_tempstore: TRUE
+      entity:
+        type: entity:{entity_type}
   requirements:
-    _layout_paragraphs_builder_access: 'TRUE'
+    _custom_access: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::access'
 
 layout_paragraphs.builder.choose_component:
   path: '/layout-paragraphs-builder/{layout_paragraphs_layout}/choose-component'
