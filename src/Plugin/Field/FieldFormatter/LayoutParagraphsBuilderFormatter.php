@@ -95,7 +95,7 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
     $definition = $items->getFieldDefinition();
     $layout = new LayoutParagraphsLayout($items, $this->getSettings() + ['reference_field_view_mode' => $this->viewMode]);
 
-    if ($this->layoutParagraphsBuilderAccess->access($this->account, $layout)->isForbidden()) {
+    if (!$this->layoutParagraphsBuilderAccess->access($this->account, $layout)->isAllowed()) {
       return $elements['#root_components'];
     }
 

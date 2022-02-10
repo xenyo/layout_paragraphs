@@ -8,7 +8,6 @@
 (function ($, Drupal) {
   Drupal.behaviors.layoutParagraphsBuilderForm = {
     attach: function attach(context) {
-      console.log(context);
       $('.lpb-enable__wrapper').removeClass('hidden');
       $('[data-lpb-form-id]').each(function (i, e) {
         var p = $(e).parents('[data-lpb-id]').toArray().pop();
