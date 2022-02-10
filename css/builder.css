@@ -90,7 +90,7 @@
   z-index: 90;
 }
 .lpb-controls.is-layout {
-  background-color: #00659B;
+  background-color: #00659b;
   border-radius: 6px 6px 0px 0px;
   box-shadow: none;
   color: #fff;
@@ -255,7 +255,7 @@
   cursor: pointer;
   box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.25), 0px 1px 3px rgba(0, 0, 0, 0.25);
   border-radius: 6px;
-  background-color: #FFFFFF;
+  background-color: #ffffff;
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath opacity='.5' fill-rule='evenodd' clip-rule='evenodd' d='M13 6V11H18V13H13V18H11V12.999L6 13V11L11 10.999V6H13Z' fill='%23130F13'/%3E%3C/svg%3E%0A");
   background-size: cover;
   margin: auto;
@@ -263,7 +263,7 @@
   transition: all .15s linear;
 }
 .lpb-btn--add:hover {
-  background-color: #E1E0E1;
+  background-color: #e1e0e1;
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M13 6V11H18V13H13V18H11V12.999L6 13V11L11 10.999V6H13Z' fill='%23130F13'/%3E%3C/svg%3E%0A");
   opacity: 1;
 }
@@ -336,7 +336,7 @@ div.lpb-enable__button {
 
 a.lpb-enable-button {
   align-items: center;
-  background-color: #00659B;
+  background-color: #00659b;
   border: none;
   border-radius: 3px;
   color: white;
@@ -408,7 +408,7 @@ a.lpb-enable-button::before {
 }
 .lp-builder:not(.is-dragging) .lpb-tooltip--focus:focus + .lpb-tooltiptext,
 .lp-builder:not(.is-dragging) .lpb-tooltip--hover:hover + .lpb-tooltiptext,
-.lpb-tooltiptext--visible{
+.lpb-tooltiptext--visible {
   opacity: 1;
 }
 .js-lpb-ui-message {

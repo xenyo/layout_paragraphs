@@ -28,6 +28,12 @@ class LayoutParagraphsLayoutTempstoreRepository {
 
   /**
    * Get a layout paragraphs layout from the tempstore.
+   *
+   * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
+   *   A layout paragraphs layout instance.
+   *
+   * @return \Drupal\layout_paragraphs\LayoutParagraphsLayout
+   *   The layout paragraphs layout instance from the tempstore.
    */
   public function get(LayoutParagraphsLayout $layout_paragraphs_layout) {
     $key = $this->getStorageKey($layout_paragraphs_layout);

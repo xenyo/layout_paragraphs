@@ -5,4 +5,3 @@ package: Layout Paragraphs
 type: module
 dependencies:
   - layout_paragraphs:layout_paragraphs
-

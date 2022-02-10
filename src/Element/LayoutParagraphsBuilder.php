@@ -685,6 +685,8 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   The element container's id.
    * @param \Drupal\Core\Render\Markup $element
    *   The UI element.
+   * @param string $key
+   *   The Javascript object key to use for storing the element.
    * @param string $method
    *   The javascript method to use to attach $element to its container.
    */

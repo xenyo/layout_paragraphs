@@ -4,7 +4,6 @@ namespace Drupal\layout_paragraphs\Routing;
 
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 
@@ -26,7 +25,7 @@ class LayoutParagraphsTempstoreParamConverter implements ParamConverterInterface
   /**
    * The Entity Type Manager service.
    *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface;
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
@@ -35,6 +34,8 @@ class LayoutParagraphsTempstoreParamConverter implements ParamConverterInterface
    *
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository $layout_paragraphs_layout_tempstore
    *   The layout tempstore repository.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    */
   public function __construct(LayoutParagraphsLayoutTempstoreRepository $layout_paragraphs_layout_tempstore, EntityTypeManagerInterface $entity_type_manager) {
     $this->layoutParagraphsLayoutTempstore = $layout_paragraphs_layout_tempstore;

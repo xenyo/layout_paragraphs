@@ -3,10 +3,6 @@
 namespace Drupal\Tests\layout_paragraphs\Functional;
 
 use Drupal\Tests\BrowserTestBase;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\Tests\paragraphs\Functional\Classic\ParagraphsTestBase;
 use Drupal\Tests\paragraphs\FunctionalJavascript\ParagraphsTestBaseTrait;
 
 /**
