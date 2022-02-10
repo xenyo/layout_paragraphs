@@ -2,7 +2,6 @@
   // Updates the "Close" button label when a layout is changed.
   Drupal.behaviors.layoutParagraphsBuilderForm = {
     attach: function attach(context) {
-      console.log(context);
       // Prevent nested frontend editors from being activated at the same time.
       $('.lpb-enable__wrapper').removeClass('hidden');
       $('[data-lpb-form-id]').each((i, e) => {
