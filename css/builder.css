@@ -1,9 +1,9 @@
 .lp-builder {
-  min-height: 30;
+  min-height: 30px;
   position: relative;
 }
 .js-lpb-region {
-  min-height: 40;
+  min-height: 40px;
   cursor: default;
   box-sizing: border-box;
   position: relative;
@@ -13,17 +13,17 @@
 }
 .lpb-empty-container {
   text-align: center;
-  padding-bottom: 30;
+  padding-bottom: 30px;
 }
 .lpb-empty-toggle {
-  min-height: 20;
+  min-height: 20px;
 }
 .lpb-empty-message {
   text-align: center;
-  padding-bottom: 40;
+  padding-bottom: 40px;
 }
 .lpb-empty-container__wrapper .lpb-section-menu__wrapper {
-  bottom: 20;
+  bottom: 20px;
 }
 .is-dragging .js-lpb-region,
 .is-navigating .js-lpb-region {
@@ -57,13 +57,13 @@
   outline: 1px solid rgba(0, 0, 255, 0.5);
 }
 .lpb-layout {
-  padding: 20;
+  padding: 20px;
 }
 .lpb-layout .lpb-layout-label {
   position: absolute;
   right: 0;
   border: 1px dotted #ccc;
-  padding: 5px 10;
+  padding: 5px 10px;
   font-size: small;
 }
 .js-lpb-btn--add {
@@ -94,7 +94,7 @@
   border-radius: 6px 6px 0 0;
   box-shadow: none;
   color: #fff;
-  top: -40;
+  top: -40px;
   left: auto;
   right: -1px;
 }
@@ -107,8 +107,8 @@
 }
 .lpb-controls-label {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  line-height: 30;
-  padding: 0 5px 0 10;
+  line-height: 30px;
+  padding: 0 5px 0 10px;
 }
 .lpb-drag,
 .lpb-up,
@@ -117,8 +117,8 @@
 .lpb-duplicate,
 .lpb-delete {
   cursor: pointer;
-  height: 30;
-  width: 30;
+  height: 30px;
+  width: 30px;
   border-radius: 3px;
   margin: 0;
   padding: 0;
@@ -220,12 +220,12 @@
   position: absolute;
   display: inline-block;
   background: #fff;
-  border-radius: 10;
+  border-radius: 10px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, .15);
   z-index: 80;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px 10;
+  padding: 6px 10px;
   transition: all .15s linear;
 }
 .lpb-btn.before {
@@ -310,13 +310,13 @@
 }
 
 form.layout-paragraphs-builder-form {
-  margin-left: -20;
-  margin-right: -20;
+  margin-left: -20px;
+  margin-right: -20px;
   outline: 1px solid rgba(0,0,0,.15);
 }
 
 form.layout-paragraphs-builder-form .js-lpb-component-list {
-  padding: 20;
+  padding: 20px;
 }
 
 .lpb-enable {
@@ -330,7 +330,7 @@ form.layout-paragraphs-builder-form .js-lpb-component-list {
   transform: translateY(-50%);
 }
 
-.lpb-enable__button {
+div.lpb-enable__button {
   display: flex;
 }
 
@@ -355,8 +355,8 @@ a.lpb-enable-button:focus {
 a.lpb-enable-button::before {
   content: "";
   display: block;
-  height: 30;
-  width: 30;
+  height: 30px;
+  width: 30px;
   border-radius: 3px;
   margin: 0;
   padding: 0;
@@ -386,7 +386,7 @@ a.lpb-enable-button::before {
   background-color: black;
   color: #fff;
   text-align: center;
-  padding: 10;
+  padding: 10px;
   position: absolute;
   z-index: 90;
   bottom: 100%;
@@ -398,7 +398,7 @@ a.lpb-enable-button::before {
   content: " ";
   position: absolute;
   top: 100%; /* At the bottom of the tooltip */
-  left: 20;
+  left: 20px;
   border-width: 7px;
   border-style: solid;
   border-color: black transparent transparent transparent;
