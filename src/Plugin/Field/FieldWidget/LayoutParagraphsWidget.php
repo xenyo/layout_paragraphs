@@ -139,7 +139,10 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $input = $form_state->getUserInput();
-    $parents = array_merge($form['#parents'], [$this->fieldDefinition->getName(), 'layout_paragraphs_storage_key']);
+    $parents = array_merge($form['#parents'], [
+      $this->fieldDefinition->getName(),
+      'layout_paragraphs_storage_key',
+    ]);
     $layout_paragraphs_storage_key = NestedArray::getValue($input, $parents);
     // If the form is being rendered for the first time, create a new Layout
     // Paragraphs Layout instance, save it to tempstore, and store the key.

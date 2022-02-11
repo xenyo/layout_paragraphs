@@ -14,7 +14,7 @@ use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class DeleteComponentForm.
+ * Defines a form for confirming deletion of a Layout Paragraphs component.
  */
 class DeleteComponentForm extends FormBase {
 

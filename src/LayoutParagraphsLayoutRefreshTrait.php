@@ -56,7 +56,7 @@ trait LayoutParagraphsLayoutRefreshTrait {
     $this->layoutParagraphsLayout = $layout_paragraphs_layout;
     $reference_field = clone $this->layoutParagraphsLayout->getParagraphsReferenceField();
     $settings = $this->layoutParagraphsLayout->getSettings();
-    $this->originalLayoutParagraphsLayout = new LayoutParagraphsLayout($reference_field, $settings);;
+    $this->originalLayoutParagraphsLayout = new LayoutParagraphsLayout($reference_field, $settings);
     return $this;
   }
 

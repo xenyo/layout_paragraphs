@@ -166,7 +166,10 @@ class LayoutParagraphsBuilderForm extends FormBase {
     $entity = $this->layoutParagraphsLayout->getEntity();
 
     $response = new AjaxResponse();
-    $t_args = ['@type' => $entity->getEntityType()->getLabel(), '%title' => $entity->label()];
+    $t_args = [
+      '@type' => $entity->getEntityType()->getLabel(),
+      '%title' => $entity->label(),
+    ];
     $response->addCommand(new MessageCommand($this->t('@type %title has been updated.', $t_args)));
     $response->addCommand(new ReplaceCommand('[data-lpb-form-id="' . $form['#attributes']['data-lpb-form-id'] . '"]', $form));
     return $response;

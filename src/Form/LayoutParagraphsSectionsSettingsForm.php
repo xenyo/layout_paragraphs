@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Layout\LayoutPluginManager;
 
 /**
- * Class LayoutParagraphsSectionsSettingsForm.
+ * Defines a form for modifying Layout Paragraphs sections settings.
  */
 class LayoutParagraphsSectionsSettingsForm extends ConfigFormBase {
 

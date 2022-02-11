@@ -9,7 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class LayoutParagraphsModalSettingsForm.
+ * Defines a form for modifying Layout Paragraphs modal settings.
  */
 class LayoutParagraphsModalSettingsForm extends ConfigFormBase {
 

@@ -397,7 +397,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       $this->paragraphsReferenceField->setValue($list);
     }
     else {
-      // @todo: throw exception.
+      // @todo Throw exception.
     }
     return $this;
   }
@@ -470,7 +470,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
       $this->paragraphsReferenceField->setValue($list);
     }
     else {
-      // @todo: throw exception.
+      // @todo Throw exception.
     }
     return $this;
   }

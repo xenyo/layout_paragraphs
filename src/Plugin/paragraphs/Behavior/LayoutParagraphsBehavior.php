@@ -125,7 +125,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     $layout_id = $input_layout_id ?? $layout_paragraphs_section->getLayoutId();
     $layout_id = Html::escape($layout_id);
     $default_value = !empty($layout_id) ? $layout_id : key($available_layouts);
-    // @todo - Throw an error if plugin instance cannot be loaded.
+    // @todo Throw an error if plugin instance cannot be loaded.
     $plugin_instance = $this->layoutPluginManager->createInstance($default_value, $layout_settings ?? []);
     $plugin_form = $this->getLayoutPluginForm($plugin_instance);
     $wrapper_id = Html::getId(implode('-', array_merge($form['#parents'], ['layout-options'])));

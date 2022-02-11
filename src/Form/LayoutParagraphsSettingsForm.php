@@ -9,7 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class LayoutParagraphsSettingsForm.
+ * Defines a form for modifying Layout Paragraphs global settings.
  */
 class LayoutParagraphsSettingsForm extends ConfigFormBase {
 
