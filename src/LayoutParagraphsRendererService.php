@@ -60,7 +60,7 @@ class LayoutParagraphsRendererService {
    */
   public function renderLayoutSection(array &$build, Paragraph $paragraph, string $view_mode = 'default') {
     if (!LayoutParagraphsComponent::isLayoutComponent($paragraph)) {
-      // @Todo Throw an exception if $paragraph does not have a layout applied.
+      // @todo Throw an exception if $paragraph does not have a layout applied.
       return [];
     }
     if ($paragraph->_referringItem) {
