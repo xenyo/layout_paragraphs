@@ -1,0 +1,7 @@
+name: Layout Paragraphs Form Rendering Permissions Test
+description: Tests rendering forms in builder components
+core_version_requirement: ^8 || ^9
+type: module
+package: Layout Paragraphs
+dependencies:
+  - layout_paragraphs

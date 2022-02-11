@@ -399,25 +399,25 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   public function postRenderComponent($content, array $element) {
     if (strpos($content, '<form') !== FALSE) {
-      // Rendering forms within the paragraph preview will break the parent
-      // form, so we need to strip form tags, "required" attributes,
-      // "form_token", and "form_id" to prevent the previewed form from
-      // being processed.
+      // Because the Layout Paragraphs Builder is often rendered within a form,
+      // we need to strip out any form tags, "name" attributes, and "required"
+      // attributes to prevent Drupal from attempting to process the form when
+      // the parent entity is saved.
+      // @see https://www.drupal.org/project/layout_paragraphs/issues/3263715
+      // First, replace form tags with divs.
       $search = [
         '<form',
         '</form>',
-        'required="required"',
-        'name="form_token"',
-        'name="form_id"',
       ];
       $replace = [
         '<div',
         '</div>',
-        '',
-        '',
-        '',
       ];
       $content = str_replace($search, $replace, $content);
+      // Strip out "name" attributes.
+      $content = preg_replace('/(<[^>]+) name\s*=\s*".*?"/i', '$1', $content);
+      // Strip out "required" attributes.
+      $content = preg_replace('/(<[^>]+) required\s*=\s*".*?"/i', '$1', $content);
     }
     return $content;
   }
