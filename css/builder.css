@@ -330,7 +330,7 @@ form.layout-paragraphs-builder-form .js-lpb-component-list {
   transform: translateY(-50%);
 }
 
-div.lpb-enable__button {
+.lpb-enable__button {
   display: flex;
 }
 
