@@ -87,7 +87,7 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
     $form['paragraph_behaviors_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Paragraph Behaviors Fieldset Label'),
-      '#default_value' => $lp_config->get('paragraph_behaviors_label'),
+      '#default_value' => $lp_config->get('paragraph_behaviors_label') ?? $this->t('Behaviors'),
     ];
 
     $form['paragraph_behaviors_position'] = [
