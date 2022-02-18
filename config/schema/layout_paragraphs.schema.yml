@@ -17,7 +17,7 @@ layout_paragraphs.settings:
     paragraph_behaviors_position:
       type: integer
       label: 'Paragraph behaviors fieldset position'
-      description: 'Wheter to render the paragraph behaviors at the top or bottom of paragraph edit forms'
+      description: 'Whether to render the paragraph behaviors at the top or bottom of paragraph edit forms'
 
 layout_paragraphs.modal_settings:
   type: config_object
@@ -45,7 +45,7 @@ field.formatter.settings.layout_paragraphs:
       label: 'View mode'
     link:
       type: string
-      label: 'Link'      
+      label: 'Link'
 
 field.formatter.settings.layout_paragraphs_builder:
   type: mapping

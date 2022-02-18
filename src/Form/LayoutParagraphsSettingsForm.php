@@ -97,7 +97,7 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
         '-99' => $this->t('Top of paragraph edit form'),
         '99' => $this->t('Bottom of paragraph edit form'),
       ],
-      '#default_value' => $lp_config->get('paragraph_behaviors_position'),
+      '#default_value' => $lp_config->get('paragraph_behaviors_position') ?? '-99',
     ];
 
     return parent::buildForm($form, $form_state);
