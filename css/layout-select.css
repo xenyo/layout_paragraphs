@@ -7,7 +7,7 @@
   flex: 0 1 150px;
   margin-right: 10px;
 }
-.layout-select__item .option {
+.layout-select__item .form-item__label.option {
   display: flex;
   padding: 10px;
   outline: 1px solid #ccc;
