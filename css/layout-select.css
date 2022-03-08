@@ -12,7 +12,7 @@
   padding: 10px;
   outline: 1px solid #ccc;
 }
-.layout-select__item input:checked + label {
+.layout-select__item input:checked + label.form-item__label {
   outline: 2px solid blue;
   transition: .1s all;
   font-weight: bold;
