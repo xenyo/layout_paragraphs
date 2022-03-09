@@ -36,14 +36,24 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
     Drupal.behaviors.AJAX.attach($container[0], drupalSettings);
   }
 
-  function repositionDialog($dialog) {
-    var height = $dialog.outerHeight();
+  function repositionDialog(intervalId) {
+    var $dialogs = $('.lpb-dialog');
 
-    if ($dialog.data('lpOriginalHeight') !== height) {
-      var pos = $dialog.dialog('option', 'position');
-      $dialog.dialog('option', 'position', pos);
-      $dialog.data('lpOriginalHeight', height);
+    if ($dialogs.length === 0) {
+      clearInterval(intervalId);
+      return;
     }
+
+    $dialogs.each(function (i, dialog) {
+      var bounding = dialog.getBoundingClientRect();
+      var viewPortHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      if (bounding.bottom > viewPortHeight) {
+        var $dialog = $('.ui-dialog-content', dialog);
+        var pos = $dialog.dialog('option', 'position');
+        $dialog.dialog('option', 'position', pos);
+      }
+    });
   }
 
   function doReorderComponents($element) {
@@ -401,13 +411,11 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       }
     }
   });
+  var lpDialogInterval;
   $(window).on('dialog:aftercreate', function (event, dialog, $dialog) {
     if ($dialog[0].id.indexOf('lpb-dialog-') === 0) {
-      $dialog.data('lpOriginalHeight', $dialog.outerHeight());
-      $dialog.data('lpDialogInterval', setInterval(repositionDialog.bind(null, $dialog), 500));
+      clearInterval(lpDialogInterval);
+      lpDialogInterval = setInterval(repositionDialog.bind(null, lpDialogInterval), 500);
     }
-  });
-  $(window).on('dialog:beforeclose', function (event, dialog, $dialog) {
-    clearInterval($dialog.data('lpDialogInterval'));
   });
 })(jQuery, Drupal, Drupal.debounce, dragula);
