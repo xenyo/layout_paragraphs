@@ -123,6 +123,12 @@ abstract class BuilderTestBase extends WebDriverTestBase {
       $this->assertSession()->assertWaitOnAjaxRequest();
     }
 
+    $dialog = $page->find('css', '.lpb-dialog');
+    $style = $dialog->getAttribute('style');
+    if (strpos($style, 'width: 90%;') === FALSE || strpos($style, 'height: auto;') === FALSE) {
+      throw new ExpectationException('Incorrect dialog width or height settings', $this->getSession()->getDriver());
+    }
+
     $this->assertSession()->pageTextContains('field_text');
 
     $page->fillField('field_text[0][value]', $text);
