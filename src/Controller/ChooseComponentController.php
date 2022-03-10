@@ -3,16 +3,19 @@
 namespace Drupal\layout_paragraphs\Controller;
 
 use Drupal\Core\Url;
+use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Ajax\AjaxHelperTrait;
+use Drupal\Core\Ajax\OpenDialogCommand;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
-use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
+use Drupal\layout_paragraphs\Utility\Dialog;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
+use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
 
 /**
  * ChooseComponentController controller class.
@@ -91,7 +94,7 @@ class ChooseComponentController extends ControllerBase {
     if (count($types) === 1) {
       $type_name = key($types);
       $type = $this->entityTypeManager()->getStorage('paragraphs_type')->load($type_name);
-      $response = $this->formBuilder()->getForm(
+      $form = $this->formBuilder()->getForm(
         '\Drupal\layout_paragraphs\Form\InsertComponentForm',
         $layout_paragraphs_layout,
         $type,
@@ -100,7 +103,13 @@ class ChooseComponentController extends ControllerBase {
         $query_params['sibling_uuid'],
         $query_params['placement']
       );
-      return $response;
+      if ($this->isAjax()) {
+        $response = new AjaxResponse();
+        $selector = Dialog::dialogSelector($layout_paragraphs_layout);
+        $response->addCommand(new OpenDialogCommand($selector, $form['#title'], $form, Dialog::dialogSettings()));
+        return $response;
+      }
+      return $form;
     }
 
     foreach ($types as &$type) {
