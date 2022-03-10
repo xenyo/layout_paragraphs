@@ -481,7 +481,7 @@
         $element
           .find('.js-lpb-region')
           .not('.is-dragula-enabled')
-          .addClass('.is-dragula-enabled')
+          .addClass('is-dragula-enabled')
           .get()
           .forEach((c) => {
             drake.containers.push(c);
