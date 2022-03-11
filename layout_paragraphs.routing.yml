@@ -30,6 +30,7 @@ layout_paragraphs.builder.formatter:
     parameters:
       entity:
         type: entity:{entity_type}
+        load_latest_revision: TRUE
   requirements:
     _custom_access: '\Drupal\layout_paragraphs\Controller\LayoutParagraphsBuilderController::access'
 
