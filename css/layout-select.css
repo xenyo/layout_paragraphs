@@ -7,12 +7,12 @@
   flex: 0 1 150px;
   margin-right: 10px;
 }
-.layout-select__item .form-item__label.option {
+.layout-select__item label.option {
   display: flex;
   padding: 10px;
   outline: 1px solid #ccc;
 }
-.layout-select__item input:checked + label.form-item__label {
+.layout-select__item input:checked + label.option {
   outline: 2px solid blue;
   transition: .1s all;
   font-weight: bold;
