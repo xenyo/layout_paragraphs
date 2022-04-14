@@ -9,6 +9,7 @@ use Drupal\Core\Ajax\MessageCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
@@ -36,6 +37,13 @@ class LayoutParagraphsBuilderForm extends FormBase {
   protected $tempstore;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * {@inheritDoc}
    */
   public function getFormId() {
@@ -45,8 +53,9 @@ class LayoutParagraphsBuilderForm extends FormBase {
   /**
    * {@inheritDoc}
    */
-  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore) {
+  public function __construct(LayoutParagraphsLayoutTempstoreRepository $tempstore, EntityTypeManagerInterface $entity_type_manager) {
     $this->tempstore = $tempstore;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -54,7 +63,8 @@ class LayoutParagraphsBuilderForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('layout_paragraphs.tempstore_repository')
+      $container->get('layout_paragraphs.tempstore_repository'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -186,7 +196,12 @@ class LayoutParagraphsBuilderForm extends FormBase {
    *   The form state object.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $entity = $this->layoutParagraphsLayout->getEntity();
+    // The entity may have been altered by another process, and needs to be
+    // loaded from storage to ensure edits to other fields are not overwritten.
+    // @see https://www.drupal.org/project/layout_paragraphs/issues/3275179
+    $entity_id = $this->layoutParagraphsLayout->getEntity()->id();
+    $entity_type = $this->layoutParagraphsLayout->getEntity()->getEntityTypeId();
+    $entity = $this->entityTypeManager->getStorage($entity_type)->load($entity_id);
     $field_name = $this->layoutParagraphsLayout->getFieldName();
     $entity->$field_name = $this->layoutParagraphsLayout->getParagraphsReferenceField();
     $entity->save();
