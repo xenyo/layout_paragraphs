@@ -10,7 +10,8 @@
    * @param {Object} settings
    *   The settings object.
    */
-  function attachUiElements($container, id, settings) {
+  function attachUiElements($container, settings) {
+    const id = $container[0].id;
     const lpbBuilderSettings = settings.lpBuilder || {};
     const uiElements = lpbBuilderSettings.uiElements || {};
     const containerUiElements = uiElements[id] || [];
@@ -441,15 +442,11 @@
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Add UI elements to the builder, each component, and each region.
-      [`${idAttr}`, 'data-uuid', 'data-region-uuid'].forEach((attr) => {
-        $(`[${attr}]`)
-          .not('.lpb-formatter')
-          .not('.has-components')
-          .once('lpb-ui-elements')
-          .each((i, el) => {
-            attachUiElements($(el), el.getAttribute(attr), settings);
-          });
-      });
+      $('[data-has-js-ui-element]')
+        .once('lpb-ui-elements')
+        .each((i, el) => {
+          attachUiElements($(el), settings);
+        });
       // Listen to relevant events and update UI.
       const events = [
         'lpb-builder:init.lpb',

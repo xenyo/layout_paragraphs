@@ -5,14 +5,15 @@ namespace Drupal\layout_paragraphs\Element;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\Renderer;
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Serialization\Json;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
+use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
-use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
@@ -223,28 +224,13 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
         'lp-builder',
         'lp-builder-' . $this->layoutParagraphsLayout->id(),
       ],
+      'id' => Html::getUniqueId($this->layoutParagraphsLayout->id()),
       'data-lpb-id' => $this->layoutParagraphsLayout->id(),
     ];
     $element['#attached']['library'] = ['layout_paragraphs/builder'];
     $element['#attached']['drupalSettings']['lpBuilder'][$this->layoutParagraphsLayout->id()] = $this->layoutParagraphsLayout->getSettings();
     $element['#is_empty'] = $this->layoutParagraphsLayout->isEmpty();
     $element['#empty_message'] = $this->layoutParagraphsLayout->getSetting('empty_message', $this->t('Start adding content.'));
-    if ($this->layoutParagraphsLayout->getSetting('require_layouts', FALSE)) {
-      $this->addJsUiElement(
-        $element,
-        $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
-        'insert'
-      );
-    }
-    else {
-      $this->addJsUiElement(
-        $element,
-        $this->layoutParagraphsLayout->id(),
-        $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
-        'insert'
-      );
-    }
     $element['#root_components'] = [];
     foreach ($this->layoutParagraphsLayout->getRootComponents() as $component) {
       /** @var \Drupal\layout_paragraphs\LayoutParagraphsComponent $component */
@@ -253,6 +239,22 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     }
     if (count($element['#root_components'])) {
       $element['#attributes']['class'][] = 'has-components';
+    }
+    else {
+      if ($this->layoutParagraphsLayout->getSetting('require_layouts', FALSE)) {
+        $this->addJsUiElement(
+          $element,
+          $this->doRender($this->insertSectionButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
+          'insert'
+        );
+      }
+      else {
+        $this->addJsUiElement(
+          $element,
+          $this->doRender($this->insertComponentButton(['layout_paragraphs_layout' => $this->layoutParagraphsLayout->id()], [], 0, ['center'])),
+          'insert'
+        );
+      }
     }
     return $element;
   }
@@ -279,6 +281,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'js-lpb-component';
+    $build['#attributes']['id'] = Html::getUniqueId($entity->id());
     $build['#layout_paragraphs_component'] = TRUE;
     if ($entity->isNew()) {
       $build['#attributes']['class'][] = 'is_new';
@@ -307,23 +310,22 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       '#uuid' => $entity->uuid(),
       '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
       '#edit_access' => $this->editAccess($entity),
-      '#duplicate_access' => $this->createAccess(),
+      '#duplicate_access' => $this->createAccess() && $this->checkCardinality(),
       '#delete_access' => $this->deleteAccess($entity),
     ];
-    $this->addJsUiElement($build, $entity->uuid(), $this->doRender($controls), 'controls', 'prepend');
+    $build['#attached']['drupalSettings']['lpBuilder']['uiElements'][$entity->uuid()] = [];
+    $this->addJsUiElement($build, $this->doRender($controls), 'controls', 'prepend');
 
-    if ($this->createAccess()) {
+    if ($this->createAccess() && $this->checkCardinality()) {
       if (!$component->getParentUuid() && $this->layoutParagraphsLayout->getSetting('require_layouts')) {
         $this->addJsUiElement(
           $build,
-          $entity->uuid(),
           $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
           'insert_before',
           'prepend'
         );
         $this->addJsUiElement(
           $build,
-          $entity->uuid(),
           $this->doRender($this->insertSectionButton($url_params, $query_params + ['placement' => 'after'], 10000, ['after'])),
           'insert_after',
           'append'
@@ -332,14 +334,12 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       else {
         $this->addJsUiElement(
           $build,
-          $entity->uuid(),
           $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'before'], -10000, ['before'])),
           'insert_before',
           'prepend'
         );
         $this->addJsUiElement(
           $build,
-          $entity->uuid(),
           $this->doRender($this->insertComponentButton($url_params, $query_params + ['placement' => 'after'], -10000, ['after'])),
           'insert_after',
           'append'
@@ -371,12 +371,12 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
             ],
             'data-region' => $region_name,
             'data-region-uuid' => $entity->uuid() . '-' . $region_name,
+            'id' => Html::getUniqueId($entity->uuid() . '-' . $region_name),
           ],
         ];
-        if ($this->createAccess()) {
+        if ($this->createAccess() && $this->checkCardinality()) {
           $this->addJsUiElement(
-            $build,
-            $entity->uuid() . '-' . $region_name,
+            $build['regions'][$region_name],
             $this->doRender($this->insertComponentButton($url_params, $query_params, 10000, ['center'])),
             'insert'
           );
@@ -681,8 +681,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *
    * @param array $build
    *   The build array to attach JS settings to.
-   * @param string $id
-   *   The element container's id.
    * @param \Drupal\Core\Render\Markup $element
    *   The UI element.
    * @param string $key
@@ -690,7 +688,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * @param string $method
    *   The javascript method to use to attach $element to its container.
    */
-  public function addJsUiElement(array &$build, string $id, Markup $element, string $key, string $method = 'append') {
+  public function addJsUiElement(array &$build, Markup $element, string $key, string $method = 'append') {
+    $id = $build['#attributes']['id'];
+    $build['#attributes']['data-has-js-ui-element'] = TRUE;
     $build['#attached']['drupalSettings']['lpBuilder']['uiElements'][$id][$key] = [
       'element' => $element,
       'method' => $method,
@@ -708,6 +708,34 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   public function doRender(array $render_array) {
     return $this->renderer->render($render_array);
+  }
+
+  /**
+   * Checks if adding a component would exceed the field's cardinality limit.
+   *
+   * @return bool
+   *   True if a compoment can be added without exceeding cardinality.
+   */
+  protected function checkCardinality() {
+    $cardinality = $this->getCardinality();
+    if ($cardinality > 0) {
+      $count = $this->layoutParagraphsLayout->getParagraphsReferenceField()->count();
+      return $cardinality > $count;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Gets the cardinality field setting for a Layout Paragraphs reference field.
+   *
+   * @return int
+   *   The cardinality setting.
+   */
+  protected function getCardinality() {
+    $field_name = $this->layoutParagraphsLayout->getFieldName();
+    $field_config = $this->layoutParagraphsLayout->getEntity()->{$field_name}->getFieldDefinition();
+    $field_definition = $field_config->getFieldStorageDefinition();
+    return $field_definition->getCardinality();
   }
 
 }

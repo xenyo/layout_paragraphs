@@ -20,7 +20,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 (function ($, Drupal, debounce, dragula) {
   var idAttr = 'data-lpb-id';
 
-  function attachUiElements($container, id, settings) {
+  function attachUiElements($container, settings) {
+    var id = $container[0].id;
     var lpbBuilderSettings = settings.lpBuilder || {};
     var uiElements = lpbBuilderSettings.uiElements || {};
     var containerUiElements = uiElements[id] || [];
@@ -354,10 +355,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      ["".concat(idAttr), 'data-uuid', 'data-region-uuid'].forEach(function (attr) {
-        $("[".concat(attr, "]")).not('.lpb-formatter').not('.has-components').once('lpb-ui-elements').each(function (i, el) {
-          attachUiElements($(el), el.getAttribute(attr), settings);
-        });
+      $('[data-has-js-ui-element]').once('lpb-ui-elements').each(function (i, el) {
+        attachUiElements($(el), settings);
       });
       var events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
       $('[data-lpb-id]').once('lpb-events').on(events, function (e) {
