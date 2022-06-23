@@ -182,7 +182,7 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
             'progress' => 'none',
           ],
           '#attributes' => [
-            'class' => ['lpb-btn--save'],
+            'class' => ['lpb-btn--save', 'button--primary'],
             'data-disable-refocus' => 'true',
           ],
         ],
