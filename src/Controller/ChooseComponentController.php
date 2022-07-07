@@ -88,6 +88,14 @@ class ChooseComponentController extends ControllerBase {
       'sibling_uuid' => $request->query->get('sibling_uuid', NULL),
       'placement' => $request->query->get('placement', NULL),
     ];
+    // If inserting a new item adjecent to a sibling component, the region
+    // passed in the URL will be incorrect if the existing sibling component
+    // was dragged into another region. In that case, always use the existing
+    // sibling's region.
+    if ($query_params['sibling_uuid']) {
+      $sibling = $layout_paragraphs_layout->getComponentByUuid($query_params['sibling_uuid']);
+      $query_params['region'] = $sibling->getRegion();
+    }
     $types = $this->getAllowedComponentTypes($layout_paragraphs_layout, $query_params['parent_uuid'], $query_params['region']);
     // If there is only one type to render,
     // return the component form instead of a list of links.
