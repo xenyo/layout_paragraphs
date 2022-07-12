@@ -155,13 +155,31 @@ class BuilderTest extends BuilderTestBase {
     $this->keyPress('ArrowUp');
     $this->assertOrderOfStrings(['Third item', 'First item', 'Second item']);
 
+    // Add a fifth item above the third item, which has been moved to the first
+    // region, and ensure the fifth item is correctly added to the first region,
+    // hiding the controls ui first so it doesn't overlapp the + button.
+    // @see https://www.drupal.org/project/layout_paragraphs/issues/3281169
+    $this->forceHidden('.layout__region--first .lpb-controls');
+    $this->addTextComponent('Fifth item', '.layout__region--first .lpb-btn--add');
+    $this->assertOrderOfStrings([
+      'Fifth item',
+      'Third item',
+      'First item',
+      'Second item',
+    ]);
+
     // Save the node.
     $this->submitForm([
       'title[0][value]' => 'Node title',
     ], 'Save');
 
     // Ensures reordering was correctly applied via Ajax.
-    $this->assertOrderOfStrings(['Third item', 'First item', 'Second item']);
+    $this->assertOrderOfStrings([
+      'Fifth item',
+      'Third item',
+      'First item',
+      'Second item',
+    ]);
   }
 
   /**

@@ -101,6 +101,16 @@ abstract class BuilderTestBase extends WebDriverTestBase {
   }
 
   /**
+   * Uses Javascript to hide a DOM element.
+   *
+   * @param string $selector
+   *   A css selector.
+   */
+  protected function forceHidden($selector) {
+    $this->getSession()->executeScript("jQuery('{$selector}').css({display:'none', opacity:0, visibility: 'hidden'});");
+  }
+
+  /**
    * Inserts a text component by clicking the "+" button.
    *
    * @param string $text

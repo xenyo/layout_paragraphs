@@ -188,10 +188,7 @@ class InsertComponentForm extends ComponentFormBase {
    * @return $this
    */
   public function insertComponent() {
-    if ($this->parentUuid && $this->region) {
-      $this->layoutParagraphsLayout->insertIntoRegion($this->parentUuid, $this->region, $this->paragraph);
-    }
-    elseif ($this->siblingUuid && $this->placement) {
+    if ($this->siblingUuid && $this->placement) {
       switch ($this->placement) {
         case 'before':
           $this->layoutParagraphsLayout->insertBeforeComponent($this->siblingUuid, $this->paragraph);
@@ -201,6 +198,9 @@ class InsertComponentForm extends ComponentFormBase {
           $this->layoutParagraphsLayout->insertAfterComponent($this->siblingUuid, $this->paragraph);
           break;
       }
+    }
+    elseif ($this->parentUuid && $this->region) {
+      $this->layoutParagraphsLayout->insertIntoRegion($this->parentUuid, $this->region, $this->paragraph);
     }
     else {
       $this->layoutParagraphsLayout->appendComponent($this->paragraph);

@@ -242,7 +242,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       var $btn = $(e.currentTarget);
       startNav($btn.closest('.js-lpb-component'));
     });
-    document.addEventListener('keydown', function (e) {
+    $(document).once('layout-paragraphs-keydown').on('keydown', function (e) {
       var $item = $('.js-lpb-component.is-navigating');
 
       if ($item.length) {

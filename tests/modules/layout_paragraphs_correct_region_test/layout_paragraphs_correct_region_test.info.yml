@@ -1,0 +1,7 @@
+name: Layout Paragraphs Correct Region Test
+description: Tests that components are added to correct region after being moved
+core_version_requirement: ^8 || ^9
+type: module
+package: Layout Paragraphs
+dependencies:
+  - layout_paragraphs

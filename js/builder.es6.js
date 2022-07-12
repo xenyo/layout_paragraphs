@@ -323,7 +323,7 @@
       const $btn = $(e.currentTarget);
       startNav($btn.closest('.js-lpb-component'));
     });
-    document.addEventListener('keydown', (e) => {
+    $(document).once('layout-paragraphs-keydown').on('keydown', (e) => {
       const $item = $('.js-lpb-component.is-navigating');
       if ($item.length) {
         switch (e.code) {
