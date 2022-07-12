@@ -249,7 +249,6 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     else {
       $summary[] = $this->t('Layouts are optional.');
     }
-    $summary[] = $this->t('Maximum nesting depth: @max_depth', ['@max_depth' => $this->getSetting('nesting_depth')]);
     return $summary;
   }
 
