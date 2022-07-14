@@ -174,6 +174,10 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
     $filtered_values = $this->filterBehaviorFormSubmitValues($paragraph, $form, $form_state);
     $plugin_instance = $this->layoutPluginManager->createInstance($form_state->getValue('layout'), $form_state->getValue('config') ?? []);
     if ($plugin_form = $this->getLayoutPluginForm($plugin_instance)) {
+      // Add default #parents array to prevent form errors.
+      // @see https://www.drupal.org/project/layout_paragraphs/issues/3291180
+      $form['config'] += ['#parents' => []];
+      $form += ['#parents' => []];
       $subform_state = SubformState::createForSubform($form['config'], $form, $form_state);
       $plugin_form->submitConfigurationForm($form['config'], $subform_state);
       $filtered_values['config'] = $plugin_form->getConfiguration();
