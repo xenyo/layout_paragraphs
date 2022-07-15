@@ -86,7 +86,7 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     $this->drupalGet('admin/structure/types/manage/' . $type_name . '/display');
     $page = $this->getSession()->getPage();
     $page->selectFieldOption('fields[' . $paragraph_field . '][type]', 'layout_paragraphs');
-    $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to choose layout paragraphs field formatter.');
+    $this->assertSession()->assertWaitOnAjaxRequest(10000, 'Unable to choose layout paragraphs (fields[' . $paragraph_field . '][type]) field formatter.');
     $this->submitForm([], 'Save');
   }
 

@@ -135,12 +135,16 @@ class ChooseComponentController extends ControllerBase {
     $content_components = array_filter($types, function ($type) {
       return $type['is_section'] === FALSE;
     });
+    $empty_message = $this->config('layout_paragraphs.settings')->get('empty_message') ??
+      $this->t('No components to add.');
     $component_menu = [
       '#title' => $this->t('Choose a component'),
       '#theme' => 'layout_paragraphs_builder_component_menu',
       '#attributes' => [
         'class' => ['lpb-component-list'],
       ],
+      '#empty_message' => $empty_message,
+      '#status_messages' => ['#type' => 'status_messages'],
       '#types' => [
         'layout' => $section_components,
         'content' => $content_components,

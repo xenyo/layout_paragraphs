@@ -1,0 +1,7 @@
+name: Layout Paragraphs Empty Component List Test
+description: Tests that the correct message is displayed when the component list is empty.
+core_version_requirement: ^8 || ^9
+type: module
+package: Layout Paragraphs
+dependencies:
+  - layout_paragraphs

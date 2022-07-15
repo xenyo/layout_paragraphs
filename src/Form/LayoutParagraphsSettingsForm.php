@@ -100,6 +100,13 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
       '#default_value' => $lp_config->get('paragraph_behaviors_position') ?? '-99',
     ];
 
+    $form['empty_message'] = [
+      '#type' => 'textfield',
+      '#title' => $lp_config_schema['empty_message']['label'],
+      '#description' => $lp_config_schema['empty_message']['description'],
+      '#default_value' => $lp_config->get('empty_message') ?? 'No components to add.',
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -112,6 +119,7 @@ class LayoutParagraphsSettingsForm extends ConfigFormBase {
     $lp_config->set('show_layout_labels', $form_state->getValue('show_layout_labels'));
     $lp_config->set('paragraph_behaviors_label', $form_state->getValue('paragraph_behaviors_label'));
     $lp_config->set('paragraph_behaviors_position', $form_state->getValue('paragraph_behaviors_position'));
+    $lp_config->set('empty_message', $form_state->getValue('empty_message'));
     $lp_config->save();
     // Confirmation on form submission.
     $this->messenger()->addMessage($this->t('The Layout Paragraphs settings have been saved.'));

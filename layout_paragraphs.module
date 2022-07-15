@@ -77,6 +77,8 @@ function layout_paragraphs_theme() {
       'variables' => [
         'attributes' => [],
         'types' => NULL,
+        'empty_message' => NULL,
+        'status_messages' => NULL,
       ],
     ],
   ];

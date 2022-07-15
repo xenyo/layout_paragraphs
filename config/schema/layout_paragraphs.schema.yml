@@ -18,6 +18,10 @@ layout_paragraphs.settings:
       type: integer
       label: 'Paragraph behaviors fieldset position'
       description: 'Whether to render the paragraph behaviors at the top or bottom of paragraph edit forms'
+    empty_message:
+      type: string
+      label: 'Empty Message'
+      description: 'Message to display from the "Choose a component" dialog when the list of available components is empty.'
 
 layout_paragraphs.modal_settings:
   type: config_object
