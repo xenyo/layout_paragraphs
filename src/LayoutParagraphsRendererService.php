@@ -89,9 +89,11 @@ class LayoutParagraphsRendererService {
   public function buildLayoutSection(LayoutParagraphsSection $section, $view_mode = '') {
 
     $view_builder = $this->entityTypeManager->getViewBuilder('paragraph');
+    $config = $section->getLayoutConfiguration();
+    $config['layout_paragraphs_section'] = $section;
     $layout = $this
       ->layoutPluginManager
-      ->createInstance($section->getLayoutId(), $section->getLayoutConfiguration());
+      ->createInstance($section->getLayoutId(), $config);
 
     // Map rendered paragraphs into their respective regions.
     $regions = $layout->getPluginDefinition()->getRegions();
@@ -104,7 +106,6 @@ class LayoutParagraphsRendererService {
         }
       }, $section->getComponentsForRegion($region));
     }
-
     return $layout->build($regions);
   }
 

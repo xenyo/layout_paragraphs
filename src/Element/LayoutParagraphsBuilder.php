@@ -522,6 +522,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   protected function layoutPluginInstance(LayoutParagraphsSection $section) {
     $layout_id = $section->getLayoutId();
     $layout_config = $section->getLayoutConfiguration();
+    $layout_config['layout_paragraphs_section'] = $section;
     $layout_instance = $this->layoutPluginManager->createInstance($layout_id, $layout_config);
     return $layout_instance;
   }
