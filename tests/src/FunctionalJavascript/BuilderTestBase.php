@@ -244,4 +244,58 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     $this->getSession()->executeScript($script);
   }
 
+  /**
+   * Enables the frontend builder formatter for a content type and field.
+   */
+  protected function useFrontEndBuilderFormatter($type, $field) {
+    $this->loginWithPermissions([
+      'administer site configuration',
+      'administer node fields',
+      'administer node display',
+      'administer paragraphs types',
+    ]);
+    $this->drupalGet('admin/structure/types/manage/' . $type . '/display');
+    $page = $this->getSession()->getPage();
+    $page->selectFieldOption('fields[' . $field . '][type]', 'layout_paragraphs_builder');
+    $this->assertSession()->assertWaitOnAjaxRequest(10000, 'Unable to choose layout paragraphs builder (fields[' . $field . '][type]) field formatter.');
+    $this->submitForm([], 'Save');
+    $this->drupalLogout();
+  }
+
+  /**
+   * Enables the frontend editor.
+   */
+  protected function enableFrontendBuilder() {
+    $this->forceVisible('.lpb-enable-button');
+    $this->getSession()->getPage()->find('css', '.lpb-enable-button')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->elementExists('css', '.layout-paragraphs-builder-form');
+  }
+
+  /**
+   * Save the frontend builder.
+   */
+  protected function saveFrontendBuilder() {
+    $page = $this->getSession()->getPage();
+    $page->find('css', '.lpb-form__actions .button--primary')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+  }
+
+  /**
+   * Close the frontend builder.
+   */
+  protected function closeFrontendBuilder() {
+    $page = $this->getSession()->getPage();
+    $page->find('css', '.lpb-form__actions .lpb-btn--cancel')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+  }
+
+  /**
+   * Save and close the fronend builder.
+   */
+  protected function saveAndCloseFrontendBuilder() {
+    $this->saveFrontendBuilder();
+    $this->closeFrontendBuilder();
+  }
+
 }
