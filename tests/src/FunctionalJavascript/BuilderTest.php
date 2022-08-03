@@ -10,15 +10,26 @@ namespace Drupal\Tests\layout_paragraphs\FunctionalJavascript;
 class BuilderTest extends BuilderTestBase {
 
   /**
+   * The URL to use to add content.
+   *
+   * @var string
+   */
+  protected $contentAddUrl = 'node/add/page';
+
+  /**
+   * The URL to use to edit content.
+   *
+   * @var string
+   */
+  protected $contentEditUrl = 'node/1/edit';
+
+  /**
    * Tests adding a section component to a new page.
    */
   public function testAddSection() {
-    $this->loginWithPermissions([
-      'create page content',
-      'edit own page content',
-    ]);
+    $this->loginWithPermissions($this->contentPermissions);
 
-    $this->drupalGet('node/add/page');
+    $this->drupalGet($this->contentAddUrl);
     $page = $this->getSession()->getPage();
 
     $this->addSectionComponent(2, '.lpb-btn--add');
@@ -51,7 +62,7 @@ class BuilderTest extends BuilderTestBase {
    */
   public function testEditComponent() {
     $this->testAddComponent();
-    $this->drupalGet('node/1/edit');
+    $this->drupalGet($this->contentEditUrl);
 
     $page = $this->getSession()->getPage();
     $button = $page->find('css', 'a.lpb-edit');
@@ -66,7 +77,7 @@ class BuilderTest extends BuilderTestBase {
    */
   public function testDeleteComponent() {
     $this->testAddComponent();
-    $this->drupalGet('node/1/edit');
+    $this->drupalGet($this->contentEditUrl);
     $page = $this->getSession()->getPage();
     // Press delete on the component in the first region.
     $button = $page->find('css', '.layout__region--first a.lpb-delete');
@@ -97,7 +108,7 @@ class BuilderTest extends BuilderTestBase {
    */
   public function testReorderComponents() {
     $this->testAddComponent();
-    $this->drupalGet('node/1/edit');
+    $this->drupalGet($this->contentEditUrl);
 
     $page = $this->getSession()->getPage();
     $this->addTextComponent('Second text item.', '[data-id="2"] .lpb-btn--add.after');
@@ -128,7 +139,7 @@ class BuilderTest extends BuilderTestBase {
       'title[0][value]' => 'Node title',
     ], 'Save');
 
-    $this->drupalGet('node/1/edit');
+    $this->drupalGet($this->contentEditUrl);
     $this->addTextComponent('First item', '.layout__region--first .lpb-btn--add');
     $this->addTextComponent('Second item', '.layout__region--second .lpb-btn--add');
     $this->addTextComponent('Third item', '.layout__region--third .lpb-btn--add');
@@ -193,7 +204,7 @@ class BuilderTest extends BuilderTestBase {
       'title[0][value]' => 'Node title',
     ], 'Save');
 
-    $this->drupalGet('node/1/edit');
+    $this->drupalGet($this->contentEditUrl);
     $this->addTextComponent('First item', '.layout__region--first .lpb-btn--add');
     $this->addTextComponent('Second item', '.layout__region--second .lpb-btn--add');
     $this->addTextComponent('Third item', '.layout__region--third .lpb-btn--add');

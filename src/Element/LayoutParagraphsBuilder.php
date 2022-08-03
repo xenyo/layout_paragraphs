@@ -14,6 +14,7 @@ use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
@@ -578,17 +579,19 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   TRUE if translating.
    */
   protected function isTranslating() {
-    if (is_null($this->isTranslating)) {
-      $this->isTranslating = FALSE;
-      /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
-      $host = $this->layoutParagraphsLayout->getEntity();
-      $default_langcode_key = $host->getEntityType()->getKey('default_langcode');
-      if (
-        $host->hasTranslation($this->langcode)
-        && $host->getTranslation($this->langcode)->get($default_langcode_key)->value == 0
-      ) {
-        $this->isTranslating = TRUE;
-      }
+    if ($this->isTranslating != NULL) {
+      return $this->isTranslating;
+    }
+    $this->isTranslating = FALSE;
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
+    $host = $this->layoutParagraphsLayout->getEntity();
+    if (
+      $host->isTranslatable()
+      && $host->hasTranslation($this->langcode)
+      && $host->getEntityType()->hasKey('default_langcode')
+      && $host->getTranslation($this->langcode)->get($host->getEntityType()->getKey('default_langcode'))->value == 0
+    ) {
+      $this->isTranslating = TRUE;
     }
     return $this->isTranslating;
   }

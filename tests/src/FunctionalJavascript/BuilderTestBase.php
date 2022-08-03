@@ -29,6 +29,28 @@ abstract class BuilderTestBase extends WebDriverTestBase {
   ];
 
   /**
+   * List of admin permissions.
+   *
+   * @var array
+   */
+  protected $adminPermissions = [
+    'administer site configuration',
+    'administer node fields',
+    'administer node display',
+    'administer paragraphs types',
+  ];
+
+  /**
+   * List of content creation related permissions.
+   *
+   * @var array
+   */
+  protected $contentPermissions = [
+    'create page content',
+    'edit own page content',
+  ];
+
+  /**
    * {@inheritdoc}
    */
   protected $defaultTheme = 'stark';
@@ -43,12 +65,7 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     $this->addParagraphsType('text');
     $this->addFieldtoParagraphType('text', 'field_text', 'text');
 
-    $this->loginWithPermissions([
-      'administer site configuration',
-      'administer node fields',
-      'administer node display',
-      'administer paragraphs types',
-    ]);
+    $this->loginWithPermissions($this->adminPermissions);
 
     // Enable Layout Paragraphs behavior for section paragraph type.
     $this->drupalGet('admin/structure/paragraphs_type/section');
@@ -63,6 +80,7 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     ], 'Save');
     $this->assertSession()->pageTextContains('Saved the section Paragraphs type.');
     $this->addLayoutParagraphedContentType('page', 'field_content');
+    $this->drupalGet('admin/structure/paragraphs_type/section');
     $this->drupalLogout();
   }
 
@@ -171,7 +189,7 @@ abstract class BuilderTestBase extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to select section component.');
 
     // Choose a three-column layout.
-    $elements = $page->findAll('css', 'label.option');
+    $elements = $page->findAll('css', '.layout-select__item label.option');
     $elements[$columns_choice]->click();
     $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to select layout.');
 
@@ -248,12 +266,7 @@ abstract class BuilderTestBase extends WebDriverTestBase {
    * Enables the frontend builder formatter for a content type and field.
    */
   protected function useFrontEndBuilderFormatter($type, $field) {
-    $this->loginWithPermissions([
-      'administer site configuration',
-      'administer node fields',
-      'administer node display',
-      'administer paragraphs types',
-    ]);
+    $this->loginWithPermissions($this->adminPermissions);
     $this->drupalGet('admin/structure/types/manage/' . $type . '/display');
     $page = $this->getSession()->getPage();
     $page->selectFieldOption('fields[' . $field . '][type]', 'layout_paragraphs_builder');
