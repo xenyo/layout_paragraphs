@@ -98,7 +98,8 @@ class InsertComponentForm extends ComponentFormBase {
     ) {
 
     $this->setLayoutParagraphsLayout($layout_paragraphs_layout);
-    $this->paragraph = $this->newParagraph($paragraph_type);
+    $langcode = $this->layoutParagraphsLayout->getEntity()->language()->getId();
+    $this->paragraph = $this->newParagraph($paragraph_type, $langcode);
 
     $this->parentUuid = $parent_uuid;
     $this->region = $region;
@@ -213,16 +214,22 @@ class InsertComponentForm extends ComponentFormBase {
    *
    * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type.
+   * @param string $langcode
+   *   The language code for the new paragraph.
    *
    * @return \Drupal\paragraphs\ParagraphInterface
    *   The new paragraph.
    */
-  protected function newParagraph(ParagraphsTypeInterface $paragraph_type) {
+  protected function newParagraph(ParagraphsTypeInterface $paragraph_type, string $langcode) {
     $entity_type = $this->entityTypeManager->getDefinition('paragraph');
+    $langcode_key = $entity_type->getKey('langcode');
     $bundle_key = $entity_type->getKey('bundle');
     /** @var \Drupal\paragraphs\ParagraphInterface $paragraph_entity */
     $paragraph = $this->entityTypeManager->getStorage('paragraph')
-      ->create([$bundle_key => $paragraph_type->id()]);
+      ->create([
+        $bundle_key => $paragraph_type->id(),
+        $langcode_key => $langcode,
+      ]);
     return $paragraph;
   }
 

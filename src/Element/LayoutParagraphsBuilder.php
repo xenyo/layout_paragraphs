@@ -14,8 +14,6 @@ use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
-use Drupal\Core\TypedData\TranslatableInterface;
-use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsSection;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -76,32 +74,11 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   protected $isTranslating;
 
   /**
-   * The source translation language id.
-   *
-   * @var string
-   */
-  protected $sourceLangcode;
-
-  /**
    * The layout paragraphs layout object.
    *
    * @var \Drupal\layout_paragraphs\LayoutParagraphsLayout
    */
   protected $layoutParagraphsLayout;
-
-  /**
-   * The entity repository service.
-   *
-   * @var \Drupal\Core\Entity\EntityRepositoryInterface
-   */
-  protected $entityRepository;
-
-  /**
-   * The language code.
-   *
-   * @var string
-   */
-  protected $langcode;
 
   /**
    * {@inheritDoc}
@@ -114,8 +91,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     EntityTypeManagerInterface $entity_type_manager,
     LayoutPluginManager $layout_plugin_manager,
     Renderer $renderer,
-    EntityTypeBundleInfo $entity_type_bundle_info,
-    EntityRepositoryInterface $entity_repository) {
+    EntityTypeBundleInfo $entity_type_bundle_info) {
 
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->tempstore = $tempstore_repository;
@@ -123,7 +99,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->renderer = $renderer;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
-    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -138,8 +113,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.core.layout'),
       $container->get('renderer'),
-      $container->get('entity_type.bundle.info'),
-      $container->get('entity.repository')
+      $container->get('entity_type.bundle.info')
     );
   }
 
@@ -149,14 +123,14 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    * Properties:
    * - #layout_paragraphs_layout: a LayoutParagraphsLayout instance.
    * - #uuid: if provided, the uuid of the single paragraph to render.
-   * - #source_langcode: if provided, the source entity language.
+   * - #is_translating: if translating content.
    */
   public function getInfo() {
     return [
       '#layout_paragraphs_layout' => NULL,
       '#uuid' => NULL,
-      '#source_langcode' => NULL,
       '#theme' => 'layout_paragraphs_builder',
+      '#is_translating' => NULL,
       '#pre_render' => [
         [$this, 'preRender'],
       ],
@@ -170,19 +144,13 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   public function preRender($element) {
     $this->layoutParagraphsLayout = $this->tempstore->get($element['#layout_paragraphs_layout']);
-    $this->langcode = $this->entityRepository
-      ->getTranslationFromContext($this->layoutParagraphsLayout->getEntity())
-      ->language()
-      ->getId();
-
-    $this->sourceLangcode = $element['#source_langcode'];
+    $this->isTranslating = $element['#is_translating'] ?? FALSE;
     $element_uuid = $element['#uuid'];
     $preview_view_mode = $this->layoutParagraphsLayout->getSetting('preview_view_mode', 'default');
 
     $element['#layout_paragraphs_layout'] = $this->layoutParagraphsLayout;
     $element['#components'] = [];
     if ($this->isTranslating()) {
-      $this->initTranslations();
       $element['#translation_warning'] = $this->translationWarning();
     }
     // Build a flat list of component build arrays.
@@ -579,20 +547,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    *   TRUE if translating.
    */
   protected function isTranslating() {
-    if ($this->isTranslating != NULL) {
-      return $this->isTranslating;
-    }
-    $this->isTranslating = FALSE;
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
-    $host = $this->layoutParagraphsLayout->getEntity();
-    if (
-      $host->isTranslatable()
-      && $host->hasTranslation($this->langcode)
-      && $host->getEntityType()->hasKey('default_langcode')
-      && $host->getTranslation($this->langcode)->get($host->getEntityType()->getKey('default_langcode'))->value == 0
-    ) {
-      $this->isTranslating = TRUE;
-    }
     return $this->isTranslating;
   }
 
@@ -608,71 +562,6 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
    */
   protected function supportsAsymmetricTranslations() {
     return $this->layoutParagraphsLayout->getParagraphsReferenceField()->getFieldDefinition()->isTranslatable();
-  }
-
-  /**
-   * Initialize translations for item list.
-   *
-   * Makes sure all components have a translation for the current
-   * language and creates them if necessary.
-   */
-  protected function initTranslations() {
-    $items = $this->layoutParagraphsLayout->getParagraphsReferenceField();
-    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
-    foreach ($items as $delta => $item) {
-      if (!empty($item->entity) && $item->entity instanceof ParagraphInterface) {
-        // Now we're sure it's a paragraph:
-        $paragraph = $item->entity;
-        if (!$this->isTranslating()) {
-          // Set the langcode if we are not translating.
-          $langcode_key = $paragraph->getEntityType()->getKey('langcode');
-          if ($paragraph->get($langcode_key)->value != $this->langcode) {
-            // If a translation in the given language already exists,
-            // switch to that. If there is none yet, update the language.
-            if ($paragraph->hasTranslation($this->langcode)) {
-              $paragraph = $paragraph->getTranslation($this->langcode);
-            }
-            else {
-              $paragraph->set($langcode_key, $this->langcode);
-            }
-          }
-        }
-        else {
-          // Add translation if missing for the target language,
-          // if the paragraph is translatable at all:
-          if ($paragraph->isTranslatable() && !$paragraph->hasTranslation($this->langcode)) {
-            // Get the selected translation of the paragraph entity.
-            $entity_langcode = $paragraph->language()->getId();
-            $source_langcode = $this->sourceLangcode ?? $entity_langcode;
-            // Make sure the source language version is used if available.
-            // Fetching the translation without this check could lead valid
-            // scenario to have no paragraphs items in the source version of
-            // to an exception.
-            if ($paragraph->hasTranslation($source_langcode)) {
-              $paragraph = $paragraph->getTranslation($source_langcode);
-            }
-            // The paragraphs entity has no content translation source field
-            // if no paragraph entity field is translatable,
-            // even if the host is.
-            if ($paragraph->hasField('content_translation_source')) {
-              // Initialise the translation with source language values.
-              $paragraph->addTranslation($this->langcode, $paragraph->toArray());
-              $translation = $paragraph->getTranslation($this->langcode);
-              $manager = \Drupal::service('content_translation.manager');
-              $manager->getTranslationMetadata($translation)
-                ->setSource($paragraph->language()->getId());
-            }
-          }
-          // If any paragraphs type is translatable do not switch.
-          if ($paragraph->isTranslatable() && $paragraph->hasField('content_translation_source')) {
-            // Switch the paragraph to the translation.
-            $paragraph = $paragraph->getTranslation($this->langcode);
-          }
-        }
-        $items[$delta]->entity = $paragraph;
-      }
-    }
-    $this->tempstore->set($this->layoutParagraphsLayout);
   }
 
   /**

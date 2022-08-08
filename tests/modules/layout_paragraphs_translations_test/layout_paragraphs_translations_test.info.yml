@@ -1,0 +1,7 @@
+name: Layout Paragraphs Translations Test
+description: Helper module for testing Layout Paragraphs translations
+core_version_requirement: ^8 || ^9
+type: module
+package: Layout Paragraphs
+dependencies:
+  - layout_paragraphs

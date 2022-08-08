@@ -2,20 +2,22 @@
 
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\WidgetBase;
-use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\layout_paragraphs\LayoutParagraphsLayout;
-use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Form\FormBuilder;
-use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Utility\NestedArray;
+use Drupal\paragraphs\ParagraphInterface;
+use Drupal\Core\Layout\LayoutPluginManager;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayout;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\layout_paragraphs\LayoutParagraphsLayoutTempstoreRepository;
 
 /**
  * Layout paragraphs widget.
@@ -82,11 +84,39 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   protected $entityDisplayRepository;
 
   /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * The module configuration.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
   protected $config;
+
+  /**
+   * The source translation language id.
+   *
+   * @var string
+   */
+  protected $sourceLangcode;
+
+  /**
+   * The language code.
+   *
+   * @var string
+   */
+  protected $langcode;
+
+  /**
+   * Indicates whether the element is in translation mode.
+   *
+   * @var bool
+   */
+  protected $isTranslating;
 
   /**
    * {@inheritDoc}
@@ -102,7 +132,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     LayoutPluginManager $layout_plugin_manager,
     FormBuilder $form_builder,
     EntityDisplayRepositoryInterface $entity_display_repository,
-    ConfigFactoryInterface $config_factory
+    ConfigFactoryInterface $config_factory,
+    EntityRepositoryInterface $entity_repository
     ) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings);
 
@@ -111,6 +142,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $this->layoutPluginManager = $layout_plugin_manager;
     $this->formBuilder = $form_builder;
     $this->entityDisplayRepository = $entity_display_repository;
+    $this->entityRepository = $entity_repository;
     $this->config = $config_factory->get('layout_paragraphs.settings');
 
   }
@@ -130,7 +162,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
       $container->get('plugin.manager.core.layout'),
       $container->get('form_builder'),
       $container->get('entity_display.repository'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('entity.repository')
     );
   }
 
@@ -156,12 +189,14 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     else {
       $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
     }
+    $this->initTranslations($form_state);
     $element += [
       '#type' => 'fieldset',
       '#title' => $this->fieldDefinition->getLabel(),
       'layout_paragraphs_builder' => [
         '#type' => 'layout_paragraphs_builder',
         '#layout_paragraphs_layout' => $this->layoutParagraphsLayout,
+        '#is_translating' => $this->isTranslating($form_state),
       ],
       // Stores the Layout Paragraphs Layout storage key.
       'layout_paragraphs_storage_key' => [
@@ -176,6 +211,121 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   }
 
   /**
+   * Determine if widget is in translation.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @see \Drupal\paragraphs\Plugin\Field\FieldWidget\ParagraphsWidget::initIsTranslating()
+   */
+  protected function isTranslating(FormStateInterface $form_state) {
+    if ($this->isTranslating != NULL) {
+      return $this->isTranslating;
+    }
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $host */
+    $host = $this->layoutParagraphsLayout->getEntity();
+    $this->isTranslating = FALSE;
+    if (!$host->isTranslatable()) {
+      return $this->isTranslating;
+    }
+    if (!$host->getEntityType()->hasKey('default_langcode')) {
+      return $this->isTranslating;
+    }
+    $default_langcode_key = $host->getEntityType()->getKey('default_langcode');
+    if (!$host->hasField($default_langcode_key)) {
+      return $this->isTranslating;
+    }
+
+    // Support for
+    // \Drupal\content_translation\Controller\ContentTranslationController.
+    if (!empty($form_state->get('content_translation'))) {
+      // Adding a translation.
+      $this->isTranslating = TRUE;
+    }
+    $langcode = $form_state->get('langcode');
+    if (isset($langcode) && $host->hasTranslation($langcode) && $host->getTranslation($langcode)->get($default_langcode_key)->value == 0) {
+      // Editing a translation.
+      $this->isTranslating = TRUE;
+    }
+    return $this->isTranslating;
+  }
+
+  /**
+   * Initialize translations for item list.
+   *
+   * Makes sure all components have a translation for the current
+   * language and creates them if necessary.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   */
+  protected function initTranslations(FormStateInterface $form_state) {
+    if ($source = $form_state->get(['content_translation', 'source'])) {
+      $this->sourceLangcode = $source->getId();
+    }
+    $this->langcode = $this->entityRepository
+      ->getTranslationFromContext($this->layoutParagraphsLayout->getEntity())
+      ->language()
+      ->getId();
+    $items = $this->layoutParagraphsLayout->getParagraphsReferenceField();
+    /** @var \Drupal\entity_reference_revisions\Plugin\Field\FieldType\EntityReferenceRevisionsItem $item */
+    foreach ($items as $delta => $item) {
+      if (!empty($item->entity) && $item->entity instanceof ParagraphInterface) {
+        // Now we're sure it's a paragraph:
+        $paragraph = $item->entity;
+        if (!$this->isTranslating($form_state)) {
+          // Set the langcode if we are not translating.
+          $langcode_key = $paragraph->getEntityType()->getKey('langcode');
+          if ($paragraph->get($langcode_key)->value != $this->langcode) {
+            // If a translation in the given language already exists,
+            // switch to that. If there is none yet, update the language.
+            if ($paragraph->hasTranslation($this->langcode)) {
+              $paragraph = $paragraph->getTranslation($this->langcode);
+            }
+            else {
+              $paragraph->set($langcode_key, $this->langcode);
+            }
+          }
+        }
+        else {
+          // Add translation if missing for the target language,
+          // if the paragraph is translatable at all:
+          if ($paragraph->isTranslatable() && !$paragraph->hasTranslation($this->langcode)) {
+            // Get the selected translation of the paragraph entity.
+            $entity_langcode = $paragraph->language()->getId();
+            $source_langcode = $this->sourceLangcode ?? $entity_langcode;
+            // Make sure the source language version is used if available.
+            // Fetching the translation without this check could lead valid
+            // scenario to have no paragraphs items in the source version of
+            // to an exception.
+            if ($paragraph->hasTranslation($source_langcode)) {
+              $paragraph = $paragraph->getTranslation($source_langcode);
+            }
+            // The paragraphs entity has no content translation source field
+            // if no paragraph entity field is translatable,
+            // even if the host is.
+            if ($paragraph->hasField('content_translation_source')) {
+              // Initialise the translation with source language values.
+              $paragraph->addTranslation($this->langcode, $paragraph->toArray());
+              $translation = $paragraph->getTranslation($this->langcode);
+              $manager = \Drupal::service('content_translation.manager');
+              $manager->getTranslationMetadata($translation)
+                ->setSource($paragraph->language()->getId());
+            }
+          }
+          // If any paragraphs type is translatable do not switch.
+          if ($paragraph->isTranslatable() && $paragraph->hasField('content_translation_source')) {
+            // Switch the paragraph to the translation.
+            $paragraph = $paragraph->getTranslation($this->langcode);
+          }
+        }
+        $items[$delta]->entity = $paragraph;
+      }
+    }
+    $this->tempstore->set($this->layoutParagraphsLayout);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function extractFormValues(FieldItemListInterface $items, array $form, FormStateInterface $form_state) {
@@ -185,11 +335,16 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     $path = array_merge($form['#parents'], [$field_name]);
     $layout_paragraphs_storage_key = $form_state->getValue(array_merge($path, ['layout_paragraphs_storage_key']));
     if (!empty($layout_paragraphs_storage_key)) {
-      $layout_paragraphs_layout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
+      $this->layoutParagraphsLayout = $this->tempstore->getWithStorageKey($layout_paragraphs_storage_key);
       $values = [];
-      foreach ($layout_paragraphs_layout->getParagraphsReferenceField() as $item) {
+      foreach ($this->layoutParagraphsLayout->getParagraphsReferenceField() as $item) {
         if ($item->entity) {
           $entity = $item->entity;
+          // Set each paragraph langcode if we are not translating.
+          if (!$this->isTranslating($form_state)) {
+            $langcode_key = $entity->getEntityType()->getKey('langcode');
+            $entity->set($langcode_key, $items->getLangcode());
+          }
           $entity->setNeedsSave(TRUE);
           $values[] = [
             'entity' => $entity,

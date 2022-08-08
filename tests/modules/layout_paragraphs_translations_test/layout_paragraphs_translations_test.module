@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function layout_paragraphs_translations_test_theme() {
+  return [
+    'paragraph__section' => [
+      'base hook' => 'paragraph',
+    ],
+    'paragraph__text' => [
+      'base hook' => 'paragraph',
+    ],
+  ];
+}
