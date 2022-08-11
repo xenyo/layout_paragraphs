@@ -45,6 +45,36 @@ class BuilderTest extends BuilderTestBase {
   }
 
   /**
+   * Tests switching between layouts.
+   */
+  public function testSwitchLayout() {
+    // Adds a section component with a three-column layout.
+    $this->testAddSection();
+    $page = $this->getSession()->getPage();
+    $this->assertSession()->elementExists('css', '.layout--threecol-25-50-25');
+
+    // Edit the section.
+    $section_edit_btn = $page->find('css', '.lpb-edit');
+    $section_edit_btn->click();
+    $this->assertSession()->assertWaitOnAjaxRequest(1000, 'Unable to edit layout.');
+
+    // Switch to 1-column layout and test that the save button is temporarily
+    // disabled while the AJAX request is being sent.
+    // @see https://www.drupal.org/project/layout_paragraphs/issues/3265669#comment-14643670
+    $layout_options = $page->findAll('css', '.layout-select__item label.option');
+    $layout_options[0]->click();
+    $this->assertSession()->elementExists('css', 'button.lpb-btn--save:disabled');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->elementExists('css', 'button.lpb-btn--save:not(disabled)');
+    $this->getSession()->getPage()->find('css', 'button.lpb-btn--save:not(disabled)')->click();
+
+    // Should now be a 1-column layout.
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->htmlOutput($this->getSession()->getPage()->getHtml());
+    $this->assertSession()->elementExists('css', '.layout--onecol');
+  }
+
+  /**
    * Tests adding a component into a section.
    */
   public function testAddComponent() {

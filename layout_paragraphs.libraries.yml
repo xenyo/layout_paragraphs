@@ -11,6 +11,12 @@ dragula:
   js:
     https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js: {type: external, minified: true}
 
+component_form:
+  js:
+    js/component-form.js: {}
+  dependencies:
+    - core/jquery
+
 component_list:
   css:
     layout:

@@ -170,6 +170,11 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
       '#after_build' => [
         [$this, 'afterBuild'],
       ],
+      '#attached' => [
+        'library' => [
+          'layout_paragraphs/component_form',
+        ],
+      ],
       'actions' => [
         '#weight' => 100,
         '#type' => 'actions',

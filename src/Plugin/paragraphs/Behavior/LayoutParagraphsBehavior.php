@@ -138,8 +138,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
         'wrapper' => $wrapper_id,
         'callback' => [$this, 'ajaxUpdateOptions'],
         'progress' => [
-          'type' => 'none',
-          'message' => NULL,
+          'type' => 'throbber',
         ],
       ],
       '#weight' => 0,
