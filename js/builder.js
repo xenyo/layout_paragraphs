@@ -17,7 +17,7 @@ function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Sy
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-(function ($, Drupal, debounce, dragula) {
+(function ($, Drupal, debounce, dragula, once) {
   var idAttr = 'data-lpb-id';
 
   function attachUiElements($container, settings) {
@@ -242,7 +242,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       var $btn = $(e.currentTarget);
       startNav($btn.closest('.js-lpb-component'));
     });
-    $(document).once('layout-paragraphs-keydown').on('keydown', function (e) {
+    $(document).off('keydown');
+    $(document).on('keydown', function (e) {
       var $item = $('.js-lpb-component.is-navigating');
 
       if ($item.length) {
@@ -355,19 +356,19 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
-      $('[data-has-js-ui-element]').once('lpb-ui-elements').each(function (i, el) {
+      $(once('lpb-ui-elements', '[data-has-js-ui-element]')).each(function (i, el) {
         attachUiElements($(el), settings);
       });
       var events = ['lpb-builder:init.lpb', 'lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb', 'lpb-component:delete.lpb'].join(' ');
-      $('[data-lpb-id]').once('lpb-events').on(events, function (e) {
+      $(once('lpb-events', '[data-lpb-id]')).on(events, function (e) {
         var $element = $(e.currentTarget);
         updateUi($element);
       });
       $(".has-components[".concat(idAttr, "]")).each(function (index, element) {
-        var $element = $(element);
+        var $element = $(once('lpb-enabled', element));
         var id = $element.attr(idAttr);
         var lpbSettings = settings.lpBuilder[id];
-        $element.once('lpb-enabled').each(function () {
+        $element.each(function () {
           $element.data('drake', initDragAndDrop($element, lpbSettings));
           attachEventListeners($element, lpbSettings);
           $element.trigger('lpb-builder:init');
@@ -417,4 +418,4 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       lpDialogInterval = setInterval(repositionDialog.bind(null, lpDialogInterval), 500);
     }
   });
-})(jQuery, Drupal, Drupal.debounce, dragula);
+})(jQuery, Drupal, Drupal.debounce, dragula, once);

@@ -5,7 +5,7 @@
 * @preserve
 **/
 
-(function ($, Drupal) {
+(function ($, Drupal, once) {
   Drupal.behaviors.layoutParagraphsBuilderForm = {
     attach: function attach(context) {
       $('.lpb-enable__wrapper').removeClass('hidden');
@@ -15,9 +15,9 @@
         $('.lpb-enable__wrapper', parent).addClass('hidden');
       });
       var events = ['lpb-component:insert.lpb', 'lpb-component:update.lpb', 'lpb-component:move.lpb', 'lpb-component:drop.lpb'].join(' ');
-      $('[data-lpb-id]', context).once('lpb-builder-form').on(events, function (e) {
+      $(once('lpb-builder-form', '[data-lpb-id]', context)).on(events, function (e) {
         $(e.currentTarget).closest('[data-lpb-form-id]').find('[data-drupal-selector="edit-close"]').val(Drupal.t('Cancel'));
       });
     }
   };
-})(jQuery, Drupal);
+})(jQuery, Drupal, once);

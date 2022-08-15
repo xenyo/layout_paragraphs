@@ -1,4 +1,4 @@
-(($, Drupal) => {
+(($, Drupal, once) => {
   // Updates the "Close" button label when a layout is changed.
   Drupal.behaviors.layoutParagraphsBuilderForm = {
     attach: function attach(context) {
@@ -17,8 +17,7 @@
         'lpb-component:move.lpb',
         'lpb-component:drop.lpb',
       ].join(' ');
-      $('[data-lpb-id]', context)
-        .once('lpb-builder-form')
+      $(once('lpb-builder-form', '[data-lpb-id]', context))
         .on(events, (e) => {
           $(e.currentTarget)
             .closest('[data-lpb-form-id]')
@@ -27,4 +26,4 @@
         });
     },
   };
-})(jQuery, Drupal);
+})(jQuery, Drupal, once);

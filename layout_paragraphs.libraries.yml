@@ -35,7 +35,7 @@ builder:
   dependencies:
     - layout_paragraphs/dragula
     - core/jquery
-    - core/jquery.once
+    - core/once
     - core/drupal.dialog
     - core/drupal.dialog.ajax
     - core/drupal.ajax
@@ -49,7 +49,7 @@ builder_form:
     js/builder-form.js: {}
   dependencies:
     - core/jquery
-    - core/jquery.once
+    - core/once
 
 layout_select:
   css:

@@ -1,4 +1,4 @@
-(($, Drupal, debounce, dragula) => {
+(($, Drupal, debounce, dragula, once) => {
   const idAttr = 'data-lpb-id';
 
   /**
@@ -323,7 +323,8 @@
       const $btn = $(e.currentTarget);
       startNav($btn.closest('.js-lpb-component'));
     });
-    $(document).once('layout-paragraphs-keydown').on('keydown', (e) => {
+    $(document).off('keydown');
+    $(document).on('keydown', (e) => {
       const $item = $('.js-lpb-component.is-navigating');
       if ($item.length) {
         switch (e.code) {
@@ -442,8 +443,7 @@
   Drupal.behaviors.layoutParagraphsBuilder = {
     attach: function attach(context, settings) {
       // Add UI elements to the builder, each component, and each region.
-      $('[data-has-js-ui-element]')
-        .once('lpb-ui-elements')
+      $(once('lpb-ui-elements', '[data-has-js-ui-element]'))
         .each((i, el) => {
           attachUiElements($(el), settings);
         });
@@ -456,19 +456,18 @@
         'lpb-component:drop.lpb',
         'lpb-component:delete.lpb',
       ].join(' ');
-      $('[data-lpb-id]')
-        .once('lpb-events')
+      $(once('lpb-events', '[data-lpb-id]'))
         .on(events, (e) => {
           const $element = $(e.currentTarget);
           updateUi($element);
         });
       // Initialize the editor drag and drop ui.
       $(`.has-components[${idAttr}]`).each((index, element) => {
-        const $element = $(element);
+        const $element = $(once('lpb-enabled', element));
         const id = $element.attr(idAttr);
         const lpbSettings = settings.lpBuilder[id];
         // Attach event listeners and init dragula just once.
-        $element.once('lpb-enabled').each(() => {
+        $element.each(() => {
           $element.data('drake', initDragAndDrop($element, lpbSettings));
           attachEventListeners($element, lpbSettings);
           $element.trigger('lpb-builder:init');
@@ -538,4 +537,4 @@
       lpDialogInterval = setInterval(repositionDialog.bind(null, lpDialogInterval), 500);
     }
   });
-})(jQuery, Drupal, Drupal.debounce, dragula);
+})(jQuery, Drupal, Drupal.debounce, dragula, once);
