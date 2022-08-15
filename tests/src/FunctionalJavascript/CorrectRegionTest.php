@@ -49,13 +49,18 @@ class CorrectRegionTest extends BuilderTestBase {
 
     // Moves third item to bottom of second region.
     $this->keyPress('ArrowUp');
+    $this->assertSession()->assertWaitOnAjaxRequest();
     // Moves third item to top of second region.
     $this->keyPress('ArrowUp');
+    $this->assertSession()->assertWaitOnAjaxRequest();
     // Moves third item to bottom of first region.
     $this->keyPress('ArrowUp');
+    $this->assertSession()->assertWaitOnAjaxRequest();
     // Moves third item to top of first region.
     $this->keyPress('ArrowUp');
+    $this->assertSession()->assertWaitOnAjaxRequest();
     $this->keyPress('Enter');
+    $this->assertSession()->assertWaitOnAjaxRequest();
 
     // Add a fourth item above the third item, which has been moved to the first
     // region. Ensure the fourth item is correctly added to the first region,

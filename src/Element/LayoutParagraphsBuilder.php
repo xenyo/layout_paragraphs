@@ -250,7 +250,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $build['#attributes']['data-type'] = $entity->bundle();
     $build['#attributes']['data-id'] = $entity->id();
     $build['#attributes']['class'][] = 'js-lpb-component';
-    $build['#attributes']['id'] = Html::getUniqueId($entity->id());
+    $build['#attributes']['id'] = Html::getUniqueId($entity->id() ?? 'new-' . $entity->bundle());
     $build['#layout_paragraphs_component'] = TRUE;
     if ($entity->isNew()) {
       $build['#attributes']['class'][] = 'is_new';
