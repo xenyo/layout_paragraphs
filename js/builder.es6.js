@@ -472,14 +472,12 @@
           attachEventListeners($element, lpbSettings);
           $element.trigger('lpb-builder:init');
         });
-        const drake = $element.data('drake');
         // Add new containers to the dragula instance.
-        $element
-          .find('.js-lpb-region')
-          .not('.is-dragula-enabled')
+        $('.js-lpb-region:not(.is-dragula-enabled)', element)
           .addClass('is-dragula-enabled')
           .get()
           .forEach((c) => {
+            const drake = $(element).data('drake');
             drake.containers.push(c);
           });
       });

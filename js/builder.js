@@ -373,8 +373,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
           attachEventListeners($element, lpbSettings);
           $element.trigger('lpb-builder:init');
         });
-        var drake = $element.data('drake');
-        $element.find('.js-lpb-region').not('.is-dragula-enabled').addClass('is-dragula-enabled').get().forEach(function (c) {
+        $('.js-lpb-region:not(.is-dragula-enabled)', element).addClass('is-dragula-enabled').get().forEach(function (c) {
+          var drake = $(element).data('drake');
           drake.containers.push(c);
         });
       });
