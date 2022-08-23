@@ -159,6 +159,33 @@ class BuilderTest extends BuilderTestBase {
   }
 
   /**
+   * Tests dragging components into sections.
+   */
+  public function testDragComponents() {
+
+    $this->loginWithPermissions($this->contentPermissions);
+    $this->drupalGet($this->contentAddUrl);
+    $page = $this->getSession()->getPage();
+    $this->addSectionComponent(0, '.lpb-btn--add');
+    $this->addTextComponent('First item', '.layout__region--content .lpb-btn--add');
+    $this->addSectionComponent(2, '.lpb-layout > .lpb-btn--add.after');
+
+    // Click the new item's drag button.
+    // This should create a <div> with the id 'lpb-navigatin-msg'.
+    $drag_handle = $page->find('css', '.layout__region--content .lpb-drag');
+    $first_region = $page->find('css', '.layout__region--first');
+    $drag_handle->dragTo($first_region);
+    $this->htmlOutput($this->getSession()->getPage()->getHtml());
+
+    $this->assertSession()->elementExists('css', '.layout__region--first .js-lpb-component');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->submitForm([
+      'title[0][value]' => 'Node title',
+    ], 'Save');
+    $this->assertSession()->elementExists('css', '.layout__region--first .paragraph--type--text');
+  }
+
+  /**
    * Tests keyboard navigation.
    */
   public function testKeyboardNavigation() {
