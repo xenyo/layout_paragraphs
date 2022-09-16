@@ -2,22 +2,22 @@
 
 namespace Drupal\layout_paragraphs\Form;
 
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Drupal\field_group\FormatterHelper;
-use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\Core\Ajax\CloseDialogCommand;
-use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxFormHelperTrait;
-use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\paragraphs\ParagraphInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\layout_paragraphs\Contracts\ComponentFormInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -51,7 +51,7 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
   /**
    * The layout plugin manager service.
    *
-   * @var \Drupal\Core\Layout\LayoutPluginManager
+   * @var \Drupal\Core\Layout\LayoutPluginManagerInterface
    */
   protected $layoutPluginManager;
 
@@ -65,14 +65,14 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
   /**
    * The paragraph.
    *
-   * @var \Drupal\paragraphs\Entity\Paragraph
+   * @var \Drupal\paragraphs\ParagraphInterface
    */
   protected $paragraph;
 
   /**
    * The module handler service.
    *
-   * @var \Drupal\Core\Extension\ModuleHandler
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
   protected $moduleHandler;
 
@@ -89,8 +89,8 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
   public function __construct(
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
-    LayoutPluginManager $layout_plugin_manager,
-    ModuleHandler $module_handler,
+    LayoutPluginManagerInterface $layout_plugin_manager,
+    ModuleHandlerInterface $module_handler,
     EventDispatcherInterface $event_dispatcher,
     EntityRepositoryInterface $entity_repository
     ) {
@@ -133,7 +133,7 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
   /**
    * {@inheritDoc}
    */
-  public function setParagraph(Paragraph $paragraph) {
+  public function setParagraph(ParagraphInterface $paragraph) {
     $this->paragraph = $paragraph;
   }
 
@@ -317,7 +317,7 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
    *   The paragraph entity.
    */
   public function buildParagraphComponent(array $form, FormStateInterface $form_state) {
-    /** @var Drupal\Core\Entity\Entity\EntityFormDisplay $display */
+    /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $display */
     $display = $form['#display'];
 
     $paragraph = clone $this->paragraph;
@@ -409,7 +409,7 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
    *
    * @param array $element
    *   The form element.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
    * @param array $form
    *   The complete form array.
@@ -463,10 +463,10 @@ abstract class ComponentFormBase extends FormBase implements ComponentFormInterf
    *
    * @param array $form
    *   The form array.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   The Ajax response.
    */
   public function cancel(array &$form, FormStateInterface $form_state) {

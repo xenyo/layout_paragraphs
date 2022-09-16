@@ -7,7 +7,7 @@
 
 use Drupal\Core\Url;
 use Drupal\Component\Utility\Html;
-use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -312,7 +312,7 @@ function _layout_paragraphs_form_field_weights(array &$form, FormStateInterface 
  * https://www.drupal.org/project/drupal/issues/3040556
  * (It is not possible to react to an entity being duplicated)
  */
-function layout_paragraphs_paragraph_presave(Paragraph $paragraph) {
+function layout_paragraphs_paragraph_presave(ParagraphInterface $paragraph) {
   $behavior_settings = $paragraph->getAllBehaviorSettings();
   $parent_uuid = $behavior_settings['layout_paragraphs']['parent_uuid'] ?? NULL;
   if (empty($parent_uuid)) {
@@ -373,13 +373,13 @@ function layout_paragraphs_paragraph_presave(Paragraph $paragraph) {
  * The returned list contains all of the referenced entities,
  * including the passed $paragraph.
  *
- * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+ * @param \Drupal\paragraphs\ParagraphInterface $paragraph
  *   The paragraph to use for finding the complete list of siblings.
  *
  * @return \Drupal\Core\Field\EntityReferenceFieldItemList
  *   The list of paragraphs.
  */
-function _layout_paragraphs_get_paragraphs(Paragraph $paragraph) {
+function _layout_paragraphs_get_paragraphs(ParagraphInterface $paragraph) {
   $host = $paragraph->getParentEntity();
   $parent_field = $paragraph->get('parent_field_name');
   $field_name = $parent_field->first()->getString();

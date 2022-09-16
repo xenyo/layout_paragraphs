@@ -8,7 +8,6 @@ use Drupal\Core\Ajax\AppendCommand;
 use Drupal\Core\Ajax\BeforeCommand;
 use Drupal\Core\Ajax\PrependCommand;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\layout_paragraphs\Ajax\LayoutParagraphsEventCommand;
@@ -75,7 +74,7 @@ class InsertComponentForm extends ComponentFormBase {
    *   The form state object.
    * @param \Drupal\layout_paragraphs\LayoutParagraphsLayout $layout_paragraphs_layout
    *   The layout paragraphs layout object.
-   * @param \Drupal\paragraphs\Entity\ParagraphsType $paragraph_type
+   * @param \Drupal\paragraphs\ParagraphsTypeInterface $paragraph_type
    *   The paragraph type.
    * @param string $parent_uuid
    *   The parent component's uuid.
@@ -90,7 +89,7 @@ class InsertComponentForm extends ComponentFormBase {
     array $form,
     FormStateInterface $form_state,
     LayoutParagraphsLayout $layout_paragraphs_layout = NULL,
-    ParagraphsType $paragraph_type = NULL,
+    ParagraphsTypeInterface $paragraph_type = NULL,
     string $parent_uuid = NULL,
     string $region = NULL,
     string $sibling_uuid = NULL,

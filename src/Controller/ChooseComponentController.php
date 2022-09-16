@@ -31,7 +31,7 @@ class ChooseComponentController extends ControllerBase {
   /**
    * The entity type bundle info service.
    *
-   * @var Drupal\Core\Entity\EntityTypeBundleInfo
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
 

@@ -3,13 +3,12 @@
 namespace Drupal\layout_paragraphs\Plugin\paragraphs\Behavior;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Form\SubformState;
 use Drupal\Core\Layout\LayoutInterface;
-use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\paragraphs\ParagraphInterface;
-use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\paragraphs\ParagraphsBehaviorBase;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
@@ -42,7 +41,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
   /**
    * The entity type manager service.
    *
-   * @var Drupal\Core\Entity\EntityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    *   The entity type manager service.
    */
   protected $entityTypeManager;
@@ -70,7 +69,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
    *   This plugin id.
    * @param mixed $plugin_definition
    *   Plugin definition.
-   * @param \Drupal\Core\Entity\EntityFieldManager $entity_field_manager
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   Entity field manager service.
    * @param \Drupal\Core\Layout\LayoutPluginManagerInterface $layout_plugin_manager
    *   The grid discovery service.
@@ -83,7 +82,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
       array $configuration,
       $plugin_id,
       $plugin_definition,
-      EntityFieldManager $entity_field_manager,
+      EntityFieldManagerInterface $entity_field_manager,
       LayoutPluginManagerInterface $layout_plugin_manager,
       EntityTypeManagerInterface $entity_type_manager,
       LayoutParagraphsRendererService $layout_paragraphs_renderer_service) {
@@ -261,7 +260,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
   /**
    * {@inheritdoc}
    */
-  public function settingsSummary(Paragraph $paragraph) {
+  public function settingsSummary(ParagraphInterface $paragraph) {
     $summary = [];
     return $summary;
   }
@@ -269,7 +268,7 @@ class LayoutParagraphsBehavior extends ParagraphsBehaviorBase {
   /**
    * {@inheritdoc}
    */
-  public function view(array &$build, Paragraph $paragraph, EntityViewDisplayInterface $display, $view_mode) {
+  public function view(array &$build, ParagraphInterface $paragraph, EntityViewDisplayInterface $display, $view_mode) {
     if (empty($build['regions']) && LayoutParagraphsSection::isLayoutComponent($paragraph)) {
       $build['regions'] = $this->layoutParagraphsRendererService->renderLayoutSection($build, $paragraph, $view_mode);
     }

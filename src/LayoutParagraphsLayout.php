@@ -4,10 +4,10 @@ namespace Drupal\layout_paragraphs;
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Config\Entity\ThirdPartySettingsInterface;
+use Drupal\paragraphs\ParagraphInterface;
 
 /**
  * Provides a domain object for a complete Layout Paragraphs Layout.
@@ -177,13 +177,13 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   /**
    * Wraps the paragraph in the component class.
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph entity.
    *
    * @return LayoutParagraphsComponent|LayoutParagraphsSection
    *   The component.
    */
-  public function getComponent(Paragraph $paragraph) {
+  public function getComponent(ParagraphInterface $paragraph) {
     return new LayoutParagraphsComponent($paragraph);
   }
 
@@ -209,13 +209,13 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *
    * If the provided paragraph is not a layout section, returns false.
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph.
    *
    * @return \Drupal\layout_paragraphs\LayoutParagraphsSection|false
    *   The layout section or false.
    */
-  public function getLayoutSection(Paragraph $paragraph) {
+  public function getLayoutSection(ParagraphInterface $paragraph) {
     if (!LayoutParagraphsSection::isLayoutComponent($paragraph)) {
       return FALSE;
     }
@@ -256,7 +256,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   /**
    * Returns a list of all paragraph entities associated with this collection.
    *
-   * @return \Drupal\paragraphs\Entity\Paragraph[]
+   * @return \Drupal\paragraphs\ParagraphInterface[]
    *   An array of paragraph entities.
    */
   public function getEntities() {
@@ -287,12 +287,12 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    * incoming paragraph. Otherwise the paragraph is appended
    * to the field item list.
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph to set.
    *
    * @return $this
    */
-  public function setComponent(Paragraph $paragraph) {
+  public function setComponent(ParagraphInterface $paragraph) {
     $delta = $this->getComponentDeltaByUuid($paragraph->uuid());
     if ($delta > -1) {
       $this->paragraphsReferenceField[$delta]->entity = $paragraph;
@@ -373,12 +373,12 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *   The parent component's uuid.
    * @param string $region
    *   The region.
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph component to add.
    *
    * @return $this
    */
-  public function insertIntoRegion(string $parent_uuid, string $region, Paragraph $paragraph) {
+  public function insertIntoRegion(string $parent_uuid, string $region, ParagraphInterface $paragraph) {
     // Create a layout component for the new paragraph.
     $component = $this->getComponent($paragraph);
     // Make sure the parent component exists.
@@ -407,12 +407,12 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *
    * @param string $sibling_uuid
    *   The existing sibling paragraph component's uuid.
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph component to add.
    *
    * @return $this
    */
-  public function insertBeforeComponent(string $sibling_uuid, Paragraph $paragraph) {
+  public function insertBeforeComponent(string $sibling_uuid, ParagraphInterface $paragraph) {
     return $this->insertSiblingComponent($sibling_uuid, $paragraph);
   }
 
@@ -421,12 +421,12 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *
    * @param string $sibling_uuid
    *   The existing sibling paragraph component's uuid.
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph component to add.
    *
    * @return $this
    */
-  public function insertAfterComponent(string $sibling_uuid, Paragraph $paragraph) {
+  public function insertAfterComponent(string $sibling_uuid, ParagraphInterface $paragraph) {
     return $this->insertSiblingComponent($sibling_uuid, $paragraph, 1);
   }
 
@@ -435,7 +435,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    *
    * @param string $sibling_uuid
    *   The existing sibling paragraph component's uuid.
-   * @param \Drupal\paragraphs\Entity\Paragraph $new_paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $new_paragraph
    *   The paragraph component to add.
    * @param int $delta_offset
    *   Where to add the new item in relation to sibling.
@@ -444,7 +444,7 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
    */
   protected function insertSiblingComponent(
     string $sibling_uuid,
-    Paragraph $new_paragraph,
+    ParagraphInterface $new_paragraph,
     int $delta_offset = 0) {
 
     // Create a layout component for the new paragraph.
@@ -478,12 +478,12 @@ class LayoutParagraphsLayout implements ThirdPartySettingsInterface {
   /**
    * Append a new component.
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $new_paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $new_paragraph
    *   The paragraph component to append.
    *
    * @return $this
    */
-  public function appendComponent(Paragraph $new_paragraph) {
+  public function appendComponent(ParagraphInterface $new_paragraph) {
     $this->paragraphsReferenceField->appendItem(['entity' => $new_paragraph]);
     return $this;
   }

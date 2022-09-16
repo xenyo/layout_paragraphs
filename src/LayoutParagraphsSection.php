@@ -2,7 +2,7 @@
 
 namespace Drupal\layout_paragraphs;
 
-use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
 
 /**
  * Provides a domain object for a Layout Paragraphs Section.
@@ -26,13 +26,13 @@ class LayoutParagraphsSection extends LayoutParagraphsComponent {
   /**
    * Constructor.
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph this layout section is attached to.
    * @param \Drupal\layout_paragraphs\LayoutParagraphsComponent[] $components
    *   An array of child components.
    */
   public function __construct(
-    Paragraph $paragraph,
+    ParagraphInterface $paragraph,
     array $components = []
   ) {
     parent::__construct($paragraph);
@@ -42,13 +42,13 @@ class LayoutParagraphsSection extends LayoutParagraphsComponent {
   /**
    * Wraps the paragraph is the correct component class.
    *
-   * @param Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph entity.
    *
    * @return LayoutParagraphsComponent|LayoutParagraphsSection
    *   The component.
    */
-  public function getComponent(Paragraph $paragraph) {
+  public function getComponent(ParagraphInterface $paragraph) {
     foreach ($this->components as $component) {
       if ($component->getEntity()->uuid() == $paragraph->uuid()) {
         return $component;
@@ -79,7 +79,7 @@ class LayoutParagraphsSection extends LayoutParagraphsComponent {
    * @param string $region
    *   The region name.
    *
-   * @return Drupal\layout_paragraphs\LayoutParagraphsComponent[]
+   * @return \Drupal\layout_paragraphs\LayoutParagraphsComponent[]
    *   An array of components.
    */
   public function getComponentsForRegion(string $region) {

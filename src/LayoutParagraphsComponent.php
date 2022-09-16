@@ -2,7 +2,7 @@
 
 namespace Drupal\layout_paragraphs;
 
-use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
 
 /**
  * Provides a domain object for a single Layout Paragraphs Component.
@@ -19,17 +19,17 @@ class LayoutParagraphsComponent {
   /**
    * The paragraph entity.
    *
-   * @var Drupal\paragraphs\Entity\Paragraph
+   * @var \Drupal\paragraphs\ParagraphInterface
    */
   protected $paragraph;
 
   /**
    * Class constructor.
    *
-   * @param Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface$paragraph
    *   The paragraph entity.
    */
-  public function __construct(Paragraph $paragraph) {
+  public function __construct(ParagraphInterface $paragraph) {
     $this->paragraph = $paragraph;
   }
 
@@ -46,13 +46,13 @@ class LayoutParagraphsComponent {
   /**
    * Static wrapper for isLayout().
    *
-   * @param Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph to check if is layout.
    *
    * @return bool
    *   True if paragraph is a layout.
    */
-  public static function isLayoutComponent(Paragraph $paragraph) {
+  public static function isLayoutComponent(ParagraphInterface $paragraph) {
     $instance = new static($paragraph);
     return $instance->isLayout();
   }
@@ -90,13 +90,13 @@ class LayoutParagraphsComponent {
   /**
    * Static wrapper for isRoot().
    *
-   * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
+   * @param \Drupal\paragraphs\ParagraphInterface $paragraph
    *   The paragraph entity.
    *
    * @return bool
    *   True if this item has no parent.
    */
-  public static function isRootComponent(Paragraph $paragraph) {
+  public static function isRootComponent(ParagraphInterface $paragraph) {
     $component = new static($paragraph);
     return $component->isRoot();
   }
@@ -114,7 +114,7 @@ class LayoutParagraphsComponent {
   /**
    * Returns the parent component if one exists.
    *
-   * @return Drupal\paragraphs\Entity\Paragraph|false
+   * @return \Drupal\paragraphs\ParagraphInterface|false
    *   The parent paragraph or false if doesn't exist.
    */
   public function getParentUuid() {
@@ -124,7 +124,7 @@ class LayoutParagraphsComponent {
   /**
    * Returns the wrapped paragraph entity.
    *
-   * @return \Drupal\paragraphs\Entity\Paragraph
+   * @return \Drupal\paragraphs\ParagraphInterface
    *   The paragraph entity.
    */
   public function getEntity() {

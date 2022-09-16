@@ -2,6 +2,7 @@
 
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldFormatter;
 
+use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -54,7 +55,7 @@ class LayoutParagraphsBuilderFormatter extends LayoutParagraphsFormatter impleme
   /**
    * {@inheritDoc}
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, LoggerChannelFactoryInterface $logger_factory, EntityDisplayRepositoryInterface $entity_display_repository, LayoutParagraphsLayoutTempstoreRepository $tempstore, LayoutParagraphsBuilderAccess $layout_paragraphs_builder_access, AccountProxyInterface $current_user) {
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, LoggerChannelFactoryInterface $logger_factory, EntityDisplayRepositoryInterface $entity_display_repository, LayoutParagraphsLayoutTempstoreRepository $tempstore, AccessInterface $layout_paragraphs_builder_access, AccountProxyInterface $current_user) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $logger_factory, $entity_display_repository);
     $this->tempstore = $tempstore;
     $this->layoutParagraphsBuilderAccess = $layout_paragraphs_builder_access;

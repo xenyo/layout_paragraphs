@@ -2,15 +2,15 @@
 
 namespace Drupal\layout_paragraphs\Element;
 
+use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Markup;
-use Drupal\Core\Render\Renderer;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Serialization\Json;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\Core\Access\AccessResultAllowed;
-use Drupal\Core\Layout\LayoutPluginManager;
-use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\layout_paragraphs\Utility\Dialog;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Render\Element\RenderElement;
@@ -48,7 +48,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * The Layouts Manager.
    *
-   * @var \Drupal\Core\Layout\LayoutPluginManager
+   * @var \Drupal\Core\Layout\LayoutPluginManagerInterface
    */
   protected $layoutPluginManager;
 
@@ -62,7 +62,7 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
   /**
    * The entity type bundle info service.
    *
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
   protected $entityTypeBundleInfo;
 
@@ -89,9 +89,9 @@ class LayoutParagraphsBuilder extends RenderElement implements ContainerFactoryP
     $plugin_definition,
     LayoutParagraphsLayoutTempstoreRepository $tempstore_repository,
     EntityTypeManagerInterface $entity_type_manager,
-    LayoutPluginManager $layout_plugin_manager,
-    Renderer $renderer,
-    EntityTypeBundleInfo $entity_type_bundle_info) {
+    LayoutPluginManagerInterface $layout_plugin_manager,
+    RendererInterface $renderer,
+    EntityTypeBundleInfoInterface $entity_type_bundle_info) {
 
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->tempstore = $tempstore_repository;

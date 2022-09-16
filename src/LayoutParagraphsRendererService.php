@@ -4,7 +4,7 @@ namespace Drupal\layout_paragraphs;
 
 use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
 
 /**
  * Class definition for a layout paragraphs service.
@@ -14,30 +14,30 @@ class LayoutParagraphsRendererService {
   /**
    * The layout plugin manager service.
    *
-   * @var Drupal\Core\Layout\LayoutPluginManagerInterface
+   * @var \Drupal\Core\Layout\LayoutPluginManagerInterface
    */
   protected $layoutPluginManager;
 
   /**
    * The entity type manager service.
    *
-   * @var Drupal\Core\Entity\EntityTypeManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
    * An array of parent entities.
    *
-   * @var \Drupal\Core\Entity\Entity[]
+   * @var \Drupal\Core\Entity\EntityInterface[]
    */
   protected static $parentEntities;
 
   /**
    * Class constructor.
    *
-   * @param Drupal\Core\Layout\LayoutPluginManagerInterface $layout_plugin_manager
+   * @param \Drupal\Core\Layout\LayoutPluginManagerInterface $layout_plugin_manager
    *   The layout plugin manager service.
-   * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager service.
    */
   public function __construct(LayoutPluginManagerInterface $layout_plugin_manager, EntityTypeManagerInterface $entity_type_manager) {
@@ -58,7 +58,7 @@ class LayoutParagraphsRendererService {
    * @return array
    *   The component render array.
    */
-  public function renderLayoutSection(array &$build, Paragraph $paragraph, string $view_mode = 'default') {
+  public function renderLayoutSection(array &$build, ParagraphInterface $paragraph, string $view_mode = 'default') {
     if (!LayoutParagraphsComponent::isLayoutComponent($paragraph)) {
       // @todo Throw an exception if $paragraph does not have a layout applied.
       return [];
@@ -115,10 +115,10 @@ class LayoutParagraphsRendererService {
    * @param \Drupal\paragraphs\Entity\Paragraph $paragraph
    *   The paragraph.
    *
-   * @return \Drupal\Core\Entity\Entity
+   * @return \Drupal\Core\Entity\EntityInterface
    *   The entity.
    */
-  protected function getParentEntity(Paragraph $paragraph) {
+  protected function getParentEntity(ParagraphInterface $paragraph) {
     $type = $paragraph->get('parent_type')->value;
     $id = $paragraph->get('parent_id')->value;
     if (!isset(static::$parentEntities["{$type}:{$id}"])) {

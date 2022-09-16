@@ -3,11 +3,11 @@
 namespace Drupal\layout_paragraphs\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\WidgetBase;
-use Drupal\Core\Form\FormBuilder;
+use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Layout\LayoutPluginManagerInterface;
 use Drupal\paragraphs\ParagraphInterface;
-use Drupal\Core\Layout\LayoutPluginManager;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -51,7 +51,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   /**
    * The Layouts Manager.
    *
-   * @var \Drupal\Core\Layout\LayoutPluginManager
+   * @var \Drupal\Core\Layout\LayoutPluginManagerInterface
    */
   protected $layoutPluginManager;
 
@@ -72,7 +72,7 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
   /**
    * The form builder service.
    *
-   * @var Drupal\Core\Form\FormBuilder
+   * @var \Drupal\Core\Form\FormBuilderInterface
    */
   protected $formBuilder;
 
@@ -129,8 +129,8 @@ class LayoutParagraphsWidget extends WidgetBase implements ContainerFactoryPlugi
     array $third_party_settings,
     LayoutParagraphsLayoutTempstoreRepository $tempstore,
     EntityTypeManagerInterface $entity_type_manager,
-    LayoutPluginManager $layout_plugin_manager,
-    FormBuilder $form_builder,
+    LayoutPluginManagerInterface $layout_plugin_manager,
+    FormBuilderInterface $form_builder,
     EntityDisplayRepositoryInterface $entity_display_repository,
     ConfigFactoryInterface $config_factory,
     EntityRepositoryInterface $entity_repository
