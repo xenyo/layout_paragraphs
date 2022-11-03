@@ -12,10 +12,12 @@ use Drupal\layout_paragraphs\Utility\Dialog;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\layout_paragraphs\LayoutParagraphsLayout;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\layout_paragraphs\LayoutParagraphsLayoutRefreshTrait;
 use Drupal\layout_paragraphs\Event\LayoutParagraphsAllowedTypesEvent;
+use Drupal\paragraphs\Plugin\EntityReferenceSelection\ParagraphSelection;
 
 /**
  * ChooseComponentController controller class.
@@ -196,8 +198,8 @@ class ChooseComponentController extends ControllerBase {
   public function getComponentTypes(LayoutParagraphsLayout $layout) {
 
     $items = $layout->getParagraphsReferenceField();
-    $settings = $items->getSettings()['handler_settings'];
-    $sorted_bundles = $this->getSortedAllowedTypes($settings);
+    $field_definition = $items->getFieldDefinition();
+    $sorted_bundles = $this->getSortedAllowedTypes($field_definition);
     $storage = $this->entityTypeManager()->getStorage('paragraphs_type');
     $types = [];
     foreach (array_keys($sorted_bundles) as $bundle) {
@@ -232,51 +234,15 @@ class ChooseComponentController extends ControllerBase {
    * @return array
    *   An array of sorted, allowed paragraph bundles.
    */
-  protected function getSortedAllowedTypes(array $settings) {
-    $bundles = $this->entityTypeBundleInfo->getBundleInfo('paragraph');
-    if (!empty($settings['target_bundles'])) {
-      if (isset($settings['negate']) && $settings['negate'] == '1') {
-        $bundles = array_diff_key($bundles, $settings['target_bundles']);
-      }
-      else {
-        $bundles = array_intersect_key($bundles, $settings['target_bundles']);
-      }
+  protected function getSortedAllowedTypes(FieldDefinitionInterface $field_definition) {
+    $return_bundles = [];
+    /** @var \Drupal\Core\Entity\EntityReferenceSelection\SelectionPluginManagerInterface $selection_manager */
+    $selection_manager = \Drupal::service('plugin.manager.entity_reference_selection');
+    $handler = $selection_manager->getSelectionHandler($field_definition ?: $this->fieldDefinition);
+    if ($handler instanceof ParagraphSelection) {
+      $return_bundles = $handler->getSortedAllowedTypes();
     }
 
-    // Support for the paragraphs reference type.
-    if (!empty($settings['target_bundles_drag_drop'])) {
-      $drag_drop_settings = $settings['target_bundles_drag_drop'];
-      $max_weight = count($bundles);
-
-      foreach ($drag_drop_settings as $bundle_info) {
-        if (isset($bundle_info['weight']) && $bundle_info['weight'] && $bundle_info['weight'] > $max_weight) {
-          $max_weight = $bundle_info['weight'];
-        }
-      }
-
-      // Default weight for new items.
-      $weight = $max_weight + 1;
-      foreach ($bundles as $machine_name => $bundle) {
-        $return_bundles[$machine_name] = [
-          'label' => $bundle['label'],
-          'weight' => isset($drag_drop_settings[$machine_name]['weight']) ? $drag_drop_settings[$machine_name]['weight'] : $weight,
-        ];
-        $weight++;
-      }
-    }
-    else {
-      $weight = 0;
-
-      foreach ($bundles as $machine_name => $bundle) {
-        $return_bundles[$machine_name] = [
-          'label' => $bundle['label'],
-          'weight' => $weight,
-        ];
-
-        $weight++;
-      }
-    }
-    uasort($return_bundles, 'Drupal\Component\Utility\SortArray::sortByWeightElement');
     return $return_bundles;
   }
 
