@@ -108,7 +108,7 @@
     $element.find('.lpb-up, .lpb-down').attr('tabindex', '0');
     $element
       .find(
-        '.js-lpb-component:first-of-type .lpb-up, .js-lpb-component:last-of-type .lpb-down',
+        '.js-lpb-component:first-of-type > .lpb-controls .lpb-up, .js-lpb-component:last-of-type > .lpb-controls .lpb-down',
       )
       .attr('tabindex', '-1');
   }
